@@ -79,7 +79,8 @@ scales['cam1'] = (lock_length, fluid_depth)
 scales['cam2'] = (lock_length, fluid_depth)
 
 # where is the data going to be stored?? (filename)
-data_storage_file = 'data/data_store_'
+data_dir = '/home/eeaol/code/lab-waves/data/'
+data_storage_file = data_dir + 'data/data_store_'
 
 # specify where the centre of the camera was pointing to.
 # used in parallax_corr
@@ -168,7 +169,7 @@ def get_basic_run_data(run):
     for camera in ('cam1', 'cam2'):
         basic_run_data[camera] = {}
         cam_data = basic_run_data[camera]
-        for image in sorted(glob.glob(run+'/' + camera + '/*jpg')):
+        for image in sorted(glob.glob(data_dir + run+'/' + camera + '/*jpg')):
             frame = iframe(image)
             cam_data[frame] = get_basic_frame_data(image)
     return basic_run_data
@@ -180,7 +181,7 @@ def get_basic_data(runs=None):
         runs = [runs]
     for run in runs:
         basic_run_data = get_basic_run_data(run)
-        file = 'basic/basic_%s' % run
+        file = data_dir + 'basic/basic_%s' % run
         write_data(basic_run_data, file)
 
 def get_frame_data(image, run_data_container):
@@ -210,6 +211,7 @@ def get_frame_data(image, run_data_container):
     frame_data = {}
 
     # need the baseline when doing amplitude deviations
+    #FIXME frame identity incorrect
     if frame == 'img_0001.jpg':
         # calculate the baseline, putting it in the same list/tuple
         # format as the other data
@@ -229,12 +231,12 @@ def get_frame_data(image, run_data_container):
 def get_run_data(run):
     """grabs all data from a run"""
     # run = '11_7_06c'
-    basic_run_data = read_data('basic/basic_%s' % run)
+    basic_run_data = read_data(data_dir + 'basic/basic_%s' % run)
     run_data = {}
     for camera in ('cam1', 'cam2'):
         run_data[camera] = {}
         cam_data = run_data[camera]
-        for image in sorted(glob.glob(run+'/' + camera + '/*jpg')):
+        for image in sorted(glob.glob(data_dir + run+'/' + camera + '/*jpg')):
             frame = iframe(image)
             cam_data[frame] = get_frame_data(image, basic_run_data)
     return run_data
