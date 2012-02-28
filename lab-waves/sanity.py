@@ -50,11 +50,14 @@ def sanity_check(inter, maxima, minima, front, image):
     # killit = 'killall display'
     # os.system(killit)
 
-    run = image.split('/')[0]
-    camera = image.split('/')[1]
-    frame = image.split('/')[2]
+    run = image.split('/')[-3]
+    camera = image.split('/')[-2]
+    frame = image.split('/')[-1]
     
-    sanity_dir = run + '/' + camera + '_sanity/'
+    # derive the root data directory from the image filename that is passed
+    root_data_dir = image.split('/')[:-3]
+    
+    sanity_dir = root_data_dir + run + '/' + camera + '_sanity/'
     if not os.path.exists(sanity_dir):
         os.makedirs(sanity_dir)
     else:
