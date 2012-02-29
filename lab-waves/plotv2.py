@@ -10,7 +10,7 @@ def plot(run='r11_7_06c', data_storage_file=None):
     if run.split('r')[0] == run:
         run = 'r' + run
     if data_storage_file is None:
-        rdata_dir = '/home/eeaol/code/lab-waves/'
+        rdata_dir = '/home/eeaol/code/lab-waves/data/'
         data_storage_file = rdata_dir + 'data/data_store_' + run
 
     # read the data to memory
