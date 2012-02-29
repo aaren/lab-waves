@@ -55,7 +55,7 @@ def sanity_check(inter, maxima, minima, front, image):
     frame = image.split('/')[-1]
     
     # derive the root data directory from the image filename that is passed
-    root_data_dir = image.split('/')[:-3]
+    root_data_dir = ('/').join(image.split('/')[:-3]) + '/'
     
     sanity_dir = root_data_dir + run + '/' + camera + '_sanity/'
     if not os.path.exists(sanity_dir):

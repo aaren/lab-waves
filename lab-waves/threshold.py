@@ -83,7 +83,7 @@ def process(image, fluid_type_lists, region, fluid, rulers):
     depth = []
 
     # set the horizontal bounds dependent on the camera 
-    camera = image.split('/')[1]
+    camera = image.split('/')[-2]
 
     # used for testing purposes
     # camera = 'cam1'
@@ -153,7 +153,7 @@ def interpolate(image, in_list, rulers):
         for i in range(x1, x2):
             interface[i] = (y2 - y1) * ((i - x1) / (x2 - x1)) + y1 
 
-    camera = image.split('/')[1]
+    camera = image.split('/')[-2]
     for ruler in rulers[camera]:
         interp(ruler)
     #elif (camera == 'join'):
