@@ -8,6 +8,11 @@
 # features observed, but we have a pretty good idea of that.
 # (in this case straight lines in spacetime).
 
+# This is a good candidate for wrapping in a class when moved back
+# into the main get_data program. Should it actually be moved back??
+# This is just a utility feature - could have all of these utilities
+# in the same file and then call them from a separate file.
+
 from get_data import read_data
 import numpy as np
 import matplotlib.pyplot as plt
@@ -30,11 +35,13 @@ def wave(run='r11_7_06c', data_storage_file=None):
     off = {}
     off['cam1'] = -1
     off['cam2'] = -2
+
+    data_dir = '/home/eeaol/code/lab-waves/data/'
     
     if run.split('r')[0] == run:
         run = 'r' + run
     if data_storage_file is None:
-        data_storage_file = 'data/data_store_' + run
+        data_storage_file = data_dir + 'data/data_store_' + run
 
     data = read_data(data_storage_file)
 
@@ -44,7 +51,7 @@ def wave(run='r11_7_06c', data_storage_file=None):
         frames = sorted(cam_data.keys())
         Time = range(3, len(frames) - 1)
         xtm[cam] = [[round(p[0], 4)\
-                for p in cam_data['img_%04d' % (T + off[cam])]['max']] \
+                for p in cam_data['%04d' % (T + off[cam])]['max']] \
                            for T in Time]
 
     Xtm = zip(xtm['cam1'], xtm['cam2'])
@@ -149,6 +156,33 @@ def track(t_start, t_end, Xtm, m_err=0, c_err=1):
         x_maxes = x_maxes + x_max
     return x_maxes
 
+def get_t_start(Xtm):
+    """From a given map of points, work out what time the first
+    wave appears at. This is just the first non empty list (with
+    no noise...).
+    """
+    # FIXME: this doesn't get the right value if it is presented
+    # with an Xtm that hasn't had a complete set of wave coords
+    # removed from it. i.e. if track doesn't detect all of the 
+    # coords that make up a wave the t_start will be wrong as 
+    # we've assumed that Xtm is perfectly formed.
+    # SOLN: either put something in here that allows for this
+    # or ensure that track always picks up all of the points
+    # or ensure that the Xtm supplied doesn't have left over bits
+    # of wave in it.
+    # soln 3 could be implemented by sifting through Xtm and 
+    # removing points that are in or beyond the last wave envelope.
+    # e.g. (from wave)
+    # strip out non physical points (faster then 1:1)
+    # Xtm = [[x for x in Xtm[t] if x < t] for t in range(len(Xtm))]
+    # modity if x < t --> if x < (t - c) / m, where m and c are
+    # calculated from the list of coords of the last wave + variation.
+
+    for t in range(len(Xtm)):
+        if len(Xtm[t]) != 0:
+            return t
+        else: pass
+
 def get_waves(t_start, t_end, Xtm, n=1):
     """Get the first n waves from Xtm. After a wave is detected
     its points are removed from the dataset so that the next wave
@@ -157,11 +191,16 @@ def get_waves(t_start, t_end, Xtm, n=1):
     Return: waves, a list of lists of the (x,t) of points in the waves
             such that waves[2] is a list of the points in the third wave.
     """
+
     waves = []
-    for i in range(no_waves):
+    for i in range(n):
         x_maxes = track(t_start, t_end, Xtm, m_err=0, c_err=1)
-        remove_from(Xtm, x_maxes)
+        Xtm = remove_from(Xtm, x_maxes)
         waves.append(x_maxes)
+        # this incrementing of t_start is a guess. what it really wants
+        # to do is increment such that it is equal to the first point
+        # of the next wave
+        t_start=get_t_start(Xtm)
     return waves
 
 # plotting for testing the wave detection
@@ -171,6 +210,29 @@ def plot_lines(line):
     plt.plot(x,t)
 
 def plot_xtm(Xtm):
-    t = range(len(Xtm))
-    x = [p[0] for p in Xtm]
-    plt.plot(x, t, 'bo')
+    # make a list of (x,t) tuples over all Xtm
+    xt = [(x,t) for t in range(len(Xtm)) for x in Xtm[t]]
+    x = zip(*xt)[0]
+    t = zip(*xt)[1]
+    plt.plot(x, t, 'bO')
+
+def plot_waves(waves):
+    """Take a given list of waves and plot them with different colours."""
+    for wave in waves:
+        x = zip(*wave)[0]
+        t = zip(*wave)[1]
+        plt.plot(x, t, 'r+')
+
+def test(run='11_7_06c'):
+    """Produce a plot for visual checking of wave detection.
+    TODO: WHAT SHOULD THIS LOOK LIKE??
+    """
+    start = 2
+    end = 25
+    no_waves = 4
+    Xtm = wave(run)
+    nXtm = Xtm
+
+    plot_xtm(Xtm)
+    waves = get_waves(start, end, nXtm, no_waves)
+    plot_waves(waves)
