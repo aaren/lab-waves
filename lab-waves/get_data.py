@@ -313,9 +313,3 @@ def get_offset_from_front():
 
     f2x = zip(*f2xt)[0]
     f2t = zip(*f2xt)[1]
-
-    
-
-    
-
-
