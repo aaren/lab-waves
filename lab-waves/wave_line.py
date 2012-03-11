@@ -62,76 +62,55 @@ def wave(run='r11_7_06c', data_storage_file=None):
 
     return Xtm
 
-# the maximum x for some t WHICH NEEDS TO BE DEFINED is
-# 2) repeat three times (at least)
-# get three of them
-# x_maxes = [(max(Xtm[t]), t) for t in range(t, t + 3)]
-
 def bounding_init(t_start, Xtm):
-# """Initialise the list of coordinates with the first three
-# that are furthest in x, but not physically unrealistic.
-# This gives an initial bounding region in which to search for
-# more points.
-# """
-    x_maxes = []
-    for t in range(t_start, t_start+3):
-        try:
-            x_max = max(Xtm[t]) 
-        except ValueError:
-            break
-        xt = (x_max, t)
-        x_maxes.append(xt)
+    """Initialise the list of coordinates with the first 
+    three that are furthest in x. This gives an initial 
+    bounding region in which to search for more
+    points. 
+    """
+    x_maxes = [] 
+    for t in range(t_start, t_start+3): 
+        try: x_max = max(Xtm[t])
+        except ValueError: 
+            break 
+        xt = (x_max, t) 
+        x_maxes.append(xt) 
     return x_maxes
 
 def bounding_lines(x_maxes, m_err, c_err):
-# """Given a list of (x,t), fit a straight line and return two
-# lines [m, c] displaced by error in gradient and intercept.
-# Arguments: x_maxes is a list of (x,t) points to put a line
-#            through.
-#            m_err, c_err are the error on the gradient and y (time)
-#            intercept to be applied to the line.
-# Return:    line_up, line_down, two lines that are displaced from
-#            the fitted line by given error.
-# """
-    x = [x_max[0] for x_max in x_maxes]
-    T = [x_max[1] for x_max in x_maxes]
-
+    """Given a list of (x,t), fit a straight line and return two
+    lines [m, c] displaced by error in gradient and intercept.
+    Arguments: x_maxes is a list of (x,t) points to put a line
+            through.
+            m_err, c_err are the error on the gradient and y (time)
+            intercept to be applied to the line.
+    Return:    line_up, line_down, two lines that are displaced from
+            the fitted line by given error.
+    """
     # fit a straight line, return [m,c] for line y=mx+c
-    line = list(np.polyfit(x,T,1))
+    x,T = zip(*x_maxes)
+    m,c = np.polyfit(x,T,1)
     # calculate the bounding lines
-    line_up = [line[0] + m_err, line[1] + c_err]
-    line_down = [line[0] - m_err, line[1] - c_err]
+    line_up = [m + m_err, c + c_err]
+    line_down = [m - m_err, c - c_err]
     return line_up, line_down
 
 def find_points(t, line_up, line_down, Xtm):
-# """For a given time slice, look for (x,t) that fit 
-# in the given bounding lines. 
-#
-# Return: a list of tuples (x,t) of the points that fit.
-# """
-    L = []
-    for i in range(len(Xtm[t])):
-        x = Xtm[t][i]
-        x_down = (t - line_up[1]) / line_up[0]
-        x_up = (t - line_down[1]) / line_down[0]
-        if (x_down < x < x_up):
-            coord = (x,t)
-            L.append(coord)
-        else:
-            pass
-    return L
+    """For a given time slice, look for (x,t) that fit 
+    in the given bounding lines. 
+
+    Return: a list of tuples (x,t) of the points that fit.
+    """
+    x_down = (t - line_up[1]) / line_up[0]
+    x_up = (t - line_down[1]) / line_down[0]
+
+    return [(x,t) for x in Xtm[t] if (x_down < x < x_up)]
 
 # METHOD SUMMARY
 # bounding_init # returns first three coords, given a starting time
 # bounding_line # returns the lines that bound given list of coords
 # find_points # returns list of points that fit inside the bounds 
 #               for a given t
-
-# 5) repeat, ignoring points in L from prior waves
-# test the above first.
-# for given input data, return a list of lists. each list corresponds
-# to a wave and its elements are coordinates (x,t).
-
 def remove_from(Xtm, points):
     # Take Xtm and remove supplied points.
     # Points is a list of (x,t) coordinates
@@ -149,11 +128,13 @@ def track(t_start, t_end, Xtm, m_err=0, c_err=1):
     # of the points that fit in a wave-like structure matching the
     # fastest wave (i.e. furthest out in x for given t), given some
     # allowed error in the coordinates.
-    x_maxes = bounding_init(t_start, Xtm)
-    for t in xrange(t_start + 4, t_end):
-        line_up, line_down = bounding_lines(x_maxes, m_err, c_err)
+    init_x_maxes = bounding_init(t_start + 2, Xtm)
+    line_up, line_down = bounding_lines(init_x_maxes, m_err, c_err)
+    x_maxes = []
+    for t in xrange(t_start, t_end):
         x_max = find_points(t, line_up, line_down, Xtm)
         x_maxes = x_maxes + x_max
+        line_up, line_down = bounding_lines(x_maxes, m_err, c_err)
     return x_maxes
 
 def get_t_start(Xtm):
@@ -161,23 +142,6 @@ def get_t_start(Xtm):
     wave appears at. This is just the first non empty list (with
     no noise...).
     """
-    # FIXME: this doesn't get the right value if it is presented
-    # with an Xtm that hasn't had a complete set of wave coords
-    # removed from it. i.e. if track doesn't detect all of the 
-    # coords that make up a wave the t_start will be wrong as 
-    # we've assumed that Xtm is perfectly formed.
-    # SOLN: either put something in here that allows for this
-    # or ensure that track always picks up all of the points
-    # or ensure that the Xtm supplied doesn't have left over bits
-    # of wave in it.
-    # soln 3 could be implemented by sifting through Xtm and 
-    # removing points that are in or beyond the last wave envelope.
-    # e.g. (from wave)
-    # strip out non physical points (faster then 1:1)
-    # Xtm = [[x for x in Xtm[t] if x < t] for t in range(len(Xtm))]
-    # modity if x < t --> if x < (t - c) / m, where m and c are
-    # calculated from the list of coords of the last wave + variation.
-
     for t in range(len(Xtm)):
         if len(Xtm[t]) != 0:
             return t
@@ -191,15 +155,19 @@ def get_waves(t_start, t_end, Xtm, n=1):
     Return: waves, a list of lists of the (x,t) of points in the waves
             such that waves[2] is a list of the points in the third wave.
     """
-
     waves = []
     for i in range(n):
         x_maxes = track(t_start, t_end, Xtm, m_err=0, c_err=1)
         Xtm = remove_from(Xtm, x_maxes)
         waves.append(x_maxes)
-        # this incrementing of t_start is a guess. what it really wants
-        # to do is increment such that it is equal to the first point
-        # of the next wave
+        # put a line through the wave
+        X,T = zip(*x_maxes)
+        m,c = np.polyfit(X,T,1)
+        me = m
+        ce = c + 0.8
+        # remove left over points
+        Xtm = [[x for x in Xtm[t] if x < (t - ce) / me] \
+                                    for t in range(len(Xtm))]
         t_start=get_t_start(Xtm)
     return waves
 
@@ -212,27 +180,29 @@ def plot_lines(line):
 def plot_xtm(Xtm):
     # make a list of (x,t) tuples over all Xtm
     xt = [(x,t) for t in range(len(Xtm)) for x in Xtm[t]]
-    x = zip(*xt)[0]
-    t = zip(*xt)[1]
-    plt.plot(x, t, 'bO')
+    x,t = zip(*xt)
+    plt.plot(x, t, 'bo')
 
 def plot_waves(waves):
     """Take a given list of waves and plot them with different colours."""
     for wave in waves:
-        x = zip(*wave)[0]
-        t = zip(*wave)[1]
+        x,t = zip(*wave)
         plt.plot(x, t, 'r+')
 
-def test(run='11_7_06c'):
+def test(n=1, run='11_7_06c'):
     """Produce a plot for visual checking of wave detection.
     TODO: WHAT SHOULD THIS LOOK LIKE??
     """
     start = 2
     end = 25
-    no_waves = 4
+    no_waves = n
     Xtm = wave(run)
     nXtm = Xtm
 
     plot_xtm(Xtm)
     waves = get_waves(start, end, nXtm, no_waves)
     plot_waves(waves)
+
+
+
+    

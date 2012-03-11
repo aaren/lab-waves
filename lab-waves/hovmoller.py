@@ -59,4 +59,28 @@ def interp2(hn):
 # regular spacing.
 
 
+class hovmoller(object):
+
+    # make a map of wave speed in (x,t) by looking
+    # at the detected waves
+    def gen_c_map():
+        # some stuff
+        return c_map
+    
+    def h(x,t):
+        # lookup what the value of h is at some given
+        # (x,t). Should be able to work with any input
+        # numbers, i.e. interpolates to grid.
+
+    def interpolate(region):
+        for (x, t) in region:
+            c = c_map(x,t)
+            t0 = int(t)
+            t1 = t0 + 1
+            x0 = x - c*(t - t0)
+            x1 = x + c*(t1 - t)
+            h0 = h(x0,t0)
+            h1 = h(x1,t1)
+            hxt = h0 + (h1-h0) * (t - t0) / (t1 - t0)
+            # stick this in an array.
 
