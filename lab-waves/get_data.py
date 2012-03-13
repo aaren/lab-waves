@@ -205,6 +205,9 @@ def get_basic_data(runs=None):
         runs = ['r11_7_06c']
     elif type(runs) is not list:
         runs = [runs]
+    if 'r' not in runs[0]:
+        print "runs must lead with an r!!"
+        return 0
     for run in runs:
         basic_run_data = get_basic_run_data(run)
         file = data_dir + 'basic/basic_%s' % run
@@ -239,6 +242,7 @@ def get_frame_data(image, run_data_container):
     # need the baseline when doing amplitude deviations
     #FIXME frame identity incorrect
     if frame == '0001':
+
         # calculate the baseline, putting it in the same list/tuple
         # format as the other data
         baseline = [(0,sum(interface)/len(interface))]

@@ -187,9 +187,9 @@ def plot_waves(waves):
     """Take a given list of waves and plot them with different colours."""
     for wave in waves:
         x,t = zip(*wave)
-        plt.plot(x, t, 'r+')
+        plt.plot(x, t, 'bo')
 
-def test(n=1, run='11_7_06c'):
+def test(n=1, run='r11_7_06c'):
     """Produce a plot for visual checking of wave detection.
     TODO: WHAT SHOULD THIS LOOK LIKE??
     """
@@ -203,6 +203,43 @@ def test(n=1, run='11_7_06c'):
     waves = get_waves(start, end, nXtm, no_waves)
     plot_waves(waves)
 
+def set():
+    plt.xlim(0, 12)
+    plt.ylim(0, 50)
+    plt.xlabel("Distance (lock lengths)")
+    plt.ylabel("Time (s)")
 
-
+def fit_waves(waves):
+    for wave in waves:
+        x,t = zip(*wave)
+        m,c = np.polyfit(x,t,1)
+        T = np.linspace(1, 25, 25)
+        X = (T - c) / m
+        c = 1 / m
+        plt.plot(X, T, label="c=%.2f /s" %c)
     
+def plot_front(data, run='r11_7_06c'):
+    off = {}
+    off['cam1'] = 0
+    off['cam2'] = 1
+
+    f={}
+    t={}
+    for cam in ['cam1', 'cam2']:
+        cam_data = data[run][cam]
+        frames = sorted(cam_data.keys())
+
+        f[cam] = [[p[0] for p in cam_data[frame]['front']] for frame in frames]
+        t[cam] = range(off[cam], len(cam_data.keys()) + off[cam])
+
+    f['cam1'] = f['cam1'][0:25]
+    t['cam1'] = t['cam1'][0:25]
+    f['cam2'] = f['cam2'][20:45]
+    t['cam2'] = t['cam2'][20:45]
+
+    plt.plot(f['cam1'], t['cam1'], 'ko')
+    plt.plot(f['cam2'], t['cam2'], 'ko', label = 'g.c. front')
+
+
+
+
