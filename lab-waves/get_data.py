@@ -71,12 +71,12 @@ camera_offsets['cam1'] = (2650, 543)
 ## they need to be the same.
 ## the 2600 value is the distance from the identical place in cam1 to 
 ## the lock in cam1
-camera_offsets['cam2'] = (2750+2600, 543)
+camera_offsets['cam2'] = (2750 + 2600, 543)
 
 # specify the scale, i.e how many pixels to some real measurement in the
 # images. in y we want this to be the total fluid depth. in x make it the
 # lock length for now (25cm).
-fluid_depth = 543-109
+fluid_depth = 543 - 109
 lock_length = 440
 scales = {}
 scales['cam1'] = (lock_length, fluid_depth)
@@ -96,7 +96,7 @@ centre['cam2'] = 2.25
 
 def write_data(data_dict, filename):
     """uses pickle to write a dict to disk for persistent storage"""
-    output = open(filename, 'wb') # b is binary
+    output = open(filename, 'wb')  # b is binary
     pickle.dump(data_dict, output)
     output.close()
 
@@ -149,6 +149,9 @@ def norm(inlist, camera, p=0):
     return inlist_norm
 
 def iframe(image):
+    """From an image filename, e.g. img_0001.jpg, get just the
+    0001 bit and return it.
+    """
     frame = image.split('_')[-1].split('.')[0].split('_')[-1]
     return frame
 
@@ -235,7 +238,7 @@ def get_frame_data(image, run_data_container):
     frame_data = {}
     # need the baseline when doing amplitude deviations
     #FIXME frame identity incorrect
-    if frame == 'img_0001.jpg':
+    if frame == '0001':
         # calculate the baseline, putting it in the same list/tuple
         # format as the other data
         baseline = [(0,sum(interface)/len(interface))]
