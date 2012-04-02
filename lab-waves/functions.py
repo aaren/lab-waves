@@ -1,6 +1,6 @@
 # I want to produce a load of plots of theoretical wave speeds.
 from __future__ import division
-
+import numpy as np
 # Two layer linear waves
 g = 9.81
 H = 0.25
@@ -20,9 +20,10 @@ class TwoLayer(object):
     def __init__(self):
         pass
     # general
-    def linear(rho0, rho1, h0, h1, k):
-        pass
-        
+    @staticmethod
+    def linear(k):
+        c = (g * H * drho / (k * (rho1/np.tanh(k*h1) + rho2 / np.tanh(k*h0))))**.5
+        return c/H
     # H = lambda --> coth -> 1
     @staticmethod
     def equiv(rho1=rho1, rho2=rho2):
@@ -55,4 +56,5 @@ class GCHomo(object):
         
 def plot():
     t = np.linspace(0, 30, 31)
+
     
