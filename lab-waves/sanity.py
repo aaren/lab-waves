@@ -2,7 +2,7 @@ import Image
 import ImageDraw
 import os
 
-def sanity_check(inter, maxima, minima, front, image):
+def sanity_check(inter, maxima, minima, front, image, inter2=None):
     """produces an image on screen that has the calculated interface
     and the inferred peak coordinates and front position overlaid.
     
@@ -10,6 +10,7 @@ def sanity_check(inter, maxima, minima, front, image):
           maxima -- the list of maxima coordinates
           minima -- the list of minima coordinates
           front -- the coordinate of the current front
+          inter2 -- another interface list, e.g the current (default None)
 
     return: none. opens a pil image object in xv and imagemagick
     """
@@ -26,6 +27,11 @@ def sanity_check(inter, maxima, minima, front, image):
 
     # plot the measured interface depth onto the image
     draw.line(i_coords, fill = 'black', width = 5)
+    if inter2:
+        x2_coords = range(len(inter2)) 
+        y2_coords = inter2 
+        i2_coords = zip(x2_coords, y2_coords)
+        draw.line(i2_coords, fill = 'blue', width = 5)
  
     # plot red and green squares onto the image at the calculated 
     # maxima and minima

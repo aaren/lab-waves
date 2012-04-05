@@ -164,7 +164,8 @@ def interpolate(image, in_list, rulers):
 
     return interface
 
-def main(image, region, rulers, thresh_values=None):
+def main(image, region, rulers, thresh_values=None, front_depth=None):
+    top, bottom = region
     # generate fluid type list of lists
     # print('generating threshold array...')
     fluid_type = thresh_img(image, thresh_values)
@@ -174,18 +175,14 @@ def main(image, region, rulers, thresh_values=None):
     interface = process(image, fluid_type, region, 1, rulers)
     interp_interface = interpolate(image, interface, rulers) 
 
-    # detect and interpolate the current
-    # print('detecting the current')
-    current = process(image, fluid_type, region, 0, rulers)
-    interp_current = interpolate(image, current, rulers)
-    
     # detect the current front
     # print('detecting the front...')
     # fluid_type_transpose = zip(*fluid_type)
     # front_pos = fluid_type_transpose[510].index(0)
     # much faster, given we know the row we want (70ms / 200us)
     # but the zip transpose is still very quick.
-    front_depth = 520
+    if not front_depth:
+        front_depth = 520
     try:
         front_pos = [i[front_depth] for i in fluid_type].index(0)
     # if the front isn't found
@@ -195,6 +192,15 @@ def main(image, region, rulers, thresh_values=None):
     if front_pos < 110:
         front_pos = -99999
     front_coord = [(front_pos, front_depth)]
+
+    # detect and interpolate the current
+    # print('detecting the current')
+    current = process(image, fluid_type, region, 0, rulers)
+    # remove silly current values
+    current[:front_pos] = [bottom]*front_pos
+    interp_current = interpolate(image, current, rulers)
+    # current = [0 if not top < c < bottom else c for c in current]
+
 
     out = (interp_interface, interp_current, front_coord)
 

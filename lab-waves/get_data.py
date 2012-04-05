@@ -44,7 +44,7 @@ import sanity
 # How about a Camera class, with attributes of rulers, offsets, scales, etc.
 
 # specify a vertical region of the image in which to search for the interface
-region = (130, 590)
+region = (130, 540)
 
 # specify the threshold values to use. fiddling with these has a strong impact
 # on the quality of the interface signal.
@@ -56,7 +56,7 @@ thresh_values = (thresh_green, thresh_red)
 # obscure the fluid.
 rulers = {}
 rulers['cam1'] = [(80, 105), (870, 950), (1740, 1810)]
-rulers['cam2'] = [(80, 130), (950, 1000), (1820, 1870), \
+rulers['cam2'] = [(80, 130), (950, 1000), (1820, 1890), \
                   (2665, 2695), (2705, 2725)]
 
 # specify the offsets that each of the cameras have, for normalisation of
@@ -150,9 +150,12 @@ def iframe(image):
 
 def get_basic_frame_data(image):
     # get the list of interface depths
+    # TODO: make this dependent on the type of run, i.e. full / partial
+    # to determine the front_depth at which to look for the front_pos.
+    front_depth = 520
     print("thresholding image %s..." % image)
     interface, current, front_coord\
-            = threshold.main(image, region, rulers, thresh_values)
+            = threshold.main(image, region, rulers, thresh_values, front_depth)
 
     basic_data = {}
     basic_data['interface'] = interface
@@ -164,7 +167,7 @@ def get_basic_frame_data(image):
 def get_basic_run_data(run):
     """grabs all basic data from a run"""
     # run = '11_7_06c'
-    run = run.split('r')[-1]
+    # run = run.split('r')[-1]
     basic_run_data = {}
     for camera in ('cam1', 'cam2'):
         basic_run_data[camera] = {}
@@ -176,7 +179,7 @@ def get_basic_run_data(run):
 
 def get_basic_data(runs=None):
     if runs is None:
-        runs = ['11_7_06c']
+        runs = ['r11_7_06c']
     elif type(runs) is not list:
         runs = [runs]
     for run in runs:
@@ -206,7 +209,7 @@ def get_frame_data(image, run_data_container):
     # check that the front and wave peaks make sense by overlaying
     # measured positions onto the source image and writing this out
     # to the sanity directories
-    sanity.sanity_check(interface, _max, _min, front_coord, image)
+    sanity.sanity_check(interface, _max, _min, front_coord, image, current)
     # make a container for the data and populate it
     frame_data = {}
 
@@ -247,13 +250,13 @@ def main(runs=None):
     data = {}
     # define the runs to collect data from
     if runs is None:
-        runs = ['11_7_06c']
+        runs = ['r11_7_06c']
     elif type(runs) is not list:
         runs = [runs]
     for run in runs:
         run_data = get_run_data(run)
-        data['r'+run] = run_data
-        file = data_storage_file + 'r' + run
+        data[run] = run_data
+        file = data_storage_file + run
         print "writing the data to", file
         write_data(data, file)
 
