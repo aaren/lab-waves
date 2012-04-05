@@ -187,7 +187,7 @@ def plot_waves(waves):
     """Take a given list of waves and plot them with different colours."""
     for wave in waves:
         x,t = zip(*wave)
-        plt.plot(x, t, 'bo')
+        plt.plot(x, t, 'ro')
 
 def test(n=1, run='r11_7_06c'):
     """Produce a plot for visual checking of wave detection.
