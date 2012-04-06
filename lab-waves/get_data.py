@@ -210,9 +210,9 @@ def get_frame_data(image, run_data_container):
     # measured positions onto the source image and writing this out
     # to the sanity directories
     sanity.sanity_check(interface, _max, _min, front_coord, image, current)
+
     # make a container for the data and populate it
     frame_data = {}
-
     # need the baseline when doing amplitude deviations
     #FIXME frame identity incorrect
     if frame == 'img_0001.jpg':
@@ -225,6 +225,7 @@ def get_frame_data(image, run_data_container):
     interface = [(i,interface[i]) for i in range(len(interface))]
      
     frame_data['interface'] = norm(interface, camera)    
+    frame_data['current'] = norm(current, camera)
     frame_data['max'] = norm(_max, camera, 0.5)
     frame_data['min'] = norm(_min, camera, 0.5)
     frame_data['front'] = norm(front_coord, camera, 0.5)
