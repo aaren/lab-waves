@@ -189,7 +189,7 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
         for n in range(d):
             front_pos = [i[front_depth - n] for i in fluid_type].index(0)
             tot += front_pos
-        front_pos = tot / d
+        front_pos = int(tot / d)
     # if the front isn't found
     except ValueError:
         front_pos = -99999
