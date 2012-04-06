@@ -242,7 +242,8 @@ def get_frame_data(image, run_data_container):
         frame_data['baseline'] = norm(baseline, camera)
 
     # put the interface into the standard format
-    interface = [(i,interface[i]) for i in range(len(interface))]
+    interface = list(enumerate(interface))
+    current = list(enumerate(current))
      
     frame_data['interface'] = norm(interface, camera)    
     frame_data['current'] = norm(current, camera)
