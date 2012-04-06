@@ -156,7 +156,6 @@ def irun(image):
     run = image.split('/')[-3]
     return run
 
-
 def get_parameters(run): 
     p_runs = pull_col(0, paramf) 
     run_params = pull_line(p_runs.index(run), paramf)
@@ -164,14 +163,16 @@ def get_parameters(run):
     parameters = dict(zip(headers, run_params))
     return parameters
 
-
 def get_basic_frame_data(image):
-    # get the list of interface depths
-    # TODO: make this dependent on the type of run, i.e. full / partial
-    # to determine the front_depth at which to look for the front_pos.
+    # get the list of interface depths, with the depth for the current
+    # different for varying lock depth
     run = irun(image)
+    params = get_parameters(run)
+    if params['D/H'] == 0.4:
+        front_depth = 525
+    elif params['D/H'] == 1:
+        front_depth = 510
 
-    front_depth = 520
     print("thresholding image %s..." % image)
     interface, current, front_coord\
             = threshold.main(image, region, rulers, thresh_values, front_depth)
