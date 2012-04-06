@@ -34,6 +34,7 @@ import pickle
 
 import matplotlib.pyplot as plt
 
+from aolcore import pull_col, pull_line
 import threshold
 import peakdetect
 import sanity
@@ -42,6 +43,9 @@ import sanity
 
 # perhaps this is a good place to use a class instead of all of these dicts?
 # How about a Camera class, with attributes of rulers, offsets, scales, etc.
+
+# where is the parameters file?
+paramf = '/home/eeaol/lab/data/flume1/working/parameters'
 
 # specify a vertical region of the image in which to search for the interface
 region = (130, 540)
@@ -148,10 +152,25 @@ def iframe(image):
     frame = image.split('_')[-1].split('.')[0].split('_')[-1]
     return frame
 
+def irun(image):
+    run = image.split('/')[-3]
+    return run
+
+
+def get_parameters(run): 
+    p_runs = pull_col(0, paramf) 
+    run_params = pull_line(p_runs.index(run), paramf)
+    headers = pull_line(0, paramf)
+    parameters = dict(zip(headers, run_params))
+    return parameters
+
+
 def get_basic_frame_data(image):
     # get the list of interface depths
     # TODO: make this dependent on the type of run, i.e. full / partial
     # to determine the front_depth at which to look for the front_pos.
+    run = irun(image)
+
     front_depth = 520
     print("thresholding image %s..." % image)
     interface, current, front_coord\
