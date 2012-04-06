@@ -55,7 +55,7 @@ thresh_values = (thresh_green, thresh_red)
 # specify the positions of rulers and other vertical features that
 # obscure the fluid.
 rulers = {}
-rulers['cam1'] = [(80, 105), (870, 950), (1740, 1810)]
+rulers['cam1'] = [(80, 105), (870, 950), (1630, 1660), (1740, 1810)]
 rulers['cam2'] = [(80, 130), (950, 1000), (1820, 1890), \
                   (2665, 2695), (2705, 2725)]
 
