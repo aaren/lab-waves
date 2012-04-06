@@ -168,9 +168,9 @@ def get_basic_frame_data(image):
     # different for varying lock depth
     run = irun(image)
     params = get_parameters(run)
-    if params['D/H'] == 0.4:
+    if params['D/H'] == '0.4':
         front_depth = 525
-    elif params['D/H'] == 1:
+    elif params['D/H'] == '1':
         front_depth = 505
 
     print("thresholding image %s..." % image)
