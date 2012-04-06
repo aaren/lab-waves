@@ -171,7 +171,7 @@ def get_basic_frame_data(image):
     if params['D/H'] == 0.4:
         front_depth = 525
     elif params['D/H'] == 1:
-        front_depth = 510
+        front_depth = 505
 
     print("thresholding image %s..." % image)
     interface, current, front_coord\
