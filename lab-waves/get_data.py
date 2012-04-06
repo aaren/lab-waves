@@ -267,14 +267,14 @@ def get_run_data(run):
 
 ## MAIN function
 def main(runs=None):
-    # make container for all the data
-    data = {}
     # define the runs to collect data from
     if runs is None:
         runs = ['r11_7_06c']
     elif type(runs) is not list:
         runs = [runs]
     for run in runs:
+        # make container for all the run data
+        data = {}
         run_data = get_run_data(run)
         data[run] = run_data
         file = data_storage_file + run
