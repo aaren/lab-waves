@@ -182,9 +182,14 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     # much faster, given we know the row we want (70ms / 200us)
     # but the zip transpose is still very quick.
     if not front_depth:
-        front_depth = 520
+        front_depth = 510
     try:
-        front_pos = [i[front_depth] for i in fluid_type].index(0)
+        tot = 0
+        d = 5
+        for n in range(d):
+            front_pos = [i[front_depth - n] for i in fluid_type].index(0)
+            tot += front_pos
+        front_pos = tot / d
     # if the front isn't found
     except ValueError:
         front_pos = -99999
@@ -200,7 +205,6 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     current[:front_pos] = [bottom]*front_pos
     interp_current = interpolate(image, current, rulers)
     # current = [0 if not top < c < bottom else c for c in current]
-
 
     out = (interp_interface, interp_current, front_coord)
 
