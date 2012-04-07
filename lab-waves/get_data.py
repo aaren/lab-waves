@@ -111,23 +111,29 @@ def parallax_corr(xin, cam, p):
     """ Lab images suffer from parallax due to the static cameras.
     This is easily corrected for by assuming that features are 2d
     and homogeneous in the y coord (widthways across the tank."""
-    # lock_displacement is chosen to make the reference x a distance
-    # of l/2 from the midpoint.
-    # unscaled = [s * x for s,x in zip(scales[cam], xy_tuple)] 
-    scale = 0.25 # lock-lengths
-    unscaled_x = xin * scale
-    x_wrt_to_lock = unscaled_x
-    x = x_wrt_to_lock
-    l = 2 * centre[cam] 
+    # xin is in units of lock-lengths
+    scale = 0.25 
+    x = xin * scale
+    # basic tank geometry
+    c = centre[cam]
     d = 1.45
     w = 0.20
-    # given pos in tank x, fov width l, distance from cam to tank d
-    # and width of tank w, the correction is
-    corr = p * (x - l/2) * (w / (w + d))
-    x_corr = x + corr
-    # corr_unscaled = (x_corr, unscaled[1])
-    # corr_xy_tuple = tuple([x / s for x,s in zip(corr_unscaled, scales[cam])])
+    f = (w / (2 * d + w))
+    # given pos in tank x, cam pos c, distance from cam to tank d
+    # and width of tank w, the correction, when projected onto the
+    # centreline of the tank, is
+    corr = p * (x - c) * f
+    # whether this is positive or negative depends on the position of
+    # the front w.r.t the cam position
+    if x < c:
+        x_corr = x + corr
+    elif x > c:
+        x_corr = x - corr
+    else:
+        x_corr = x
+    # back into lock-lengths
     scale_x_corr = x_corr / scale
+
     return scale_x_corr
 
 def norm(inlist, camera, p=0):
