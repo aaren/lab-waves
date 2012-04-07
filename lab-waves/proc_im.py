@@ -13,6 +13,10 @@ from aolcore import pull_col, pull_line
 
 
 # script, run = argv
+from get_data import path
+
+paramf = path + '/parameters'
+procf = path + '/proc_data'
 
 # Initialisation:
 #
@@ -65,8 +69,8 @@ def barrel_corr(image, null1):
     else:
         print "Camera must be cam1 or cam2"
 
-    infile = 'synced/%s/%s/%s' % (folder, cam, image)
-    outfile = 'processed/%s/%s/%s' % (folder, cam, image)
+    infile = '%s/synced/%s/%s/%s' % (path, folder, cam, image)
+    outfile = '%s/processed/%s/%s/%s' % (path, folder, cam, image)
     command = 'convert -distort Barrel %s %s %s' % (corr, infile, outfile)
 
     print "Barrel correcting %s with %s 18mm coefficients,\n%s" % (image, cam, corr)
@@ -77,9 +81,8 @@ def barrel_corr_measure(run):
     proc = []
     proc.append(run)
     for camera in ['cam1', 'cam2']:
-        # barrel_corr('synced/%s/%s/img_0001.jpg' % (run, camera)) 
-        # (now done externally)
-        command = 'gimp -s -f -d processed/%s/%s/img_0001.jpg &' % (run, camera)
+        command = 'gimp -s -f -d %s/processed/%s/%s/img_0001.jpg &'\
+                                         % (path, run, camera)
         os.system(command)
 
         print "What is the rotation correction for %s? (as measured)" % camera
@@ -106,7 +109,7 @@ def barrel_corr_measure(run):
         proc.append(raw_input('> '))
 
     entry = ','.join(proc) + '\n'
-    f = open('proc_data', 'a')
+    f = open('procf', 'a')
     f.write(entry)
     f.close()
 
@@ -116,14 +119,14 @@ def bcm():
 
 def bc1(run):
     for camera in ['cam1', 'cam2']:
-        barrel_corr('synced/%s/%s/img_0001.jpg' % (run, camera), None)
+        barrel_corr('%s/synced/%s/%s/img_0001.jpg' % (path, run, camera), None)
 
 def get_run_data(run):
-    lines = pull_col(0, 'proc_data', ',') 
+    lines = pull_col(0, procf, ',') 
     line_number = lines.index(run)
-    line = pull_line(line_number, 'proc_data', ',')
+    line = pull_line(line_number, procf, ',')
 
-    headers = pull_line(0, 'proc_data', ',')
+    headers = pull_line(0, procf, ',')
     
     run_data = {}
 
@@ -146,7 +149,7 @@ def get_measurements(run):
     proc_string = '\t'.join(proc1 + proc2)
     print proc_string
 
-    f = open('proc_data', 'a')
+    f = open(procf, 'a')
     f.write(proc_string)
     f.close()
 
@@ -182,9 +185,9 @@ def add_text(image, (scale, data)):
     param_t = param_a + param_b
 
     run = image.split('/')[-3]
-    param_runs = pull_col(0, 'parameters')
+    param_runs = pull_col(0, paramf)
     line_number = param_runs.index(run) 
-    parameter = pull_line(line_number, 'parameters')
+    parameter = pull_line(line_number, paramf)
 
     camera = image.split('/')[-2]
     time = int(image.split('_')[-1].split('.')[0])
@@ -239,14 +242,14 @@ def add_text(image, (scale, data)):
 
 def main(run, run_data):
     # Barrel correct
-    proc_images(barrel_corr, run, 'synced', None, None)
+    proc_images(barrel_corr, run, path + '/synced', None, None)
 
     # Pull the correction angles from the run data
     theta1 = -float(run_data['rot_1'])
     theta2 = -float(run_data['rot_2'])
 
     # Rotation correct the images
-    proc_images(rotation_corr, run, 'processed', theta1, theta2)
+    proc_images(rotation_corr, run, path + '/processed', theta1, theta2)
  
     # Resize the images to standard
     ideal_ruler = 435
@@ -258,11 +261,10 @@ def main(run, run_data):
     cam1_ratio = ruler_ratio
     cam2_ratio = ruler_ratio * depth_ratio
 
-    proc_images(rescale, run, 'processed', cam1_ratio, cam2_ratio)
+    proc_images(rescale, run, path + '/processed', cam1_ratio, cam2_ratio)
     # rescaling means that the offsets, lock_pos etc. are rescaled too.
     # Add text and crop
-    proc_images(add_text, run, 'processed', (cam1_ratio, run_data), (cam2_ratio, run_data))
-
+    proc_images(add_text, run, path + '/processed', (cam1_ratio, run_data), (cam2_ratio, run_data))
 
 # MAIN SEQUENCE
 #

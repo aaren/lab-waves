@@ -44,8 +44,16 @@ import sanity
 # perhaps this is a good place to use a class instead of all of these dicts?
 # How about a Camera class, with attributes of rulers, offsets, scales, etc.
 
+# what is the root directory for all of this?
+path = '/home/eeaol/lab/data/flume1/working'
 # where is the parameters file?
-paramf = '/home/eeaol/lab/data/flume1/working/parameters'
+paramf = path + '/parameters'
+# proc_data?
+procf = path + '/proc_data'
+
+# where is the data going to be stored?? (filename)
+data_dir = '/home/eeaol/code/lab-waves/data/'
+data_storage_file = data_dir + 'data/data_store_'
 
 # specify a vertical region of the image in which to search for the interface
 region = (130, 540)
@@ -81,10 +89,6 @@ lock_length = 440
 scales = {}
 scales['cam1'] = (lock_length, fluid_depth)
 scales['cam2'] = (lock_length, fluid_depth)
-
-# where is the data going to be stored?? (filename)
-data_dir = '/home/eeaol/code/lab-waves/data/'
-data_storage_file = data_dir + 'data/data_store_'
 
 # specify where the centre of the camera was pointing to.
 # used in parallax_corr
