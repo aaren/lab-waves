@@ -14,26 +14,10 @@ def thresh_img(image, thresh_values=None):
     # get the image dimensions
     w, h = im.size
 
-    # specify the fluid depth
-    # H = 445
-
-    # go through the columns in turn evaluating
-    # type of fluid at each height. fluid is in the range
-    # 0 -> 2650, l -> r; 0 -> 445, t -> b.
-    # for pixel in column 
-
-    # specify the threshold values for fluid 1 (green)
-    t1r = 80
-    t1g = 110
-    t1b = 50
-    thresh_green = (t1r, t1g, t1b)
-
-    # and for fluid 0 (red)
-    t0r = 60
-    t0g = 20
-    t0b = 20
-    thresh_red = (t0r, t0g, t0b)
-
+    # defaults
+    thresh_green = (80, 110, 50)
+    thresh_red = (60, 20, 20)
+    mixed_red = (75, 20, 20)
     if thresh_values:
         thresh_green, thresh_red, mixed_red = thresh_values
     
@@ -84,9 +68,6 @@ def process(image, fluid_type_lists, region, fluid, rulers):
 
     # set the horizontal bounds dependent on the camera 
     camera = image.split('/')[-2]
-
-    # used for testing purposes
-    # camera = 'cam1'
 
     if camera == 'cam1':
         l_lim = 20 
@@ -156,11 +137,6 @@ def interpolate(image, in_list, rulers):
     camera = image.split('/')[-2]
     for ruler in rulers[camera]:
         interp(ruler)
-    #elif (camera == 'join'):
-    #    print 'aaahh, not got the join measurements yet'
-        # the joined images are no good for numerical analysis anyway.
-        # the cam1 and cam2 images need to be read in and corrected for
-        # parallax, then joined.
 
     return interface
 
