@@ -61,8 +61,14 @@ region = (130, 540)
 # specify the threshold values to use. fiddling with these has a strong impact
 # on the quality of the interface signal.
 thresh_green = (80, 120, 50)
-thresh_red = (100, 20, 20)
+thresh_red = (100, 75, 10)
 thresh_values = (thresh_green, thresh_red)
+# TODO: Two values for thresh red? 
+# thresh_red[1] controls how mixed the detected current is, as this strongly
+# varies the greenness. Inside the core current this might be <50 (across the
+# whole tank, the stuff against the front wall is <5), but in more mixed zones
+# more like <75, or greater depending on the mixing. Two values for thresh_red
+# would give an idea of the thickness of the mixed layer on the current.
 
 # specify the positions of rulers and other vertical features that
 # obscure the fluid.
@@ -79,12 +85,12 @@ camera_offsets['cam1'] = (2650, 543)
 ## they need to be the same.
 ## the 2600 value is the distance from the identical place in cam1 to 
 ## the lock in cam1
-camera_offsets['cam2'] = (2750+2600, 543)
+camera_offsets['cam2'] = (2750 + 2600, 543)
 
 # specify the scale, i.e how many pixels to some real measurement in the
 # images. in y we want this to be the total fluid depth. in x make it the
 # lock length for now (25cm).
-fluid_depth = 543-109
+fluid_depth = 543 - 109
 lock_length = 440
 scales = {}
 scales['cam1'] = (lock_length, fluid_depth)
@@ -100,7 +106,7 @@ centre['cam2'] = 2.25
 
 def write_data(data_dict, filename):
     """uses pickle to write a dict to disk for persistent storage"""
-    output = open(filename, 'wb') # b is binary
+    output = open(filename, 'wb')  # b is binary
     pickle.dump(data_dict, output)
     output.close()
 
@@ -115,23 +121,29 @@ def parallax_corr(xin, cam, p):
     """ Lab images suffer from parallax due to the static cameras.
     This is easily corrected for by assuming that features are 2d
     and homogeneous in the y coord (widthways across the tank."""
-    # lock_displacement is chosen to make the reference x a distance
-    # of l/2 from the midpoint.
-    # unscaled = [s * x for s,x in zip(scales[cam], xy_tuple)] 
-    scale = 0.25 # lock-lengths
-    unscaled_x = xin * scale
-    x_wrt_to_lock = unscaled_x
-    x = x_wrt_to_lock
-    l = 2 * centre[cam] 
+    # xin is in units of lock-lengths
+    scale = 0.25 
+    x = xin * scale
+    # basic tank geometry
+    c = centre[cam]
     d = 1.45
     w = 0.20
-    # given pos in tank x, fov width l, distance from cam to tank d
-    # and width of tank w, the correction is
-    corr = p * (x - l/2) * (w / (w + d))
-    x_corr = x + corr
-    # corr_unscaled = (x_corr, unscaled[1])
-    # corr_xy_tuple = tuple([x / s for x,s in zip(corr_unscaled, scales[cam])])
+    f = (w / (2 * d + w))
+    # given pos in tank x, cam pos c, distance from cam to tank d
+    # and width of tank w, the correction, when projected onto the
+    # centreline of the tank, is
+    corr = p * (x - c) * f
+    # whether this is positive or negative depends on the position of
+    # the front w.r.t the cam position
+    if x < c:
+        x_corr = x + corr
+    elif x > c:
+        x_corr = x - corr
+    else:
+        x_corr = x
+    # back into lock-lengths
     scale_x_corr = x_corr / scale
+
     return scale_x_corr
 
 def norm(inlist, camera, p=0):
@@ -153,6 +165,9 @@ def norm(inlist, camera, p=0):
     return inlist_norm
 
 def iframe(image):
+    """From an image filename, e.g. img_0001.jpg, get just the
+    0001 bit and return it.
+    """
     frame = image.split('_')[-1].split('.')[0].split('_')[-1]
     return frame
 
@@ -206,6 +221,9 @@ def get_basic_data(runs=None):
         runs = ['r11_7_06c']
     elif type(runs) is not list:
         runs = [runs]
+    if 'r' not in runs[0]:
+        print "runs must lead with an r!!"
+        return 0
     for run in runs:
         basic_run_data = get_basic_run_data(run)
         file = data_dir + 'basic/basic_%s' % run
@@ -239,7 +257,8 @@ def get_frame_data(image, run_data_container):
     frame_data = {}
     # need the baseline when doing amplitude deviations
     #FIXME frame identity incorrect
-    if frame == 'img_0001.jpg':
+    if frame == '0001':
+
         # calculate the baseline, putting it in the same list/tuple
         # format as the other data
         baseline = [(0,sum(interface)/len(interface))]
@@ -302,24 +321,3 @@ def obj_dic(d):
         else:
             setattr(top, i, j)
     return top
-
-def get_offset_from_front():
-    """Looks at the front trajectory and determines the offset
-    between the cameras by minimising the step in value between
-    the two cameras."""
-    f1xt = [[data[run]['cam1'][fr]['front'][0][0], fr]\
-            for fr in sorted(data[run]['cam1'].keys())]
-    f2xt = [[data[run]['cam2'][fr]['front'][0][0], fr]\
-            for fr in sorted(data[run]['cam2'].keys())]
-
-    f1x = zip(*f1xt)[0]
-    f1t = zip(*f1xt)[1]
-
-    f2x = zip(*f2xt)[0]
-    f2t = zip(*f2xt)[1]
-
-    
-
-    
-
-
