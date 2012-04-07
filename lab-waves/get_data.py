@@ -34,25 +34,13 @@ import pickle
 
 import matplotlib.pyplot as plt
 
-from aolcore import pull_col, pull_line
+from aolcore import pull_col, pull_line, write_data, read_data
+from aolcore import get_parameters
 import threshold
 import peakdetect
 import sanity
 
 from config import *
-
-def write_data(data_dict, filename):
-    """uses pickle to write a dict to disk for persistent storage"""
-    output = open(filename, 'wb')  # b is binary
-    pickle.dump(data_dict, output)
-    output.close()
-
-def read_data(filename):
-    """reads in a dict from filename and returns it"""
-    input = open(filename, 'rb')
-    data_dict = pickle.load(input)
-    input.close()
-    return data_dict
 
 def parallax_corr(xin, cam, p):
     """ Lab images suffer from parallax due to the static cameras.
@@ -112,18 +100,11 @@ def irun(image):
     run = image.split('/')[-3]
     return run
 
-def get_parameters(run): 
-    p_runs = pull_col(0, paramf) 
-    run_params = pull_line(p_runs.index(run), paramf)
-    headers = pull_line(0, paramf)
-    parameters = dict(zip(headers, run_params))
-    return parameters
-
 def get_basic_frame_data(image):
     # get the list of interface depths, with the depth for the current
     # different for varying lock depth
     run = irun(image)
-    params = get_parameters(run)
+    params = get_parameters(run, paramf)
     if params['D/H'] == '0.4':
         front_depth = 525
     elif params['D/H'] == '1':
@@ -241,20 +222,3 @@ def main(runs=None):
         file = data_storage_file + run
         print "writing the data to", file
         write_data(data, file)
-
-def obj_dic(d):
-    """a useful method for turning a dict into an object, so that
-    d['blah']['bleh'] is the same as d.blah.bleh.
-    will work with any level of nesting inside the dict.
-    """
-    top = type('new', (object,), d)
-    seqs = tuple, list, set, frozenset
-    for i, j in d.items():
-        if isinstance(j, dict):
-            setattr(top, i, obj_dic(j))
-        elif isinstance(j, seqs):
-            setattr(top, i, type(j)(obj_dic(sj)\
-                    if isinstance(sj, dict) else sj for sj in j))
-        else:
-            setattr(top, i, j)
-    return top

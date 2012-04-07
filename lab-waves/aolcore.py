@@ -52,3 +52,9 @@ def read_data(filename):
     input.close()
     return data_dict
 
+def get_parameters(run, paramf): 
+    p_runs = pull_col(0, paramf) 
+    run_params = pull_line(p_runs.index(run), paramf)
+    headers = pull_line(0, paramf)
+    parameters = dict(zip(headers, run_params))
+    return parameters

@@ -10,13 +10,7 @@ import os
 import math
 
 from aolcore import pull_col, pull_line
-
-
-# script, run = argv
-from get_data import path
-
-paramf = path + '/parameters'
-procf = path + '/proc_data'
+from config import path, paramf, procf
 
 # Initialisation:
 #

@@ -13,7 +13,7 @@
 # This is just a utility feature - could have all of these utilities
 # in the same file and then call them from a separate file.
 
-from get_data import read_data
+from aolcore import read_data
 import numpy as np
 import matplotlib.pyplot as plt
 
