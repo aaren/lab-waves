@@ -53,8 +53,14 @@ region = (130, 540)
 # specify the threshold values to use. fiddling with these has a strong impact
 # on the quality of the interface signal.
 thresh_green = (80, 120, 50)
-thresh_red = (100, 20, 20)
+thresh_red = (100, 75, 10)
 thresh_values = (thresh_green, thresh_red)
+# TODO: Two values for thresh red? 
+# thresh_red[1] controls how mixed the detected current is, as this strongly
+# varies the greenness. Inside the core current this might be <50 (across the
+# whole tank, the stuff against the front wall is <5), but in more mixed zones
+# more like <75, or greater depending on the mixing. Two values for thresh_red
+# would give an idea of the thickness of the mixed layer on the current.
 
 # specify the positions of rulers and other vertical features that
 # obscure the fluid.
