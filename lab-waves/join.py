@@ -148,3 +148,20 @@ def presentation(run, proc_dir):
         joined_image.save('%s/presentation/%s' % (path, image))
         print("...saved to %s/presentation/%s" % (path, image))
 
+def animate(run, proc_dir):
+    path = '%s/%s' % (proc_dir, run)
+    # make a new directory for the joined images if it doesn't already exist
+    if not os.path.exists('%s/animation' % path):
+        os.mkdir('%s/animation' % path, 0755)
+    else:
+        print("run %s has been animated, skipping..." % run)
+        return
+    if not os.path.exists('%s/presentation' % path):
+        print("no source for the animation (i.e. no presentation images), skipping...")
+    else:
+        pass
+    files = glob.glob('%s/presentation/img*jpg')
+    images = [Image.open(file) for file in files] 
+    outfile = run + '.gif'
+    images2gif.writeGif(outfile, images, duration=0.5)
+

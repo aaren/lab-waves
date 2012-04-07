@@ -9,6 +9,7 @@ from sys import argv
 import os
 import math
 
+from aolcore import pull_col, pull_line
 
 
 # script, run = argv
@@ -31,29 +32,6 @@ print "Initialising..."
 # are added to. They aren't scientific variables, just means to making an
 # easily useable product that I would like to note down somewhere. The new
 # file can always be tacked onto parameters if it's really necessary.
-
-def pull_col(i, tsv, delim='\t'):
-    # extract column i from a tsv file as a list
-    f = open(tsv)
-    f.seek(0)
-    lines = f.read().split('\n')
-    f.close()
-    line_entries = []
-    col = []
-    for j in range(len(lines)):
-        line_entries.append(lines[j].split(delim))
-        col.append(line_entries[j][i])
-    return col
-
-def pull_line(j, tsv, delim='\t'):
-    # pull line j from a tsv file as a list
-    f = open(tsv)
-    f.seek(0)
-    lines = f.read().split('\n')
-    f.close()
-    line = lines[j].split(delim)
-
-    return line
 
 def load_img(image):
     im = Image.open(image)
@@ -199,7 +177,7 @@ def add_text(image, (scale, data)):
     ratio, run_data = scale, data
 
     author_text = "Aaron O'Leary, University of Leeds"
-    param_a = "run %s, t=%ss: h_1 = %s, rho_0 = %s, rho_1 = %s, rho_0 = %s, "
+    param_a = "run %s, t=%ss: h_1 = %s, rho_0 = %s, rho_1 = %s, rho_2 = %s, "
     param_b = "alpha = %s, D = %s" 
     param_t = param_a + param_b
 
@@ -285,6 +263,7 @@ def main(run, run_data):
     # Add text and crop
     proc_images(add_text, run, 'processed', (cam1_ratio, run_data), (cam2_ratio, run_data))
 
+
 # MAIN SEQUENCE
 #
 runs = [path.split('/')[-1] for path in glob.glob('synced/*')]
@@ -297,3 +276,6 @@ runs = [path.split('/')[-1] for path in glob.glob('synced/*')]
 for run in runs:
     run_data = get_run_data(run)
     main(run, run_data)
+
+def interactive():
+    print "Check proc_data for list of runs?"
