@@ -153,14 +153,6 @@ def get_measurements(run):
     f.write(proc_string)
     f.close()
 
-def proc_images(proc, run, source, arg1, arg2):
-    for image in glob.glob('%s/%s/cam1/*jpg' % (source, run)):
-        print "performing %s on %s" % (proc, image)
-        proc(image, arg1)
-    for image in glob.glob('%s/%s/cam2/*jpg' % (source, run)):
-        print "performing %s on %s" % (proc, image)
-        proc(image, arg2)
-
 def rescale(image, ratio):
     im = Image.open(image)
     w, h = im.size
@@ -190,7 +182,7 @@ def add_text(image, (scale, data)):
     parameter = pull_line(line_number, paramf)
 
     camera = image.split('/')[-2]
-    time = int(image.split('_')[-1].split('.')[0])
+    time = int(image.split('_')[-1].split('.')[0]) - 1
     param_text = param_t % (parameter[0], time, parameter[1], parameter[2],\
             parameter[3], parameter[4], parameter[5], parameter[6])
     scale_depth = 440
@@ -240,7 +232,17 @@ def add_text(image, (scale, data)):
     cropped = im.crop(box)
     cropped.save(image)
 
-def main(run, run_data):
+def proc_images(proc, run, source, arg1, arg2):
+    for image in glob.glob('%s/%s/cam1/*jpg' % (source, run)):
+        print "performing %s on %s" % (proc, image)
+        proc(image, arg1)
+    for image in glob.glob('%s/%s/cam2/*jpg' % (source, run)):
+        print "performing %s on %s" % (proc, image)
+        proc(image, arg2)
+
+def main(run, run_data=None):
+    if run_data is None:
+        run_data = get_run_data(run)
     # Barrel correct
     proc_images(barrel_corr, run, path + '/synced', None, None)
 
@@ -268,16 +270,13 @@ def main(run, run_data):
 
 # MAIN SEQUENCE
 #
-runs = [path.split('/')[-1] for path in glob.glob('synced/*')]
+#runs = [path.split('/')[-1] for path in glob.glob('synced/*')]
 # runs = ['11_7_05c']
 
 #for run in runs:
 #    bc1(run)
 #for run in runs:
 #    barrel_corr_measure(run)
-for run in runs:
-    run_data = get_run_data(run)
-    main(run, run_data)
-
-def interactive():
-    print "Check proc_data for list of runs?"
+# for run in runs:
+#     run_data = get_run_data(run)
+#     main(run, run_data)
