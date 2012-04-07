@@ -305,18 +305,3 @@ def obj_dic(d):
         else:
             setattr(top, i, j)
     return top
-
-def get_offset_from_front():
-    """Looks at the front trajectory and determines the offset
-    between the cameras by minimising the step in value between
-    the two cameras."""
-    f1xt = [[data[run]['cam1'][fr]['front'][0][0], fr]\
-            for fr in sorted(data[run]['cam1'].keys())]
-    f2xt = [[data[run]['cam2'][fr]['front'][0][0], fr]\
-            for fr in sorted(data[run]['cam2'].keys())]
-
-    f1x = zip(*f1xt)[0]
-    f1t = zip(*f1xt)[1]
-
-    f2x = zip(*f2xt)[0]
-    f2t = zip(*f2xt)[1]

@@ -26,16 +26,6 @@ def wave(run='r11_7_06c', data_storage_file=None):
     Returns: Xtm, which is a list of x for given t, i.e. Xtm[0]
     is a list of all the measured x for t=0.
     """
-
-    # define the offsets of the cameras. in an ideal world, this 
-    # wouldn't be necessary at all and my data would be perfectly
-    # aligned.
-    # At some point this will be done at some earlier processing
-    # stage and won't be necessary here.
-    off = {}
-    off['cam1'] = -1
-    off['cam2'] = -2
-
     data_dir = '/home/eeaol/code/lab-waves/data/'
     
     if run.split('r')[0] == run:
@@ -51,8 +41,7 @@ def wave(run='r11_7_06c', data_storage_file=None):
         frames = sorted(cam_data.keys())
         Time = range(3, len(frames) - 1)
         xtm[cam] = [[round(p[0], 4)\
-                for p in cam_data['%04d' % (T + off[cam])]['max']] \
-                           for T in Time]
+                for p in cam_data['%04d' % (T)]['max']] for T in Time]
 
     Xtm = zip(xtm['cam1'], xtm['cam2'])
     Xtm = [Xtm[i][0] + Xtm[i][1] for i in range(len(Xtm))]
@@ -218,17 +207,13 @@ def fit_waves(waves):
         c = 1 / m
         plt.plot(X, T, label="c=%.2f /s" %c)
     
-def plot_front(run='r11_7_06c', data=None, camoff=0, fmt=None):
+def plot_front(run='r11_7_06c', data=None, fmt=None):
     if data is None:
         data_storage = '/home/eeaol/code/lab-waves/data/data/data_store_'
         data = read_data(data_storage + run)
 
     if fmt is None:
         fmt = 'ko'
-
-    off = {}
-    off['cam1'] = 0
-    off['cam2'] = camoff
 
     f={}
     t={}
@@ -237,7 +222,7 @@ def plot_front(run='r11_7_06c', data=None, camoff=0, fmt=None):
         frames = sorted(cam_data.keys())
 
         f[cam] = [[p[0] for p in cam_data[frame]['front']] for frame in frames]
-        t[cam] = range(off[cam], len(cam_data.keys()) + off[cam])
+        t[cam] = range(len(cam_data.keys()))
 
     # f['cam1'] = f['cam1'][0:25]
     # t['cam1'] = t['cam1'][0:25]
