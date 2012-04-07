@@ -35,7 +35,7 @@ def thresh_img(image, thresh_values=None):
     thresh_red = (t0r, t0g, t0b)
 
     if thresh_values:
-        thresh_green, thresh_red = thresh_values
+        thresh_green, thresh_red, mixed_red = thresh_values
     
     # determine the fluid type throughout the image. remember brackets
     # around the logical expressions!!!!!
@@ -44,6 +44,9 @@ def thresh_img(image, thresh_values=None):
     fluid_type = [[0 if (source[i,j][0] > thresh_red[0]) &\
                         (source[i,j][1] < thresh_red[1]) &\
                         (source[i,j][2] < thresh_red[2]) 
+                    else 0.5 if (source[i,j][0] > mixed_red[0]) &\
+                                (source[i,j][1] < mixed_red[1]) &\
+                                (source[i,j][2] < mixed_red[2])\
                     else 1 if (source[i,j][0] > thresh_green[0]) &\
                               (source[i,j][1] > thresh_green[1]) &\
                               (source[i,j][2] < thresh_green[2])\
@@ -196,13 +199,15 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     front_coord = [(front_pos, front_depth)]
 
     # detect and interpolate the current
-    # print('detecting the current')
     current = process(image, fluid_type, region, 0, rulers)
     # remove silly current values
     current[:front_pos] = [bottom]*front_pos
     interp_current = interpolate(image, current, rulers)
-    # current = [0 if not top < c < bottom else c for c in current]
 
-    out = (interp_interface, interp_current, front_coord)
+    mix_current = process(image, fluid_type, region, 0.5, rulers)
+    mix_current[:front_pos] = [bottom]*front_pos
+    interp_mix_current = interpolate(image, mix_current, rulers)
+
+    out = (interp_interface, interp_current, interp_mix_current, front_coord)
 
     return out

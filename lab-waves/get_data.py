@@ -110,12 +110,13 @@ def get_basic_frame_data(image):
         front_depth = 505
 
     print("thresholding image %s..." % image)
-    interface, current, front_coord\
+    interface, current, mix_current, front_coord\
             = threshold.main(image, region, rulers, thresh_values, front_depth)
 
     basic_data = {}
     basic_data['interface'] = interface
-    basic_data['current'] = current
+    basic_data['core_current'] = current
+    basic_data['mixed_current'] = mix_current
     basic_data['front_coord'] = front_coord
 
     return basic_data

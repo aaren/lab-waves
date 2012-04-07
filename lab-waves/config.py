@@ -20,8 +20,9 @@ region = (130, 540)
 # specify the threshold values to use. fiddling with these has a strong impact
 # on the quality of the interface signal.
 thresh_green = (80, 120, 50)
-thresh_red = (100, 75, 10)
-thresh_values = (thresh_green, thresh_red)
+thresh_red = (100, 50, 10)
+mixed_red = (100, 75, 10)
+thresh_values = (thresh_green, thresh_red, mixed_red)
 # TODO: Two values for thresh red? 
 # thresh_red[1] controls how mixed the detected current is, as this strongly
 # varies the greenness. Inside the core current this might be <50 (across the
