@@ -39,9 +39,7 @@ def wave(run='r11_7_06c', data_storage_file=None):
     for cam in ['cam1', 'cam2']:
         cam_data = data[run][cam]
         frames = sorted(cam_data.keys())
-        Time = range(3, len(frames) - 1)
-        xtm[cam] = [[round(p[0], 4)\
-                for p in cam_data['%04d' % (T)]['max']] for T in Time]
+        xtm[cam] = [[p for p in cam_data[frame]['max']] for frame in frames]
 
     Xtm = zip(xtm['cam1'], xtm['cam2'])
     Xtm = [Xtm[i][0] + Xtm[i][1] for i in range(len(Xtm))]
@@ -50,6 +48,37 @@ def wave(run='r11_7_06c', data_storage_file=None):
     Xtm = [[x for x in Xtm[t] if x < t] for t in range(len(Xtm))]
 
     return Xtm
+
+def conjoin_data(run, data_storage_file=None):
+    data_dir = '/home/eeaol/code/lab-waves/data/'
+    if run.split('r')[0] == run:
+        run = 'r' + run
+    if data_storage_file is None:
+        data_storage_file = data_dir + 'data/data_store_' + run
+    data = read_data(data_storage_file)
+
+    Xt = {}
+    for arg in ['max', 'min', 'front']:
+        xt = {}
+        for cam in ['cam1', 'cam2']:
+            cam_data = data[run][cam]
+            frames = sorted(cam_data.keys())
+            xt[cam] = [[p for p in cam_data[frame][arg]] for frame in frames]
+
+        Xt[arg] = zip(xt['cam1'], xt['cam2'])
+        Xt[arg] = [e[0] + e[1] for e in Xt[arg]]
+    
+    # we can keep Xtm if it is used as shorthand for Xt[arg]
+
+    Xtm = Xt['max']
+    Xtmin = Xt['min']
+    Xtf = Xt['front']
+
+    # strip out non physical points (faster then 1:1)
+    #for arg in ['max', 'min']:
+    #    Xt[arg] = [[x for x in Xt[arg] if x[0] < t] for t in range(len(Xtm))]
+
+    return Xt
 
 def bounding_init(t_start, Xtm):
     """Initialise the list of coordinates with the first 
@@ -117,7 +146,7 @@ def track(t_start, t_end, Xtm, m_err=0, c_err=1):
     # of the points that fit in a wave-like structure matching the
     # fastest wave (i.e. furthest out in x for given t), given some
     # allowed error in the coordinates.
-    init_x_maxes = bounding_init(t_start + 2, Xtm)
+    init_x_maxes = bounding_init(t_start, Xtm)
     line_up, line_down = bounding_lines(init_x_maxes, m_err, c_err)
     x_maxes = []
     for t in xrange(t_start, t_end):
@@ -136,16 +165,29 @@ def get_t_start(Xtm):
             return t
         else: pass
 
+def conv(Xt, arg):
+    Xta = Xt[arg]
+    return [[p[0] for p in Xta[i]] for i in range(len(Xta))]
+
 def get_waves(t_start, t_end, Xtm, n=1):
     """Get the first n waves from Xtm. After a wave is detected
     its points are removed from the dataset so that the next wave
     can be detected.
+
+    Xtm has the form of a list of lists, such that Xtm[1] gives a list
+    of the positions of the detected thing* for t=1s. It is shorthand
+    for [[p[0] for p in T] for T in Xt['max']], where Xt is the object
+    returned by conjoin_data.
+
+    *the 'thing' could be maxima, minima, front, provided it is only a
+    list of x positions and not a list of tuples.
 
     Return: waves, a list of lists of the (x,t) of points in the waves
             such that waves[2] is a list of the points in the third wave.
     """
     waves = []
     for i in range(n):
+        t_start=get_t_start(Xtm)
         x_maxes = track(t_start, t_end, Xtm, m_err=0, c_err=1)
         Xtm = remove_from(Xtm, x_maxes)
         waves.append(x_maxes)
@@ -157,7 +199,6 @@ def get_waves(t_start, t_end, Xtm, n=1):
         # remove left over points
         Xtm = [[x for x in Xtm[t] if x < (t - ce) / me] \
                                     for t in range(len(Xtm))]
-        t_start=get_t_start(Xtm)
     return waves
 
 # plotting for testing the wave detection
@@ -186,9 +227,9 @@ def test(n=1, run='r11_7_06c'):
     end = 25
     no_waves = n
     Xtm = wave(run)
-    nXtm = Xtm
+    nXtm = [[p[0] for p in T] for T in Xtm]
 
-    plot_xtm(Xtm)
+    plot_xtm(nXtm)
     waves = get_waves(start, end, nXtm, no_waves)
     plot_waves(waves)
 
