@@ -30,7 +30,6 @@
 
 from __future__ import division
 import glob
-import pickle
 
 import matplotlib.pyplot as plt
 
@@ -190,7 +189,7 @@ def get_frame_data(image, run_data_container):
     frame_data['current'] = norm(current, camera)
     frame_data['max'] = norm(_max, camera, 0.5)
     frame_data['min'] = norm(_min, camera, 0.5)
-    frame_data['front'] = norm(front_coord, camera, 0.5)
+    frame_data['front'] = norm(front_coord, camera, 1)
 
     return frame_data
 

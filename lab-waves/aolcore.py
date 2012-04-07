@@ -1,4 +1,5 @@
 # Some useful functions that I use a lot.
+import pickle
 
 def pull_col(i, tsv, delim='\t'):
     # extract column i from a tsv file as a list
