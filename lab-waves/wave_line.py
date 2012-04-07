@@ -218,10 +218,17 @@ def fit_waves(waves):
         c = 1 / m
         plt.plot(X, T, label="c=%.2f /s" %c)
     
-def plot_front(data, run='r11_7_06c'):
+def plot_front(run='r11_7_06c', data=None, camoff=0, fmt=None):
+    if data is None:
+        data_storage = '/home/eeaol/code/lab-waves/data/data/data_store_'
+        data = read_data(data_storage + run)
+
+    if fmt is None:
+        fmt = 'ko'
+
     off = {}
     off['cam1'] = 0
-    off['cam2'] = 1
+    off['cam2'] = camoff
 
     f={}
     t={}
@@ -232,14 +239,12 @@ def plot_front(data, run='r11_7_06c'):
         f[cam] = [[p[0] for p in cam_data[frame]['front']] for frame in frames]
         t[cam] = range(off[cam], len(cam_data.keys()) + off[cam])
 
-    f['cam1'] = f['cam1'][0:25]
-    t['cam1'] = t['cam1'][0:25]
-    f['cam2'] = f['cam2'][20:45]
-    t['cam2'] = t['cam2'][20:45]
+    # f['cam1'] = f['cam1'][0:25]
+    # t['cam1'] = t['cam1'][0:25]
+    # f['cam2'] = f['cam2'][20:45]
+    # t['cam2'] = t['cam2'][20:45]
 
-    plt.plot(f['cam1'], t['cam1'], 'ko')
-    plt.plot(f['cam2'], t['cam2'], 'ko', label = 'g.c. front')
+    plt.plot(f['cam1'], t['cam1'], fmt)
+    plt.plot(f['cam2'], t['cam2'], fmt, label = 'g.c. front')
 
-
-
-
+    plt.xlim(0,13)
