@@ -60,7 +60,13 @@ def bc1(run):
     """Just barrel correct the first image of a run"""
     indir = '%s/synced/%s' % (path, run)
     outdir = 'bc1'
-    for camera in glob.glob(indir + '/cam*'):
+    for camera in ['cam1', 'cam2']:
+        dirs = '/'.join([path, outdir, run, camera])
+        if not os.path.exists(dirs):
+            os.makedirs(dirs)
+            print "made " + dirs
+        else:
+            print "using " + dirs
         image1 = '%s/%s/img_0001.jpg' % (indir, camera)
         barrel_corr(image1, outdir)
 
@@ -108,6 +114,7 @@ def get_run_data(run):
     proc_runs = pull_col(0, procf, ',') 
     try:
         line_number = proc_runs.index(run)
+        print "Run is in proc_data"
     except ValueError:
         print "%s is not in the procf (%s)" % (run, procf)
         print "get the proc_data for this run now? (y/n)"

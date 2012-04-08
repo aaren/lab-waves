@@ -1,17 +1,20 @@
-import Image
 import os
 import glob
 import sys
 
+import Image
+
+import images2gif
+from config import path
 # A collection of tools for joining together processed images
 # join joins cam1 and cam2 images together for a single run,
 # based on the standard offset at the edge of processed lab
 # images.
 
-def simple_join(path, image, gap=0, remove_text=0):
-        print("Joining %s ..." %(path))
-        cam1 = Image.open('%s/cam1/%s' % (path, image))
-        cam2 = Image.open('%s/cam2/%s' % (path, image))
+def simple_join(rundir, image, gap=0, remove_text=0):
+        print("Joining %s ..." %(rundir))
+        cam1 = Image.open('%s/cam1/%s' % (rundir, image))
+        cam2 = Image.open('%s/cam2/%s' % (rundir, image))
 
         # images are 2810x690 (+/- 1 on both) with the offset 60 from the end.
         inset = 60
@@ -59,10 +62,9 @@ def rem_text(im):
     im.paste('black', bottom_bar)
     
     return im
-    
 
 def join(run, proc_dir):
-    path = '%s/%s' % (proc_dir, run)
+    path = '/'.join([path, proc_dir, run])
     # make a new directory for the joined images if it doesn't already exist
     if not os.path.exists('%s/join' % path):
         os.mkdir('%s/join' % path, 0755)
@@ -77,7 +79,7 @@ def join(run, proc_dir):
         print("...saved to %s/join/%s" % (path, image))
 
 def remove_text(run, proc_dir):
-    path = '%s/%s' % (proc_dir, run)
+    path = '/'.join([path, proc_dir, run])
 
     if not os.path.exists('%s/join_notext' % path):
         os.mkdir('%s/join_notext' % path, 0755)
@@ -104,7 +106,7 @@ def remove_text(run, proc_dir):
         im.save(outfile)
 
 def remove_borders(run, proc_dir):
-    path = '%s/%s' % (proc_dir, run)
+    path = '/'.join([path, proc_dir, run])
 
     if not os.path.exists('%s/join_noborder' % path):
         os.mkdir('%s/join_noborder' % path, 0755)
@@ -124,16 +126,12 @@ def remove_borders(run, proc_dir):
         cropped = im.crop(box)
         cropped.save(outfile)
 
-def runs(proc_dir):
-    runs = [path.split('/')[-1] for path in glob.glob('%s/*' % proc_dir)]
-    return runs
-
 def presentation(run, proc_dir):
     """Prepares run for presentation by joining the images together
     with a small black space between to make clear the discontinuity
     in parallax, and with only the cam2 text shown."""
+    path = '/'.join([path, proc_dir, run])
 
-    path = '%s/%s' % (proc_dir, run)
     # make a new directory for the joined images if it doesn't already exist
     if not os.path.exists('%s/presentation' % path):
         os.mkdir('%s/presentation' % path, 0755)
@@ -141,7 +139,7 @@ def presentation(run, proc_dir):
         print("run %s has been joined for presentation, skipping..." % run)
         return
 
-    for image in glob.glob('%s/cam1/*' % (path)):
+    for image in glob.glob('%s/cam1/img*' % (path)):
         image = image.split('/')[-1]
         joined_image = simple_join(path, image, 50, 1)
         # save the joined image, first creating a new directory called 'join'
@@ -149,7 +147,7 @@ def presentation(run, proc_dir):
         print("...saved to %s/presentation/%s" % (path, image))
 
 def animate(run, proc_dir):
-    path = '%s/%s' % (proc_dir, run)
+    path = '/'.join([path, proc_dir, run])
     # make a new directory for the joined images if it doesn't already exist
     if not os.path.exists('%s/animation' % path):
         os.mkdir('%s/animation' % path, 0755)
@@ -162,6 +160,6 @@ def animate(run, proc_dir):
         pass
     files = glob.glob('%s/presentation/img*jpg')
     images = [Image.open(file) for file in files] 
-    outfile = run + '.gif'
+    outfile = path + '/' + run + '.gif'
     images2gif.writeGif(outfile, images, duration=0.5)
 

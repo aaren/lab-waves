@@ -1,5 +1,7 @@
 import proc_im
+import join
 import get_data
+
 
 def proc_im_main(run):
     """Raw lab images need some massaging to get them into
@@ -8,6 +10,8 @@ def proc_im_main(run):
     called 'img_0001.jpg' onwards, where the first image is
     at t=0 in the run (i.e. as close to the lock release as
     possible).
+
+    Barrel correction is tested for ImageMagick 6.7.3-9
     """
     # Barrel correct the first frame of each camera in a run
     # outputs to dir 'bc1' in the path
@@ -20,6 +24,11 @@ def proc_im_main(run):
     # Add text and crop the image. Will prompt for run measurements
     # if they do not exist.
     proc_im.text_crop(run)
+
+    # Create some joined up images in presentation and an
+    # animated gif.
+    join.presentation(run, 'processed') 
+    join.animate(run, 'processed')
 
 def basic_data(run):
     """If the run data has been through proc_im_main, or the
