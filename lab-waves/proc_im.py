@@ -183,7 +183,7 @@ def add_text(image, (scale, data)):
         lower = int((bottom1 * cam1_ratio) + 150)
 
     elif camera == 'cam2':
-        if run_data['odd2'] == '999':
+        if run_data['odd_2'] == '999':
             return
         cam2_ratio = ratio
         offset = int(run_data['off_2'])
