@@ -1,35 +1,23 @@
-## Script to process lab images
+## Script to standardise lab images
 ## AOL Nov 2011
 
 from __future__ import division
+import os
 import glob
+
 import Image
 import ImageFont, ImageDraw
-from sys import argv
-import os
-import math
 
 from aolcore import pull_col, pull_line
+from aolcore import get_parameters
 from config import path, paramf, procf
-
-# Initialisation:
-#
-# list the files
-print "Initialising..."
 
 # We don't just want to operate on a single image, we want to operate on
 # many. But in the first instance, in determining the offsets for cropping
 # and checking the scale for barrel correction and determining the rotation
 # correction angle, we need only look at the first image in a given run.
-#
-# The list of runs is in the first column of the parameters file and these are
-# the same as the directory names that the images are stored in (check!!!).
-# 
-# I want to add the scale, offets and rotation angle to the parameters file.
-# Rethinking this, perhaps I should just create a new file which these data
-# are added to. They aren't scientific variables, just means to making an
-# easily useable product that I would like to note down somewhere. The new
-# file can always be tacked onto parameters if it's really necessary.
+# This is what bc1(run) does; measure(run) will prompt for measurements
+# from the images bc1 creates.
 
 def load_img(image):
     im = Image.open(image)
@@ -45,37 +33,42 @@ def load_img(image):
     
     return red, green, blue, w, h
 
-def barrel_corr(image, null1):
-    # reduce the path down to just the filename
-    folder = image.split('/')[-3]
-    camera = image.split('/')[-2]
-    image = image.split('/')[-1]
+def barrel_corr(image, outdir):
+    run = image.split('/')[-3]
+    cam = image.split('/')[-2]
+    frame = image.split('/')[-1]
 
     cam1corr = '"0.000658776 -0.0150048 -0.00123339 1.01557914"'
     cam2corr = '"0.023969 -0.060001 0 1.036032"'
     
-    if camera == 'cam1':
+    if cam == 'cam1':
         corr = cam1corr
-        cam = 'cam1'
-    elif camera == 'cam2':
+    elif cam == 'cam2':
         corr = cam2corr
-        cam = 'cam2'
     else:
         print "Camera must be cam1 or cam2"
 
-    infile = '%s/synced/%s/%s/%s' % (path, folder, cam, image)
-    outfile = '%s/processed/%s/%s/%s' % (path, folder, cam, image)
+    infile = '%s/synced/%s/%s/%s' % (path, run, cam, frame)
+    outfile = '%s/%s/%s/%s/%s' % (path, outdir, run, cam, frame)
     command = 'convert -distort Barrel %s %s %s' % (corr, infile, outfile)
 
-    print "Barrel correcting %s with %s 18mm coefficients,\n%s" % (image, cam, corr)
+    print "Barrel correcting %s, %s, %s with 18mm coefficients,\n%s"\
+                                        % (run, cam, frame, corr)
     os.system(command)
 
+def bc1(run):
+    """Just barrel correct the first image of a run"""
+    indir = '%s/synced/%s' % (path, run)
+    outdir = 'bc1'
+    for camera in glob.glob(indir + '/cam*'):
+        image1 = '%s/%s/img_0001.jpg' % (indir, camera)
+        barrel_corr(image1, outdir)
 
-def barrel_corr_measure(run):
+def measure(run):
     proc = []
     proc.append(run)
     for camera in ['cam1', 'cam2']:
-        command = 'gimp -s -f -d %s/processed/%s/%s/img_0001.jpg &'\
+        command = 'gimp -s -f -d %s/bc1/%s/%s/img_0001.jpg &'\
                                          % (path, run, camera)
         os.system(command)
 
@@ -107,26 +100,28 @@ def barrel_corr_measure(run):
     f.write(entry)
     f.close()
 
-# easy testing
 def bcm():
-    barrel_corr_measure('11_7_06g')
-
-def bc1(run):
-    for camera in ['cam1', 'cam2']:
-        barrel_corr('%s/synced/%s/%s/img_0001.jpg' % (path, run, camera), None)
+    # easy testing
+    measure('r11_7_06g')
 
 def get_run_data(run):
-    lines = pull_col(0, procf, ',') 
-    line_number = lines.index(run)
-    line = pull_line(line_number, procf, ',')
+    proc_runs = pull_col(0, procf, ',') 
+    try:
+        line_number = proc_runs.index(run)
+    except ValueError:
+        print "%s is not in the procf (%s)" % (run, procf)
+        print "get the proc_data for this run now? (y/n)"
+        A = raw_input('> ')
+        if A == 'y':
+            measure(run)
+            get_run_data(run)
+        elif A == 'n':
+            return 0
+        else:
+            print "y or n!"
+            get_run_data(run)
 
-    headers = pull_line(0, procf, ',')
-    
-    run_data = {}
-
-    for header in headers:
-        index = headers.index(header)
-        run_data[header] = line[index]
+    run_data = get_parameters(run, procf, ',')
 
     return run_data
 
@@ -136,31 +131,16 @@ def rotation_corr(image, angle):
     rot = im.rotate(angle)
     rot.save(image)
 
-def get_measurements(run):
-    proc1 = barrel_corr_measure('cam1', run)
-    proc2 = barrel_corr_measure('cam2', run)
-
-    proc_string = '\t'.join(proc1 + proc2)
-    print proc_string
-
-    f = open(procf, 'a')
-    f.write(proc_string)
-    f.close()
-
 def rescale(image, ratio):
     im = Image.open(image)
     w, h = im.size
     h_new = int(h * ratio)
     w_new = int(w * ratio)
     re = im.resize((w_new, h_new))
-    
     re.save(image)
 
 def add_text(image, (scale, data)):
-    # opens and crops an image to the box given. box is a 4-tuple defining
-    # the left, upper, right and lower pixel
-    # in 15 pt Liberation Regular, "Aaron O'Leary" is 360 px wide.
-    # "University of Leeds" is 520 px wide.
+    # opens and crops an image to the box given.     
     im = Image.open(image)
 
     ratio, run_data = scale, data
@@ -201,28 +181,25 @@ def add_text(image, (scale, data)):
         upper = int((bottom1 * cam2_ratio) - (scale_depth + 100))
         lower = int((bottom1 * cam2_ratio) + 150)
 
-    box = (left, upper, right, lower)
-
     draw = ImageDraw.Draw(im)
     draw.rectangle((left, upper, right, upper + 100), fill = 'black')
     draw.rectangle((left, lower - 100, right, lower), fill = 'black')
 
-    # Want to write something to join the two images together. Will probably
-    # mean splitting this function up to separate the text adding and cropping
-    # parts - hard, as this requires a change of order.
-
-    # this is platform specific!
+    # this is PLATFORM DEPENDENT
+    # in 15 pt Liberation Regular, "Aaron O'Leary" is 360 px wide.
+    # "University of Leeds" is 520 px wide.
     fonts = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf'
     font = ImageFont.truetype(fonts, 45)
 
     text_hi_pos = (left, upper)
     text_low_pos = (left, lower - 100)
-
     text_hi, text_low = param_text, author_text
 
     draw.text(text_hi_pos, text_hi, font=font, fill="white")
     draw.text(text_low_pos, text_low, font=font, fill="white")
 
+    #box is a 4-tuple defining the left, upper, right and lower pixel
+    box = (left, upper, right, lower)
     cropped = im.crop(box)
     cropped.save(image)
 
@@ -234,19 +211,21 @@ def proc_images(proc, run, source, arg1, arg2):
         print "performing %s on %s" % (proc, image)
         proc(image, arg2)
 
-def main(run, run_data=None):
+def std_corrections(run, run_data=None):
     if run_data is None:
         run_data = get_run_data(run)
     # Barrel correct
-    proc_images(barrel_corr, run, path + '/synced', None, None)
+    bc_out = 'processed'
+    proc_images(barrel_corr, run, path + '/synced', bc_out, bc_out)
 
-    # Pull the correction angles from the run data
+    # Rotation correct 
     theta1 = -float(run_data['rot_1'])
     theta2 = -float(run_data['rot_2'])
-
-    # Rotation correct the images
-    proc_images(rotation_corr, run, path + '/processed', theta1, theta2)
+    proc_images(rotation_corr, run, path + '/' + bc_out, theta1, theta2)
  
+def text_crop(run, run_data=None):
+    if run_data is None:
+        run_data = get_run_data(run)
     # Resize the images to standard
     ideal_ruler = 435
     ruler = int(run_data['bottom_1']) - int(run_data['ruler_25'])
@@ -257,20 +236,10 @@ def main(run, run_data=None):
     cam1_ratio = ruler_ratio
     cam2_ratio = ruler_ratio * depth_ratio
 
-    proc_images(rescale, run, path + '/processed', cam1_ratio, cam2_ratio)
+    # Rescale to common size
     # rescaling means that the offsets, lock_pos etc. are rescaled too.
+    proc_images(rescale, run, path + '/processed', cam1_ratio, cam2_ratio)
+
     # Add text and crop
-    proc_images(add_text, run, path + '/processed', (cam1_ratio, run_data), (cam2_ratio, run_data))
-
-# MAIN SEQUENCE
-#
-#runs = [path.split('/')[-1] for path in glob.glob('synced/*')]
-# runs = ['11_7_05c']
-
-#for run in runs:
-#    bc1(run)
-#for run in runs:
-#    barrel_corr_measure(run)
-# for run in runs:
-#     run_data = get_run_data(run)
-#     main(run, run_data)
+    proc_images(add_text, run, path + '/processed', \
+            (cam1_ratio, run_data), (cam2_ratio, run_data))
