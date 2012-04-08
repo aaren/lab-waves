@@ -11,7 +11,8 @@ paramf = path + '/parameters'
 procf = path + '/proc_data'
 
 # where is the data going to be stored?? (filename)
-data_dir = '/home/eeaol/code/lab-waves/data/'
+#data_dir = '/home/eeaol/code/lab-waves/data/'
+data_dir = path + '/data/'
 data_storage_file = data_dir + 'data/data_store_'
 
 # specify a vertical region of the image in which to search for the interface

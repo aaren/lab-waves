@@ -1,7 +1,21 @@
+from multiprocessing import Process
+
 import proc_im
 import join
 import get_data
 
+
+def measure(run):
+    """Before the processing in proc_im_main(run) can take
+    place, some basic measurements have to be made for each run.
+    """
+    # Barrel correct the first frame of each camera in a run
+    # outputs to dir 'bc1' in the path
+    proc_im.bc1(run)
+    
+    # Prompt user for measurements of run data, if they don't
+    # exist already.
+    proc_im.get_run_data(run)
 
 def proc_im_main(run):
     """Raw lab images need some massaging to get them into
@@ -13,10 +27,6 @@ def proc_im_main(run):
 
     Barrel correction is tested for ImageMagick 6.7.3-9
     """
-    # Barrel correct the first frame of each camera in a run
-    # outputs to dir 'bc1' in the path
-    proc_im.bc1(run)
-    
     # Correct barrel distortion and rotation. Will prompt for run
     # measurements if they do not exist.
     proc_im.std_corrections(run)
@@ -28,7 +38,9 @@ def proc_im_main(run):
     # Create some joined up images in presentation and an
     # animated gif.
     join.presentation(run, 'processed') 
-    join.animate(run, 'processed')
+    # FIXME: there is something stopping animate from working ok.
+    # A gif is output, but it has zero frames...
+    #join.animate(run, 'processed')
 
 def basic_data(run):
     """If the run data has been through proc_im_main, or the
@@ -78,9 +90,14 @@ def all(run):
     """To get some raw, synced, lab data into nice plots in
     a single command.
     """
+    measure(run)
     proc_im_main(run)    
     basic_data(run)
     data(run)
     wave(run)
     plot(run)
 
+def multi(proc, runs):
+    for run in runs:
+        p = Process(target = proc(run))
+        p.start()

@@ -207,7 +207,6 @@ def get_run_data(run):
             cam_data[frame] = get_frame_data(image, basic_run_data)
     return run_data
 
-## MAIN function
 def main(runs=None):
     # define the runs to collect data from
     if runs is None:

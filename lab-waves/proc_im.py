@@ -48,8 +48,12 @@ def barrel_corr(image, outdir):
     else:
         print "Camera must be cam1 or cam2"
 
+    outdirpath = '%s/%s/%s/%s/' % (path, outdir, run, cam)
+    if not os.path.exists(outdirpath):
+        os.makedirs(outdirpath)
+
     infile = '%s/synced/%s/%s/%s' % (path, run, cam, frame)
-    outfile = '%s/%s/%s/%s/%s' % (path, outdir, run, cam, frame)
+    outfile = outdirpath + frame
     command = 'convert -distort Barrel %s %s %s' % (corr, infile, outfile)
 
     print "Barrel correcting %s, %s, %s with 18mm coefficients,\n%s"\
@@ -102,7 +106,7 @@ def measure(run):
         proc.append(raw_input('> '))
 
     entry = ','.join(proc) + '\n'
-    f = open('procf', 'a')
+    f = open(procf, 'a')
     f.write(entry)
     f.close()
 
@@ -114,7 +118,7 @@ def get_run_data(run):
     proc_runs = pull_col(0, procf, ',') 
     try:
         line_number = proc_runs.index(run)
-        print "Run is in proc_data"
+        print "%s is in proc_data" % run
     except ValueError:
         print "%s is not in the procf (%s)" % (run, procf)
         print "get the proc_data for this run now? (y/n)"
@@ -179,6 +183,8 @@ def add_text(image, (scale, data)):
         lower = int((bottom1 * cam1_ratio) + 150)
 
     elif camera == 'cam2':
+        if run_data['weird'] == '999':
+            return
         cam2_ratio = ratio
         offset = int(run_data['off_2'])
         bottom1 = int(run_data['bottom_2'])

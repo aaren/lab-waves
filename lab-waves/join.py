@@ -5,7 +5,7 @@ import sys
 import Image
 
 import images2gif
-from config import path
+from config import path as Path
 # A collection of tools for joining together processed images
 # join joins cam1 and cam2 images together for a single run,
 # based on the standard offset at the edge of processed lab
@@ -64,7 +64,7 @@ def rem_text(im):
     return im
 
 def join(run, proc_dir):
-    path = '/'.join([path, proc_dir, run])
+    path = '/'.join([Path, proc_dir, run])
     # make a new directory for the joined images if it doesn't already exist
     if not os.path.exists('%s/join' % path):
         os.mkdir('%s/join' % path, 0755)
@@ -79,7 +79,7 @@ def join(run, proc_dir):
         print("...saved to %s/join/%s" % (path, image))
 
 def remove_text(run, proc_dir):
-    path = '/'.join([path, proc_dir, run])
+    path = '/'.join([Path, proc_dir, run])
 
     if not os.path.exists('%s/join_notext' % path):
         os.mkdir('%s/join_notext' % path, 0755)
@@ -106,7 +106,7 @@ def remove_text(run, proc_dir):
         im.save(outfile)
 
 def remove_borders(run, proc_dir):
-    path = '/'.join([path, proc_dir, run])
+    path = '/'.join([Path, proc_dir, run])
 
     if not os.path.exists('%s/join_noborder' % path):
         os.mkdir('%s/join_noborder' % path, 0755)
@@ -130,7 +130,7 @@ def presentation(run, proc_dir):
     """Prepares run for presentation by joining the images together
     with a small black space between to make clear the discontinuity
     in parallax, and with only the cam2 text shown."""
-    path = '/'.join([path, proc_dir, run])
+    path = '/'.join([Path, proc_dir, run])
 
     # make a new directory for the joined images if it doesn't already exist
     if not os.path.exists('%s/presentation' % path):
@@ -147,19 +147,18 @@ def presentation(run, proc_dir):
         print("...saved to %s/presentation/%s" % (path, image))
 
 def animate(run, proc_dir):
-    path = '/'.join([path, proc_dir, run])
+    path = '/'.join([Path, proc_dir, run])
     # make a new directory for the joined images if it doesn't already exist
-    if not os.path.exists('%s/animation' % path):
-        os.mkdir('%s/animation' % path, 0755)
-    else:
+    if os.path.exists('%s/%s.gif' % (path, run)):
         print("run %s has been animated, skipping..." % run)
         return
     if not os.path.exists('%s/presentation' % path):
         print("no source for the animation (i.e. no presentation images), skipping...")
+        return
     else:
         pass
-    files = glob.glob('%s/presentation/img*jpg')
+    files = glob.glob('%s/presentation/img*jpg' % path)
+    print files
     images = [Image.open(file) for file in files] 
     outfile = path + '/' + run + '.gif'
     images2gif.writeGif(outfile, images, duration=0.5)
-
