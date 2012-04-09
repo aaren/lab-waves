@@ -37,10 +37,9 @@ def proc_im_main(run):
 
     # Create some joined up images in presentation and an
     # animated gif.
-    join.presentation(run, 'processed') 
-    # FIXME: there is something stopping animate from working ok.
-    # A gif is output, but it has zero frames...
-    #join.animate(run, 'processed')
+    # FIXME: Parameter display when there is only one image.
+    join.presentation(run) 
+    join.animate(run)
 
 def basic_data(run):
     """If the run data has been through proc_im_main, or the

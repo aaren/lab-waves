@@ -3,8 +3,9 @@ import glob
 import sys
 
 import Image
-
+import numpy as np
 import images2gif
+
 from config import path as Path
 # A collection of tools for joining together processed images
 # join joins cam1 and cam2 images together for a single run,
@@ -15,11 +16,11 @@ def simple_join(rundir, image, gap=0, remove_text=0):
         print("Joining %s ..." %(rundir))
         # If the files exist load them as images, else create a blank
         # placeholder.
-        if os.path.exists('%s/cam1/%s' % (rundir, image):
+        if os.path.exists('%s/cam1/%s' % (rundir, image)):
             cam1 = Image.open('%s/cam1/%s' % (rundir, image))
         else:
             cam1 = Image.new("RGB", (2810, 690))
-        if os.path.exists('%s/cam2/%s' % (rundir, image):
+        if os.path.exists('%s/cam2/%s' % (rundir, image)):
             cam2 = Image.open('%s/cam2/%s' % (rundir, image))
         else:
             cam2 = Image.new("RGB", (2810, 690))
@@ -135,7 +136,7 @@ def remove_borders(run, proc_dir):
         cropped = im.crop(box)
         cropped.save(outfile)
 
-def presentation(run, proc_dir):
+def presentation(run, proc_dir='processed'):
     """Prepares run for presentation by joining the images together
     with a small black space between to make clear the discontinuity
     in parallax, and with only the cam2 text shown."""
@@ -155,7 +156,7 @@ def presentation(run, proc_dir):
         joined_image.save('%s/presentation/%s' % (path, image))
         print("...saved to %s/presentation/%s" % (path, image))
 
-def animate(run, proc_dir):
+def animate(run, proc_dir='processed', src='presentation'):
     path = '/'.join([Path, proc_dir, run])
     # make a new directory for the joined images if it doesn't already exist
     if os.path.exists('%s/%s.gif' % (path, run)):
@@ -166,8 +167,8 @@ def animate(run, proc_dir):
         return
     else:
         pass
-    files = glob.glob('%s/presentation/img*jpg' % path)
-    print files
-    images = [Image.open(file) for file in files] 
-    outfile = path + '/' + run + '.gif'
+    files = glob.glob('%s/%s/img*jpg' % (path, src))
+    images = [np.asarray(Image.open(file)) for file in files] 
+    outfile = path + '/' + run + '-' + src + '.gif'
+    print "Generating %s %s animation..." % (run, src)
     images2gif.writeGif(outfile, images, duration=0.5)
