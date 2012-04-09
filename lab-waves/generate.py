@@ -1,10 +1,12 @@
 from multiprocessing import Process, Pool, Queue
 import pp
+import glob
 
 import proc_im
 import join
 import get_data
 
+from config import path
 
 def measure(run):
     """Before the processing in proc_im_main(run) can take
@@ -119,6 +121,12 @@ def pool(proc, runs):
     pool = Pool(processes=len(runs))
     pool.map(proc, runs)
 
+def get_runs(pdir):
+    runpaths = glob.glob(('/').join(path, pdir, 'r*'))
+    runs = [runpath.split('/')[-1] for runpath in runpaths]
+    return runs
+
 if __name__ == '__main__':
-    runs = ['r11_7_08b', 'r11_7_08c', 'r11_7_08d']
+    # runs = ['r11_7_08b', 'r11_7_08c', 'r11_7_08d']
+    runs = get_runs('processed')
     pool(basic_data, runs)

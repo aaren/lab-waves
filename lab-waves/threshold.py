@@ -185,11 +185,11 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     # detect and interpolate the current
     current = process(image, fluid_type, region, 0, rulers)
     # remove silly current values
-    current[:front_pos] = [bottom]*front_pos
+    current[:front_pos_core] = [bottom]*front_pos_core
     interp_current = interpolate(image, current, rulers)
 
     mix_current = process(image, fluid_type, region, 3, rulers)
-    mix_current[:front_pos] = [bottom]*front_pos
+    mix_current[:front_pos_mix] = [bottom]*front_pos_mix
     interp_mix_current = interpolate(image, mix_current, rulers)
 
     out = (interp_interface, interp_current, interp_mix_current, \

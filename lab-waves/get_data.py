@@ -132,10 +132,10 @@ def get_basic_run_data(run):
         cam_data = basic_run_data[camera]
         images = sorted(glob.glob('/'.join([path,
                             'processed', run, camera, '*jpg'])))
-        tot_ims = "%03d" % len(images)
+        tot = "%03d" % len(images)
         for image in images:
             frame = iframe(image)
-            print "thresholding processed",run,frame,"of",tot_ims,"\r",
+            print "thresholding processed",run,camera,frame,"of",tot,"\r",
             sys.stdout.flush()
             cam_data[frame] = get_basic_frame_data(image)
     print ""
@@ -150,6 +150,7 @@ def get_basic_data(runs=None):
         print "runs must lead with an r!!"
         return 0
     for run in runs:
+        basic_run_data = get_basic_run_data(run)
         f = data_dir + 'basic/basic_%s' % run
         print "writing the data to",f
         write_data(basic_run_data, f)
