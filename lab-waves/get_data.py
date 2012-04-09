@@ -30,6 +30,7 @@
 
 from __future__ import division
 import glob
+import sys
 
 import matplotlib.pyplot as plt
 
@@ -76,10 +77,10 @@ def norm(inlist, camera, p=0):
     no parallax correction. p!=0 switches it on (for the x-value),
     scaling the parallax correction factor by p.
     """
-    def norm_tuple(input):
+    def norm_tuple(intupe):
         offsets = camera_offsets[camera]
         scale = scales[camera]
-        input_norm = [(o - i)/s for o,i,s in zip(offsets, input, scale)]
+        input_norm = [(o - i)/s for o,i,s in zip(offsets, intupe, scale)]
         # apply the parallax correction to the tuple x
         if p != 0:
             input_norm[0] = parallax_corr(input_norm[0], camera, p)
@@ -109,14 +110,15 @@ def get_basic_frame_data(image):
     elif params['D/H'] == '1':
         front_depth = 505
 
-    print("thresholding image %s..." % image)
-    interface, current, mix_current, front_coord\
+    print "thresholding",image,"...\r",
+    sys.stdout.flush()
+    interface, current, mixed_current, front_coord\
             = threshold.main(image, region, rulers, thresh_values, front_depth)
 
     basic_data = {}
     basic_data['interface'] = interface
     basic_data['core_current'] = current
-    basic_data['mixed_current'] = mix_current
+    basic_data['mixed_current'] = mixed_current
     basic_data['front_coord'] = front_coord
 
     return basic_data
@@ -129,9 +131,13 @@ def get_basic_run_data(run):
     for camera in ('cam1', 'cam2'):
         basic_run_data[camera] = {}
         cam_data = basic_run_data[camera]
-        for image in sorted(glob.glob(data_dir + run+'/' + camera + '/*jpg')):
+        images = sorted(glob.glob('/'.join([path,
+                            'processed', run, camera, '*jpg'])))
+        print "There are",len(images),"images in",camera
+        for image in images:
             frame = iframe(image)
             cam_data[frame] = get_basic_frame_data(image)
+        print ""
     return basic_run_data
 
 def get_basic_data(runs=None):
@@ -143,9 +149,11 @@ def get_basic_data(runs=None):
         print "runs must lead with an r!!"
         return 0
     for run in runs:
+        f = data_dir + 'basic/basic_%s' % run
+        print "I will write the data to",f
         basic_run_data = get_basic_run_data(run)
-        file = data_dir + 'basic/basic_%s' % run
-        write_data(basic_run_data, file)
+        print "writing the data to",f
+        write_data(basic_run_data, f)
 
 def get_frame_data(image, run_data_container):
     """gets the data for a single image.
@@ -188,7 +196,7 @@ def get_frame_data(image, run_data_container):
     # put the interfaces into the standard format
     interface = list(enumerate(interface))
     core_current = list(enumerate(core_current))
-    mixed_current = list(enumerate(core_current))
+    mixed_current = list(enumerate(mixed_current))
      
     frame_data['interface'] = norm(interface, camera)    
     frame_data['core_current'] = norm(core_current, camera)
@@ -207,7 +215,9 @@ def get_run_data(run):
     for camera in ('cam1', 'cam2'):
         run_data[camera] = {}
         cam_data = run_data[camera]
-        for image in sorted(glob.glob(data_dir + run+'/' + camera + '/*jpg')):
+        images = sorted(glob.glob('/'.join([path,
+                            'processed', run, camera, '*jpg'])))
+        for image in images:
             frame = iframe(image)
             cam_data[frame] = get_frame_data(image, basic_run_data)
     return run_data
@@ -224,5 +234,5 @@ def main(runs=None):
         run_data = get_run_data(run)
         data[run] = run_data
         file = data_storage_file + run
-        print "writing the data to", file
+        print "\nwriting the data to", file
         write_data(data, file)

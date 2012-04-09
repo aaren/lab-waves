@@ -1,5 +1,6 @@
 # Some useful functions that I use a lot.
 import pickle
+import sys
 
 def pull_col(i, tsv, delim='\t'):
     # extract column i from a tsv file as a list
@@ -59,3 +60,7 @@ def get_parameters(run, paramf, delim=None):
     headers = pull_line(0, paramf, delim)
     parameters = dict(zip(headers, run_params))
     return parameters
+
+def cprint(string):
+    print string,"\r",
+    sys.stdout.flush()

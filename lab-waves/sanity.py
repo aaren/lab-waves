@@ -1,6 +1,8 @@
+import os
+import sys
+
 import Image
 import ImageDraw
-import os
 
 def sanity_check(interfaces, points, image, icolours, pcolours):
     """produces an image that has the calculated interface
@@ -46,4 +48,5 @@ def sanity_check(interfaces, points, image, icolours, pcolours):
         pass
 
     im.save(sanity_dir + frame)
-    print "wrote out sanity image to", sanity_dir, frame
+    print "wrote sanity image to",sanity_dir,frame,"\r",
+    sys.stdout.flush()

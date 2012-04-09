@@ -4,6 +4,7 @@
 from __future__ import division
 import os
 import glob
+import sys
 
 import Image
 import ImageFont, ImageDraw
@@ -56,8 +57,10 @@ def barrel_corr(image, outdir):
     outfile = outdirpath + frame
     command = 'convert -distort Barrel %s %s %s' % (corr, infile, outfile)
 
-    print "Barrel correcting %s, %s, %s with 18mm coefficients,\n%s"\
-                                        % (run, cam, frame, corr)
+    print cam1,"has barrel correction coefficients"
+    print corr
+    print "Correcting",run,cam,frame,"\r",
+    sys.stdout.flush()
     os.system(command)
 
 def bc1(run):
@@ -216,13 +219,17 @@ def add_text(image, (scale, data)):
     cropped.save(image)
 
 def proc_images(proc, run, source, arg1, arg2):
-    print '%s, %s, cam1, %s' % (proc, run, source)
+    #print '%s, %s, cam1, %s' % (proc, run, source)
     for image in glob.glob('%s/%s/cam1/*jpg' % (source, run)):
-        #print "performing %s on %s" % (proc, image)
+        print "performing",proc,"on",image,"\r",
+        print ""
+        sys.stdout.flush()
         proc(image, arg1)
-    print '%s, %s, cam2, %s' % (proc, run, source)
+    #print '%s, %s, cam2, %s' % (proc, run, source)
     for image in glob.glob('%s/%s/cam2/*jpg' % (source, run)):
-        #print "performing %s on %s" % (proc, image)
+        print "performing",proc,"on",image,"\r",
+        print ""
+        sys.stdout.flush()
         proc(image, arg2)
 
 def std_corrections(run, run_data=None):

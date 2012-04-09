@@ -55,7 +55,7 @@ def basic_data(run):
     This stage is separated out because it has a computationally
     intensive inner loop, where an entire image is thresholded.
     """
-    get_data.get_basic_run_data(run)
+    get_data.get_basic_data(run)
 
 def data(run):
     """The basic interface depths are further processed to

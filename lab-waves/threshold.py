@@ -28,7 +28,7 @@ def thresh_img(image, thresh_values=None):
     fluid_type = [[0 if (source[i,j][0] > thresh_red[0]) &\
                         (source[i,j][1] < thresh_red[1]) &\
                         (source[i,j][2] < thresh_red[2]) 
-                    else 0.5 if (source[i,j][0] > mixed_red[0]) &\
+                    else 3 if (source[i,j][0] > mixed_red[0]) &\
                                 (source[i,j][1] < mixed_red[1]) &\
                                 (source[i,j][2] < mixed_red[2])\
                     else 1 if (source[i,j][0] > thresh_green[0]) &\
@@ -180,7 +180,7 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     current[:front_pos] = [bottom]*front_pos
     interp_current = interpolate(image, current, rulers)
 
-    mix_current = process(image, fluid_type, region, 0.5, rulers)
+    mix_current = process(image, fluid_type, region, 3, rulers)
     mix_current[:front_pos] = [bottom]*front_pos
     interp_mix_current = interpolate(image, mix_current, rulers)
 
