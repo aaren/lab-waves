@@ -13,8 +13,17 @@ from config import path as Path
 
 def simple_join(rundir, image, gap=0, remove_text=0):
         print("Joining %s ..." %(rundir))
-        cam1 = Image.open('%s/cam1/%s' % (rundir, image))
-        cam2 = Image.open('%s/cam2/%s' % (rundir, image))
+        # If the files exist load them as images, else create a blank
+        # placeholder.
+        if os.path.exists('%s/cam1/%s' % (rundir, image):
+            cam1 = Image.open('%s/cam1/%s' % (rundir, image))
+        else:
+            cam1 = Image.new("RGB", (2810, 690))
+        if os.path.exists('%s/cam2/%s' % (rundir, image):
+            cam2 = Image.open('%s/cam2/%s' % (rundir, image))
+        else:
+            cam2 = Image.new("RGB", (2810, 690))
+
 
         # images are 2810x690 (+/- 1 on both) with the offset 60 from the end.
         inset = 60
