@@ -155,19 +155,22 @@ def add_text(image, (scale, data)):
     im = Image.open(image)
 
     ratio, run_data = scale, data
+    run = image.split('/')[-3]
+    camera = image.split('/')[-2]
+    time = int(image.split('_')[-1].split('.')[0]) - 1
+
+    odd = {'cam1': run_data['odd_1'], 'cam2': run_data['odd_2']}
+    if odd[camera] == '999':
+        return
+
+    param_runs = pull_col(0, paramf)
+    line_number = param_runs.index(run) 
+    parameter = pull_line(line_number, paramf)
 
     author_text = "Aaron O'Leary, University of Leeds"
     param_a = "run %s, t=%ss: h_1 = %s, rho_0 = %s, rho_1 = %s, rho_2 = %s, "
     param_b = "alpha = %s, D = %s" 
     param_t = param_a + param_b
-
-    run = image.split('/')[-3]
-    param_runs = pull_col(0, paramf)
-    line_number = param_runs.index(run) 
-    parameter = pull_line(line_number, paramf)
-
-    camera = image.split('/')[-2]
-    time = int(image.split('_')[-1].split('.')[0]) - 1
     param_text = param_t % (parameter[0], time, parameter[1], parameter[2],\
             parameter[3], parameter[4], parameter[5], parameter[6])
     scale_depth = 440
@@ -183,8 +186,6 @@ def add_text(image, (scale, data)):
         lower = int((bottom1 * cam1_ratio) + 150)
 
     elif camera == 'cam2':
-        if run_data['odd_2'] == '999':
-            return
         cam2_ratio = ratio
         offset = int(run_data['off_2'])
         bottom1 = int(run_data['bottom_2'])
