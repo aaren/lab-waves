@@ -1,4 +1,5 @@
 from multiprocessing import Process
+import pp
 
 import proc_im
 import join
@@ -100,3 +101,9 @@ def multi(proc, runs):
     for run in runs:
         p = Process(target = proc(run))
         p.start()
+
+def parallel(proc, runs):
+    job_server = pp.Server()
+    for run in runs:
+        print "Performing %s on %s" % (proc, run)
+        job_server.submit(proc, (run,)
