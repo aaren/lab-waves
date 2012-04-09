@@ -163,16 +163,14 @@ def add_text(image, (scale, data)):
     if odd[camera] == '999':
         return
 
-    param_runs = pull_col(0, paramf)
-    line_number = param_runs.index(run) 
-    parameter = pull_line(line_number, paramf)
+    p = get_parameters(run, paramf)
 
     author_text = "Aaron O'Leary, University of Leeds"
     param_a = "run %s, t=%ss: h_1 = %s, rho_0 = %s, rho_1 = %s, rho_2 = %s, "
     param_b = "alpha = %s, D = %s" 
     param_t = param_a + param_b
-    param_text = param_t % (parameter[0], time, parameter[1], parameter[2],\
-            parameter[3], parameter[4], parameter[5], parameter[6])
+    param_text = param_t % (p['run_index'], time, p['h_1/H'], p['rho_0'],\
+            p['rho_1'], p['rho_2'], p['alpha'], p['D/H'])
     scale_depth = 440
 
     if camera == 'cam1':
