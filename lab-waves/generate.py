@@ -106,4 +106,4 @@ def parallel(proc, runs):
     job_server = pp.Server()
     for run in runs:
         print "Performing %s on %s" % (proc, run)
-        job_server.submit(proc, (run,)
+        job_server.submit(proc, (run,))

@@ -158,7 +158,8 @@ def get_frame_data(image, run_data_container):
     
     basic_data = run_data_container[camera][frame] 
     interface = basic_data['interface']
-    current = basic_data['current']
+    core_current = basic_data['core_current']
+    mixed_current = basic_data['mixed_current']
     front_coord = basic_data['front_coord']
 
     # get the lists of the positions of maxima and minima.
@@ -166,28 +167,32 @@ def get_frame_data(image, run_data_container):
     # print("detecting the peaks")
     _min, _max = peakdetect.peakdetect(interface, None, 100, 10)
 
-    # check that the front and wave peaks make sense by overlaying
-    # measured positions onto the source image and writing this out
-    # to the sanity directories
-    sanity.sanity_check(interface, _max, _min, front_coord, image, current)
+    # overlay given interfaces and points onto the images with specified
+    # colours. images are saved to the sanity dirs.
+    interfaces = [interface, core_current, mixed_current]
+    icolours = ['black', 'blue', 'cyan']
+    points = [_max, _min, front_coord]
+    pcolours = ['red', 'green', 'blue']
+    sanity.sanity_check(interfaces, points, image, icolours, pcolours)
 
     # make a container for the data and populate it
     frame_data = {}
     # need the baseline when doing amplitude deviations
     #FIXME frame identity incorrect
     if frame == '0001':
-
         # calculate the baseline, putting it in the same list/tuple
         # format as the other data
         baseline = [(0,sum(interface)/len(interface))]
         frame_data['baseline'] = norm(baseline, camera)
 
-    # put the interface into the standard format
+    # put the interfaces into the standard format
     interface = list(enumerate(interface))
-    current = list(enumerate(current))
+    core_current = list(enumerate(core_current))
+    mixed_current = list(enumerate(core_current))
      
     frame_data['interface'] = norm(interface, camera)    
-    frame_data['current'] = norm(current, camera)
+    frame_data['core_current'] = norm(core_current, camera)
+    frame_data['mixed_current'] = norm(mixed_current, camera)
     frame_data['max'] = norm(_max, camera, 0.5)
     frame_data['min'] = norm(_min, camera, 0.5)
     frame_data['front'] = norm(front_coord, camera, 1)
