@@ -106,20 +106,21 @@ def get_basic_frame_data(image):
     run = irun(image)
     params = get_parameters(run, paramf)
     if params['D/H'] == '0.4':
-        front_depth = 525
+        front_depth = 520
     elif params['D/H'] == '1':
         front_depth = 505
 
     print "thresholding",image,"...\r",
     sys.stdout.flush()
-    interface, current, mixed_current, front_coord\
+    interface, current, mixed_current, core_front_coord, mix_front_coord\
             = threshold.main(image, region, rulers, thresh_values, front_depth)
 
     basic_data = {}
     basic_data['interface'] = interface
     basic_data['core_current'] = current
     basic_data['mixed_current'] = mixed_current
-    basic_data['front_coord'] = front_coord
+    basic_data['core_front_coord'] = core_front_coord
+    basic_data['mix_front_coord'] = mix_front_coord
 
     return basic_data
 

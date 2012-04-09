@@ -160,19 +160,27 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     if not front_depth:
         front_depth = 510
     try:
-        tot = 0
+        tot_core = 0
+        tot_mix = 0
         d = 5
         for n in range(d):
-            front_pos = [i[front_depth - n] for i in fluid_type].index(0)
-            tot += front_pos
-        front_pos = int(tot / d)
+            front_pos_core = [i[front_depth - n] for i in fluid_type].index(0)
+            front_pos_mix = [i[front_depth - n] for i in fluid_type].index(3)
+            tot_core += front_pos_core
+            tot_mix += front_pos_mix
+        front_pos_core = int(tot_core / d)
+        front_pos_mix = int(tot_mix / d)
     # if the front isn't found
     except ValueError:
-        front_pos = -99999
+        front_pos_core = -999999
+        front_pos_mix = -999999
     # catch the case that the front has neared the end of the tank
-    if front_pos < 110:
-        front_pos = -99999
-    front_coord = [(front_pos, front_depth)]
+    if front_pos_core < 110:
+        front_pos_core = -999999
+    if front_pos_mix < 110:
+        front_pos_mix = -999999
+    front_coord_core = [(front_pos_core, front_depth)]
+    front_coord_mix = [(front_pos_mix, front_depth)]
 
     # detect and interpolate the current
     current = process(image, fluid_type, region, 0, rulers)
@@ -184,6 +192,7 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     mix_current[:front_pos] = [bottom]*front_pos
     interp_mix_current = interpolate(image, mix_current, rulers)
 
-    out = (interp_interface, interp_current, interp_mix_current, front_coord)
+    out = (interp_interface, interp_current, interp_mix_current, \
+                    front_coord_core, front_coord_mix)
 
     return out
