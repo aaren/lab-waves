@@ -216,11 +216,13 @@ def add_text(image, (scale, data)):
     cropped.save(image)
 
 def proc_images(proc, run, source, arg1, arg2):
+    print '%s, %s, cam1, %s' % (proc, run, source)
     for image in glob.glob('%s/%s/cam1/*jpg' % (source, run)):
-        print "performing %s on %s" % (proc, image)
+        #print "performing %s on %s" % (proc, image)
         proc(image, arg1)
+    print '%s, %s, cam2, %s' % (proc, run, source)
     for image in glob.glob('%s/%s/cam2/*jpg' % (source, run)):
-        print "performing %s on %s" % (proc, image)
+        #print "performing %s on %s" % (proc, image)
         proc(image, arg2)
 
 def std_corrections(run, run_data=None):
