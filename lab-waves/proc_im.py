@@ -244,9 +244,12 @@ def text_crop(run, run_data=None):
     ruler_ratio = ideal_ruler / ruler
     depth_1 = int(run_data['bottom_1']) - int(run_data['surface_1'])
     depth_2 = int(run_data['bottom_2']) - int(run_data['surface_2'])
-    depth_ratio = depth_1 / depth_2
     cam1_ratio = ruler_ratio
-    cam2_ratio = ruler_ratio * depth_ratio
+    if depth_2 != 0:
+        depth_ratio = depth_1 / depth_2
+        cam2_ratio = ruler_ratio * depth_ratio
+    elif depth_2 == 0:
+        cam2_ratio = 1
 
     # Rescale to common size
     # rescaling means that the offsets, lock_pos etc. are rescaled too.
