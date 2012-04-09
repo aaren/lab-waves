@@ -110,8 +110,6 @@ def get_basic_frame_data(image):
     elif params['D/H'] == '1':
         front_depth = 505
 
-    print "thresholding",image,"...\r",
-    sys.stdout.flush()
     interface, current, mixed_current, core_front_coord, mix_front_coord\
             = threshold.main(image, region, rulers, thresh_values, front_depth)
 
@@ -134,11 +132,13 @@ def get_basic_run_data(run):
         cam_data = basic_run_data[camera]
         images = sorted(glob.glob('/'.join([path,
                             'processed', run, camera, '*jpg'])))
-        print "There are",len(images),"images in",camera
+        tot_ims = "%03d" % len(images)
         for image in images:
             frame = iframe(image)
+            print "thresholding processed",run,frame,"of",tot_ims,"\r",
+            sys.stdout.flush()
             cam_data[frame] = get_basic_frame_data(image)
-        print ""
+    print ""
     return basic_run_data
 
 def get_basic_data(runs=None):
@@ -151,8 +151,6 @@ def get_basic_data(runs=None):
         return 0
     for run in runs:
         f = data_dir + 'basic/basic_%s' % run
-        print "I will write the data to",f
-        basic_run_data = get_basic_run_data(run)
         print "writing the data to",f
         write_data(basic_run_data, f)
 
