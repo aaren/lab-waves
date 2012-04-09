@@ -1,4 +1,4 @@
-from multiprocessing import Process
+from multiprocessing import Process, Pool, Queue
 import pp
 
 import proc_im
@@ -98,12 +98,27 @@ def all(run):
     plot(run)
 
 def multi(proc, runs):
+    q = Queue()
     for run in runs:
-        p = Process(target = proc(run))
+        q.put(run)
+
+    ps = [Process(target=proc, args=(run,)) for i in range(12)]
+    for p in ps:
         p.start()
+        print "started %s" % p
+    for p in ps:
+        p.join()
 
 def parallel(proc, runs):
     job_server = pp.Server()
     for run in runs:
         print "Performing %s on %s" % (proc, run)
         job_server.submit(proc, (run,))
+
+def pool(proc, runs):
+    pool = Pool(processes=len(runs))
+    pool.map(proc, runs)
+
+if __name__ == '__main__':
+    runs = ['r11_7_08b', 'r11_7_08c', 'r11_7_08d']
+    pool(basic_data, runs)
