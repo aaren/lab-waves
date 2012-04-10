@@ -1,7 +1,9 @@
 # force division to be floating by default (as in python 3).
 # floored division is done using //
 from __future__ import division
+
 import Image
+from numpy import polyfit
 
 def thresh_img(image, thresh_values=None):
     # Threshold the image, determining the fluid type of each individual
@@ -70,7 +72,7 @@ def process(image, fluid_type_lists, region, fluid, rulers):
     camera = image.split('/')[-2]
 
     if camera == 'cam1':
-        l_lim = 20 
+        l_lim = 50 
         r_lim = 2700 # this is approximate and discards lock parallax
     elif camera == 'cam2':
         l_lim = 0
@@ -108,9 +110,23 @@ def process(image, fluid_type_lists, region, fluid, rulers):
         depth.append(pixel) 
 
     # change the first l_lim depths into something more sensible than zero
+    # extrapolation of the subsequent trend
+    def extrapolate(in_depths, in_depths_low, in_depths_hi, extra_point):
+        x1, x2 = in_depths_low, in_depths_hi
+        x = range(x1, x2)
+        d = in_depths[x1:x2]
+        m, c = polyfit(x, d, 1)
+        extra_depth = m * extra_point + c
+        return extra_depth
+
     for i in range(l_lim):
-        section = depth[l_lim + 1: l_lim + 25]
-        depth[i] = sum(section)/len(section)
+        epoint = extrapolate(depth, l_lim + 1, l_lim +50, i)
+        depth[i] = int(round(epoint))
+
+    # this just sets them to an average of the next 25 depths.
+    # for i in range(l_lim):
+    #     section = depth[l_lim + 1: l_lim + 25]
+    #     depth[i] = sum(section)/len(section)
         
     return depth
 
@@ -146,11 +162,6 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     # print('generating threshold array...')
     fluid_type = thresh_img(image, thresh_values)
     
-    # detect and interpolate the interface
-    # print('detecting the interface')
-    interface = process(image, fluid_type, region, 1, rulers)
-    interp_interface = interpolate(image, interface, rulers) 
-
     # detect the current front
     # print('detecting the front...')
     # fluid_type_transpose = zip(*fluid_type)
@@ -159,40 +170,47 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     # but the zip transpose is still very quick.
     if not front_depth:
         front_depth = 510
-    try:
-        tot_core = 0
-        tot_mix = 0
-        d = 5
-        for n in range(d):
-            front_pos_core = [i[front_depth - n] for i in fluid_type].index(0)
-            front_pos_mix = [i[front_depth - n] for i in fluid_type].index(3)
-            tot_core += front_pos_core
-            tot_mix += front_pos_mix
-        front_pos_core = int(tot_core / d)
-        front_pos_mix = int(tot_mix / d)
-    # if the front isn't found
-    except ValueError:
-        front_pos_core = -999999
-        front_pos_mix = -999999
-    # catch the case that the front has neared the end of the tank
-    if front_pos_core < 110:
-        front_pos_core = -999999
-    if front_pos_mix < 110:
-        front_pos_mix = -999999
+    def get_front_pos(fluid, d=5):
+        try:
+            tot = 0
+            for n in range(d):
+                front_pos = [i[front_depth - n] for i in fluid_type].index(fluid)
+                tot += front_pos
+            front_pos = int(tot / d)
+        # if the front isn't found
+        except ValueError:
+            front_pos = -999999
+        # catch the case that the front has neared the end of the tank
+        if front_pos < 110:
+            front_pos = -999999
+        return front_pos
+
+    front_pos_core = get_front_pos(0)
+    front_pos_mix = get_front_pos(3)
+
     front_coord_core = [(front_pos_core, front_depth)]
     front_coord_mix = [(front_pos_mix, front_depth)]
 
-    # detect and interpolate the current
-    current = process(image, fluid_type, region, 0, rulers)
-    # remove silly current values
-    current[:front_pos_core] = [bottom]*front_pos_core
-    interp_current = interpolate(image, current, rulers)
-
+    # detect and interpolate the interfaces
+    interface = process(image, fluid_type, region, 1, rulers)
+    core_current = process(image, fluid_type, region, 0, rulers)
     mix_current = process(image, fluid_type, region, 3, rulers)
-    mix_current[:front_pos_mix] = [bottom]*front_pos_mix
+
+    # remove silly current values, i.e. set current depth to zero
+    # anywhere ahead of the detected front position.
+    if front_pos_core > -1:
+        core_current[:front_pos_core] = [bottom]*front_pos_core
+    if front_pos_mix > -1:
+        mix_current[:front_pos_mix] = [bottom]*front_pos_mix
+    elif front_pos_mix == -999999 and front_pos_core != -999999:
+        mix_current[:front_pos_core] = [bottom]*front_pos_core
+
+    # interpolate
+    interp_interface = interpolate(image, interface, rulers) 
+    interp_core_current = interpolate(image, core_current, rulers)
     interp_mix_current = interpolate(image, mix_current, rulers)
 
-    out = (interp_interface, interp_current, interp_mix_current, \
+    out = (interp_interface, interp_core_current, interp_mix_current, \
                     front_coord_core, front_coord_mix)
 
     return out

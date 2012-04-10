@@ -112,21 +112,26 @@ def multi(proc, runs):
         p.join()
 
 def parallel(proc, runs):
+    ## This is difficult as the submission needs the module and function
+    ## dependencies of the function being submitted, which obviously varies.
+    ## It is currently set up for basic_data. As it is there is no output
+    ## to the screen either. Using Pool is much easier, but this does look
+    ## powerful.
     job_server = pp.Server()
     for run in runs:
         print "Performing %s on %s" % (proc, run)
-        job_server.submit(proc, (run,))
+        job_server.submit(proc, (run,), (), ("get_data",))
 
 def pool(proc, runs):
     pool = Pool(processes=len(runs))
     pool.map(proc, runs)
 
-def get_runs(pdir):
-    runpaths = glob.glob(('/').join(path, pdir, 'r*'))
+def get_runs(pdir='processed'):
+    runpaths = glob.glob(('/').join([path, pdir, 'r*']))
     runs = [runpath.split('/')[-1] for runpath in runpaths]
     return runs
 
 if __name__ == '__main__':
-    # runs = ['r11_7_08b', 'r11_7_08c', 'r11_7_08d']
-    runs = get_runs('processed')
+    #runs = ['r11_7_08b', 'r11_7_08c', 'r11_7_08d']
+    runs = get_runs()
     pool(basic_data, runs)

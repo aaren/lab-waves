@@ -13,9 +13,11 @@
 # This is just a utility feature - could have all of these utilities
 # in the same file and then call them from a separate file.
 
-from aolcore import read_data
 import numpy as np
 import matplotlib.pyplot as plt
+
+from aolcore import read_data
+from config import data_dir, data_storage
 
 # # what is the furthest spatial coord?
 # Xtm[0] # means list of (x,t) for frame 0
@@ -26,12 +28,12 @@ def wave(run='r11_7_06c', data_storage_file=None):
     Returns: Xtm, which is a list of x for given t, i.e. Xtm[0]
     is a list of all the measured x for t=0.
     """
-    data_dir = '/home/eeaol/code/lab-waves/data/'
+    #data_dir = '/home/eeaol/code/lab-waves/data/'
     
     if run.split('r')[0] == run:
         run = 'r' + run
     if data_storage_file is None:
-        data_storage_file = data_dir + 'data/data_store_' + run
+        data_storage_file = data_storage + run
 
     data = read_data(data_storage_file)
 
@@ -49,13 +51,12 @@ def wave(run='r11_7_06c', data_storage_file=None):
 
     return Xtm
 
-def conjoin_data(run, data_storage_file=None):
-    data_dir = '/home/eeaol/code/lab-waves/data/'
+def conjoin_data(run, data_file=None):
     if run.split('r')[0] == run:
         run = 'r' + run
-    if data_storage_file is None:
-        data_storage_file = data_dir + 'data/data_store_' + run
-    data = read_data(data_storage_file)
+    if data_file is None:
+        data_file = data_storage + run
+    data = read_data(data_file)
 
     Xt = {}
     for arg in ['max', 'min', 'front']:
@@ -250,7 +251,7 @@ def fit_waves(waves):
     
 def plot_front(run='r11_7_06c', data=None, fmt=None):
     if data is None:
-        data_storage = '/home/eeaol/code/lab-waves/data/data/data_store_'
+        #data_storage = '/home/eeaol/code/lab-waves/data/data/data_store_'
         data = read_data(data_storage + run)
 
     if fmt is None:
@@ -274,3 +275,6 @@ def plot_front(run='r11_7_06c', data=None, fmt=None):
     plt.plot(f['cam2'], t['cam2'], fmt, label = 'g.c. front')
 
     plt.xlim(0,13)
+
+def plot_xt(Xt):
+

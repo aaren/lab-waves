@@ -33,6 +33,7 @@ import glob
 import sys
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 from aolcore import pull_col, pull_line, write_data, read_data
 from aolcore import get_parameters
@@ -168,41 +169,97 @@ def get_frame_data(image, run_data_container):
     interface = basic_data['interface']
     core_current = basic_data['core_current']
     mixed_current = basic_data['mixed_current']
-    front_coord = basic_data['front_coord']
+    core_front_coord = basic_data['core_front_coord']
+    mix_front_coord = basic_data['mix_front_coord']
+
+    # Make the front_coord the front_coord furthest from the lock.
+    front_coord = min(core_front_coord, mix_front_coord)
 
     # get the lists of the positions of maxima and minima.
     # at this point they are maxima in DEPTH! so MINIMA in height.
     # print("detecting the peaks")
+    smooth_interface = peakdetect.smooth(np.asarray(interface), 100, 'flat')
     _min, _max = peakdetect.peakdetect(interface, None, 100, 10)
 
+    # put the interfaces into the standard format
+    interface = list(enumerate(interface))
+    smooth_interface = list(enumerate(smooth_interface))
+    core_current = list(enumerate(core_current))
+    mixed_current = list(enumerate(mixed_current))
+
+    # detect bad regions
+    def window_avg(i, w):
+        return sum(zip(*interface)[1][i:i+w]) / w
+    
+    def get_bad_points(inter):
+        crit_m = 0.3
+        w = 20
+        bad_points = []
+        for i in range(w, len(inter), w):
+            if abs(window_avg(i, w) - window_avg(i-w, w)) > (crit_m * w):
+                for j in range(i, i+w):
+                    bad_points.append(inter[j]) 
+        return bad_points
+
+    def fix(inter, bad_points):
+        good_points = [e for e in inter if e not in bad_points]
+        fixed_interface = inter[:]
+        for i,d in bad_points:
+            good_points_up = []
+            c = 0
+            while len(good_points_up) < 40:
+                j = i + c  
+                try: 
+                    x,y = inter[j] 
+                except IndexError:
+                    break
+                if (x,y) in good_points:
+                    good_points_up.append((x,y))
+                c += 1
+            good_points_down = []
+            c = 0
+            while len(good_points_down) < 40:
+                j = i + c  
+                try:
+                    x,y = inter[j] 
+                except IndexError:
+                    break
+                if (x,y) in good_points:
+                    good_points_down.append((x,y))
+                c -= 1
+
+            ok_id = good_points_up + good_points_down
+            x, y = zip(*ok_id)
+            b, c = np.polyfit(x, y, 1)
+            d1 = b * i + c
+            fixed_interface[i] = (i, d1)
+            return fixed_interface
+
+    bad_points = get_bad_points(interface)
+    fixed_interface = fix(interface, bad_points)
+     
     # overlay given interfaces and points onto the images with specified
     # colours. images are saved to the sanity dirs.
-    interfaces = [interface, core_current, mixed_current]
-    icolours = ['black', 'blue', 'cyan']
-    points = [_max, _min, front_coord]
-    pcolours = ['red', 'green', 'blue']
+    interfaces = [interface, core_current, mixed_current, fixed_interface]
+    icolours = ['black', 'blue', 'cyan', 'orange']
+    points = [_max, _min, core_front_coord, mix_front_coord, bad_points]
+    pcolours = ['red', 'green', 'blue', 'cyan', 'magenta']
     sanity.sanity_check(interfaces, points, image, icolours, pcolours)
 
     # make a container for the data and populate it
     frame_data = {}
     # need the baseline when doing amplitude deviations
-    #FIXME frame identity incorrect
-    if frame == '0001':
-        # calculate the baseline, putting it in the same list/tuple
-        # format as the other data
-        baseline = [(0,sum(interface)/len(interface))]
+    if frame == iframe('img_0001.jpg'):
+        baseline = [(0,sum(zip(*interface)[1])/len(interface))]
         frame_data['baseline'] = norm(baseline, camera)
 
-    # put the interfaces into the standard format
-    interface = list(enumerate(interface))
-    core_current = list(enumerate(core_current))
-    mixed_current = list(enumerate(mixed_current))
-     
     frame_data['interface'] = norm(interface, camera)    
     frame_data['core_current'] = norm(core_current, camera)
     frame_data['mixed_current'] = norm(mixed_current, camera)
     frame_data['max'] = norm(_max, camera, 0.5)
     frame_data['min'] = norm(_min, camera, 0.5)
+    frame_data['core_front'] = norm(core_front_coord, camera, 1)
+    frame_data['mix_front'] = norm(mix_front_coord, camera, 1)
     frame_data['front'] = norm(front_coord, camera, 1)
 
     return frame_data
@@ -233,6 +290,6 @@ def main(runs=None):
         data = {}
         run_data = get_run_data(run)
         data[run] = run_data
-        file = data_storage_file + run
+        file = data_storage + run
         print "\nwriting the data to", file
         write_data(data, file)

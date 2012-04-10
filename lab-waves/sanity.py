@@ -22,10 +22,7 @@ def sanity_check(interfaces, points, image, icolours, pcolours):
 
     # plot the measured interface depth onto the image
     for inter, colour in zip(interfaces, icolours):
-        x_coords = range(len(inter))
-        y_coords = inter
-        i_coords = zip(x_coords, y_coords)
-        draw.line(i_coords, fill = colour, width = 5)
+        draw.line(inter, fill = colour, width = 5)
  
     # plot squares onto the image at the given points
     rectangle_size = (7,7)
