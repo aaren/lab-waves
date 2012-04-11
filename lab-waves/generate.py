@@ -1,5 +1,6 @@
 #!/apps/enthought-7.2-1/bin/python
 from multiprocessing import Process, Pool, Queue
+import multiprocessing.pool
 import glob
 from sys import argv
 
@@ -128,8 +129,20 @@ def parallel(proc, runs):
         print "Performing %s on %s" % (proc, run)
         job_server.submit(proc, (run,), (), ("get_data",))
 
+## see http://stackoverflow.com/questions/6974695/python-process-pool-non-daemonic
+class NoDaemonProcess(multiprocessing.Process):
+    # make the daemon attribute false
+    def _get_daemon(self):
+        return False
+    def _set_daemon(self, value):
+        pass
+    daemon = property(_get_daemon, _set_daemon)
+
+class MyPool(multiprocessing.pool.Pool):
+    Process = NoDaemonProcess
+
 def pool(proc, runs):
-    p = Pool(processes=len(runs))
+    p = MyPool(processes=len(runs))
     p.map(proc, runs)
     p.close()
     p.join()
