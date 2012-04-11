@@ -1,5 +1,5 @@
 # Some useful functions that I use a lot.
-import pickle
+import cPickle as pickle
 import sys
 
 def pull_col(i, tsv, delim='\t'):
