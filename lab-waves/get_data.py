@@ -20,6 +20,8 @@
 from __future__ import division
 import glob
 import sys
+from multiprocessing import Pool
+import time
 
 import numpy as np
 
@@ -90,6 +92,10 @@ def iframe(image):
 def irun(image):
     run = image.split('/')[-3]
     return run
+
+def icam(image):
+    cam = image.split('/')[-2]
+    return cam
 
 def reject_outliers(inter, r, w, degree=2):
     """Running through inter, if any element is outside range r
@@ -168,8 +174,15 @@ def get_basic_frame_data(image):
     # get the list of interface depths, with the depth for the current
     # different for varying lock depth
     run = irun(image)
+    camera = icam(image)
+    frame = iframe(image)
+
     params = get_parameters(run, paramf)
     front_depth = front_depths[params['D/H']]
+
+    #print "thresholding processed", \
+    #        run, camera, frame, "of"
+    #sys.stdout.flush()
 
     interface, current, mixed_current, core_front_coord, mix_front_coord\
             = threshold.main(image, region, rulers, thresh_values, front_depth)
@@ -181,7 +194,8 @@ def get_basic_frame_data(image):
     basic_data['core_front_coord'] = core_front_coord
     basic_data['mix_front_coord'] = mix_front_coord
 
-    return basic_data
+    frame_data = (frame, basic_data)
+    return frame_data
 
 def get_basic_run_data(run):
     """grabs all basic data from a run"""
@@ -189,17 +203,24 @@ def get_basic_run_data(run):
     # run = run.split('r')[-1]
     basic_run_data = {}
     for camera in ('cam1', 'cam2'):
-        basic_run_data[camera] = {}
-        cam_data = basic_run_data[camera]
         images = sorted(glob.glob('/'.join([path,
                             'processed', run, camera, '*jpg'])))
         tot = "%03d" % len(images)
-        for image in images:
-            frame = iframe(image)
-            print "thresholding processed", \
-                    run, camera, frame, "of", tot, "\r",
+        if len(images) == 0:
+            break
+        p = Pool(processes=4)
+        result = p.map_async(get_basic_frame_data, images)
+        p.close()
+
+        while True:
+            if result.ready():
+                break
+            remain = "%03d" % result._number_left
+            print "Thresholding...", remain, "left of", tot, "\r",
             sys.stdout.flush()
-            cam_data[frame] = get_basic_frame_data(image)
+            time.sleep(0.1)
+
+        basic_run_data[camera] = {k: v for k,v in result.get()}
     print ""
     return basic_run_data
 
