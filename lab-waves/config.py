@@ -1,33 +1,40 @@
 #####CONFIG#####
 
-# perhaps this is a good place to use a class instead of all of these dicts?
-# How about a Camera class, with attributes of rulers, offsets, scales, etc.
-
+### **PATH** ###
 # what is the root directory for all of this?
 path = '/home/eeaol/lab/data/flume1/working'
 # where is the parameters file?
 paramf = path + '/parameters'
 # proc_data?
 procf = path + '/proc_data'
-
 # where is the data going to be stored?? (filename)
 data_dir = path + '/data/'
 data_storage = data_dir + 'data/data_store_'
+### /PATH ###
 
-# specify a vertical region of the image in which to search for the interface
+### **BASIC SETTINGS** ###
+# Note: Modifying these settings requires re-acquiring the basic_data, 
+# which is computationally intensive.
+
+# Specify a vertical region of the image in which to search for the interface.
+# Units are pixels, starting from top of image.
 region = (130, 540)
 
 # specify the threshold values to use. fiddling with these has a strong impact
 # on the quality of the interface signal.
 thresh_green = (80, 120, 50)
-thresh_red = (100, 50, 10)
+core_red = (100, 50, 10)
 mixed_red = (100, 75, 10)
-thresh_values = (thresh_green, thresh_red, mixed_red)
+thresh_values = (thresh_green, core_red, mixed_red)
 # thresh_red[1] controls how mixed the detected current is, as this strongly
 # varies the greenness. Inside the core current this might be <50 (across the
 # whole tank, the stuff against the front wall is <5), but in more mixed zones
 # more like <75, or greater depending on the mixing. Two values for thresh_red
 # gives an idea of the thickness of the mixed layer on the current.
+
+# Depths at which to scan for the current front. 0.4 is partial, 1 is full
+# depth.
+front_depths = {'0.4': 520, '1': 495}
 
 # specify the positions of rulers and other vertical features that
 # obscure the fluid.
@@ -35,8 +42,14 @@ rulers = {}
 rulers['cam1'] = [(80, 105), (870, 950), (1630, 1660), (1740, 1810)]
 rulers['cam2'] = [(80, 130), (950, 1000), (1820, 1890), \
                   (2665, 2695), (2705, 2725)]
+### /BASIC SETTINGS ###
 
-# specify the offsets that each of the cameras have, for normalisation of
+### **CAMERA SETUP** ###
+# Settings here relate to the positioning of the cameras relative to the
+# tank and each other. This allows for conversion from pixel dimensions
+# to S.I and for the correction of parallax.
+#
+# Specify the offsets that each of the cameras have, for normalisation of
 # pixel measurements
 camera_offsets = {}
 camera_offsets['cam1'] = (2650, 543)
@@ -60,5 +73,6 @@ scales['cam2'] = (lock_length, fluid_depth)
 centre = {}
 centre['cam1'] = 0.75
 centre['cam2'] = 2.25
+### /CAMERA SETUP ###
 
 #####/CONFIG#####

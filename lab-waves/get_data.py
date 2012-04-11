@@ -164,10 +164,7 @@ def get_basic_frame_data(image):
     # different for varying lock depth
     run = irun(image)
     params = get_parameters(run, paramf)
-    if params['D/H'] == '0.4':
-        front_depth = 520
-    elif params['D/H'] == '1':
-        front_depth = 505
+    front_depth = front_depths[params['D/H']]
 
     interface, current, mixed_current, core_front_coord, mix_front_coord\
             = threshold.main(image, region, rulers, thresh_values, front_depth)
