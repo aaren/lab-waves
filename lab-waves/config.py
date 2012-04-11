@@ -11,7 +11,6 @@ paramf = path + '/parameters'
 procf = path + '/proc_data'
 
 # where is the data going to be stored?? (filename)
-#data_dir = '/home/eeaol/code/lab-waves/data/'
 data_dir = path + '/data/'
 data_storage = data_dir + 'data/data_store_'
 
@@ -24,12 +23,11 @@ thresh_green = (80, 120, 50)
 thresh_red = (100, 50, 10)
 mixed_red = (100, 75, 10)
 thresh_values = (thresh_green, thresh_red, mixed_red)
-# TODO: Two values for thresh red? 
 # thresh_red[1] controls how mixed the detected current is, as this strongly
 # varies the greenness. Inside the core current this might be <50 (across the
 # whole tank, the stuff against the front wall is <5), but in more mixed zones
 # more like <75, or greater depending on the mixing. Two values for thresh_red
-# would give an idea of the thickness of the mixed layer on the current.
+# gives an idea of the thickness of the mixed layer on the current.
 
 # specify the positions of rulers and other vertical features that
 # obscure the fluid.
