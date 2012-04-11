@@ -1,6 +1,9 @@
+#!/apps/enthought-7.2-1/bin/python
 from multiprocessing import Process, Pool, Queue
-import pp
 import glob
+from sys import argv
+
+import pp
 
 import proc_im
 import join
@@ -131,7 +134,16 @@ def get_runs(pdir='processed'):
     runs = [runpath.split('/')[-1] for runpath in runpaths]
     return runs
 
+def test():
+    print "hello"
+
 if __name__ == '__main__':
-    #runs = ['r11_7_08b', 'r11_7_08c', 'r11_7_08d']
-    runs = get_runs()
-    pool(basic_data, runs)
+    if len(argv) == 3:
+        if argv[2] == 'all':
+            runs = get_runs()
+        elif argv[2]:
+            runs = [argv[2]]
+    else:
+        runs = ['r11_7_07e']
+    process = globals().get(argv[1])
+    pool(process, runs)
