@@ -25,20 +25,19 @@
 # from baseline and whilst this can be calculated for an initial baseline, it
 # doesn't deal with the case of an undular bore, in which the baseline is
 # shifted vertically.
-# however, a baseline is needed anyway
-#      2) baseline detection
 
 from __future__ import division
 import glob
 import sys
 
-import matplotlib.pyplot as plt
 import numpy as np
 
-from aolcore import pull_col, pull_line, write_data, read_data
+from sgolay import savitzky_golay as sgolay
+import peakdetect
+
+from aolcore import write_data, read_data
 from aolcore import get_parameters
 import threshold
-import peakdetect
 import sanity
 
 from config import *
@@ -81,7 +80,7 @@ def norm(inlist, camera, p=0):
     def norm_tuple(intupe):
         offsets = camera_offsets[camera]
         scale = scales[camera]
-        input_norm = [(o - i)/s for o,i,s in zip(offsets, intupe, scale)]
+        input_norm = [(o - i) / s for o,i,s in zip(offsets, intupe, scale)]
         # apply the parallax correction to the tuple x
         if p != 0:
             input_norm[0] = parallax_corr(input_norm[0], camera, p)
@@ -100,6 +99,65 @@ def iframe(image):
 def irun(image):
     run = image.split('/')[-3]
     return run
+
+def reject_outliers(inter, r, w):
+    """Running through inter, if any element is outside range r
+    either side of the previous element then replace it with the
+    value of the previous element.
+
+    The problem with this method is that it can only deal with
+    anomalous spikes and not ramps. If the transition to anomaly
+    is sufficiently smooth then we get stuck > r away from truth.
+
+    We could make r small (~5), but this would cause problems when
+    there are steeper slopes.
+
+    Try calculating the gradient of the last few points and
+    extrapolating from there.
+
+    This will lead to problems at extrema. Could try quadratic 
+    extrapolation.
+
+    w determines the width of window over which to calculate
+    the prediction curve.
+
+    r and w are dependent on the form of the data. w should be
+    set to the length-scale over which the data have the approximate
+    form of a parabola.
+
+    r should be large enough to accommodate the normal variability
+    of the data.
+    """
+    # Initialise with an average of the first few points, which we
+    # hope is sensible.
+    def fit(inter, j, k, deg):  
+        x = range(j, k)
+        h = inter[j:k]
+        return np.polyfit(x, h, deg)
+
+    # initialise
+    m, n = fit(inter, 0, w, 1)
+    init = [ i * m + n for i in range(w)]
+    b = init[:]
+
+    for i in range(w, len(inter)):
+        l, m, n = fit(b, i-w, i, 2)
+        pred_i = l * i**2 + m * i + n
+        if (pred_i - r < inter[i] < pred_i + r):
+            b.append(inter[i])
+        else:
+            b.append(pred_i)
+
+    return b
+
+def smooth(inter, window):
+    """Apply Savitzky-Golay smoothing to the given data (1D)
+    over a given window width.
+    """
+    x = np.asarray(inter)
+    y = sgolay(x, window, 2)
+    smoothed_inter = list(y)
+    return smoothed_inter
 
 def get_basic_frame_data(image):
     # get the list of interface depths, with the depth for the current
@@ -175,89 +233,55 @@ def get_frame_data(image, run_data_container):
     # Make the front_coord the front_coord furthest from the lock.
     front_coord = min(core_front_coord, mix_front_coord)
 
+    # Outlier rejection. arg[1] is point to point variability;
+    # arg[2] is window over which interface can be considered
+    # parabolic in form.
+    fixed_interface = reject_outliers(interface, 10, 250)
+    # SMOOTHING (Savitzky-Golay). Preferable to moving avg.
+    smoothed_interface = smooth(fixed_interface, 301)
+    # current profile is a bit too messy for the rejection to work
+    #core_current = reject_outliers(core_current, 50, 20)
+    #mixed_current = reject_outliers(mixed_current, 50, 20)
+
     # get the lists of the positions of maxima and minima.
     # at this point they are maxima in DEPTH! so MINIMA in height.
-    # print("detecting the peaks")
-    smooth_interface = peakdetect.smooth(np.asarray(interface), 100, 'flat')
-    _min, _max = peakdetect.peakdetect(interface, None, 100, 10)
+    _min, _max = peakdetect.peakdetect(smoothed_interface, None, 200, 10)
+    core_min, core_max = peakdetect.peakdetect(core_current, None, 200)
+    mix_min, mix_max = peakdetect.peakdetect(mixed_current, None, 200)
 
     # put the interfaces into the standard format
     interface = list(enumerate(interface))
-    smooth_interface = list(enumerate(smooth_interface))
+    fixed_interface = list(enumerate(fixed_interface))
+    smoothed_interface = list(enumerate(smoothed_interface))
     core_current = list(enumerate(core_current))
     mixed_current = list(enumerate(mixed_current))
 
-    # detect bad regions
-    def window_avg(i, w):
-        return sum(zip(*interface)[1][i:i+w]) / w
-    
-    def get_bad_points(inter):
-        crit_m = 0.3
-        w = 20
-        bad_points = []
-        for i in range(w, len(inter), w):
-            if abs(window_avg(i, w) - window_avg(i-w, w)) > (crit_m * w):
-                for j in range(i, i+w):
-                    bad_points.append(inter[j]) 
-        return bad_points
-
-    def fix(inter, bad_points):
-        good_points = [e for e in inter if e not in bad_points]
-        fixed_interface = inter[:]
-        for i,d in bad_points:
-            good_points_up = []
-            c = 0
-            while len(good_points_up) < 40:
-                j = i + c  
-                try: 
-                    x,y = inter[j] 
-                except IndexError:
-                    break
-                if (x,y) in good_points:
-                    good_points_up.append((x,y))
-                c += 1
-            good_points_down = []
-            c = 0
-            while len(good_points_down) < 40:
-                j = i + c  
-                try:
-                    x,y = inter[j] 
-                except IndexError:
-                    break
-                if (x,y) in good_points:
-                    good_points_down.append((x,y))
-                c -= 1
-
-            ok_id = good_points_up + good_points_down
-            x, y = zip(*ok_id)
-            b, c = np.polyfit(x, y, 1)
-            d1 = b * i + c
-            fixed_interface[i] = (i, d1)
-            return fixed_interface
-
-    bad_points = get_bad_points(interface)
-    fixed_interface = fix(interface, bad_points)
-     
+    # SANITY CHECKING
     # overlay given interfaces and points onto the images with specified
     # colours. images are saved to the sanity dirs.
-    interfaces = [interface, core_current, mixed_current, fixed_interface]
-    icolours = ['black', 'blue', 'cyan', 'orange']
-    points = [_max, _min, core_front_coord, mix_front_coord, bad_points]
-    pcolours = ['red', 'green', 'blue', 'cyan', 'magenta']
+    interfaces = [interface, core_current, mixed_current, smoothed_interface, fixed_interface]
+    icolours = ['black', 'blue', 'cyan', 'orange', 'red']
+    points = [_max, _min, core_front_coord, mix_front_coord, core_max, mix_max]
+    pcolours = ['red', 'green', 'blue', 'cyan', 'blue', 'cyan'] 
     sanity.sanity_check(interfaces, points, image, icolours, pcolours)
 
     # make a container for the data and populate it
     frame_data = {}
     # need the baseline when doing amplitude deviations
     if frame == iframe('img_0001.jpg'):
-        baseline = [(0,sum(zip(*interface)[1])/len(interface))]
+        baseline = [(0,sum(zip(*smoothed_interface)[1])\
+                                         / len(smoothed_interface))]
         frame_data['baseline'] = norm(baseline, camera)
 
-    frame_data['interface'] = norm(interface, camera)    
+    frame_data['interface'] = norm(interface, camera)
     frame_data['core_current'] = norm(core_current, camera)
     frame_data['mixed_current'] = norm(mixed_current, camera)
-    frame_data['max'] = norm(_max, camera, 0.5)
-    frame_data['min'] = norm(_min, camera, 0.5)
+    frame_data['max'] = norm(_max, camera, 0)
+    frame_data['min'] = norm(_min, camera, 0)
+    frame_data['core_max'] = norm(core_max, camera, 0)
+    frame_data['core_min'] = norm(core_min, camera, 0)
+    frame_data['mix_max'] = norm(mix_max, camera, 0)
+    frame_data['mix_min'] = norm(mix_min, camera, 0)
     frame_data['core_front'] = norm(core_front_coord, camera, 1)
     frame_data['mix_front'] = norm(mix_front_coord, camera, 1)
     frame_data['front'] = norm(front_coord, camera, 1)
@@ -291,5 +315,8 @@ def main(runs=None):
         run_data = get_run_data(run)
         data[run] = run_data
         file = data_storage + run
-        print "\nwriting the data to", file
+        print "\nwriting the data to",file,"...\r",
+        sys.stdout.flush()
         write_data(data, file)
+        print "writing the data to",file,"...done"
+        sys.stdout.flush()
