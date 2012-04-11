@@ -1,0 +1,9 @@
+This branch has multiprocessing integrated into the get_data module as well as
+generate. Specifically, get_data.get_basic_run_data creates a pool of workers
+for performing the image thresholding, resulting in a significant speed up when
+only processing a single run.
+
+In order to get around the daemon children problem a couple of classes are
+created in generate, allowing for the execution of pools within pools.
+
+http://stackoverflow.com/questions/6974695/python-process-pool-non-daemonic
