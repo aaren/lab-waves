@@ -4,8 +4,6 @@ import multiprocessing.pool
 import glob
 from sys import argv
 
-import pp
-
 import proc_im
 import join
 import get_data
@@ -116,18 +114,6 @@ def multi(proc, runs):
         print "started %s" % p
     for p in ps:
         p.join()
-
-def parallel(proc, runs):
-    ## Not presently used.
-    ## This is difficult as the submission needs the module and function
-    ## dependencies of the function being submitted, which obviously varies.
-    ## It is currently set up for basic_data. As it is there is no output
-    ## to the screen either. Using Pool is much easier, but this does look
-    ## powerful.
-    job_server = pp.Server()
-    for run in runs:
-        print "Performing %s on %s" % (proc, run)
-        job_server.submit(proc, (run,), (), ("get_data",))
 
 ## see http://stackoverflow.com/questions/6974695/python-process-pool-non-daemonic
 class NoDaemonProcess(multiprocessing.Process):
