@@ -22,7 +22,8 @@ region = (130, 540)
 
 # specify the threshold values to use. fiddling with these has a strong impact
 # on the quality of the interface signal.
-thresh_green = (80, 120, 50)
+#thresh_green = (80, 120, 50)
+thresh_green = (80, 100, 20)
 core_red = (100, 50, 10)
 mixed_red = (100, 75, 10)
 thresh_values = (thresh_green, core_red, mixed_red)

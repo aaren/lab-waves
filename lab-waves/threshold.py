@@ -131,8 +131,7 @@ def process(image, fluid_type_lists, region, fluid, rulers):
     return depth
 
 def interpolate(image, in_list, rulers):
-    """
-    Takes a list of interface depths and changes locations with a ruler
+    """ Takes a list of interface depths and changes locations with a ruler
     present from a constant value to an interpolation between the two edges.
     
     arguments:

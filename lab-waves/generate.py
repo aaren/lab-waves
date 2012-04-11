@@ -18,7 +18,7 @@ def measure(run):
     # Barrel correct the first frame of each camera in a run
     # outputs to dir 'bc1' in the path
     proc_im.bc1(run)
-    
+
     # Prompt user for measurements of run data, if they don't
     # exist already.
     proc_im.get_run_data(run)
@@ -44,7 +44,7 @@ def proc_im_main(run):
     # Create some joined up images in presentation and an
     # animated gif.
     # FIXME: Parameter display when there is only one image.
-    join.presentation(run) 
+    join.presentation(run)
     join.animate(run)
 
 def basic_data(run):
@@ -52,7 +52,7 @@ def basic_data(run):
     stages of it, it is ready to have the basic data extracted
     from it.
 
-    The basic data consists of a series of lists of interface 
+    The basic data consists of a series of lists of interface
     depths for a number of interfaces found in the fluid. These
     are extracted using the threshold module and then saved
     (pickled) to a file as a dictionary.
@@ -68,8 +68,8 @@ def data(run):
     correction is applied here, as well as conversion of the
     data units from pixels in to tank relative numbers (units
     of fluid depth, lock length).
-    
-    At this point some 'sanity' images are written out with 
+
+    At this point some 'sanity' images are written out with
     some of the measured data superimposed.
 
     The data extracted here are saved to another file.
@@ -87,7 +87,7 @@ def wave(run):
     """
 
 def plot(run):
-    """With the structures pulled out by wave(run), it is 
+    """With the structures pulled out by wave(run), it is
     easy to make some plots.
     """
 
@@ -96,13 +96,14 @@ def all(run):
     a single command.
     """
     measure(run)
-    proc_im_main(run)    
+    proc_im_main(run)
     basic_data(run)
     data(run)
     wave(run)
     plot(run)
 
 def multi(proc, runs):
+    # not presently used.
     q = Queue()
     for run in runs:
         q.put(run)
@@ -115,6 +116,7 @@ def multi(proc, runs):
         p.join()
 
 def parallel(proc, runs):
+    ## Not presently used.
     ## This is difficult as the submission needs the module and function
     ## dependencies of the function being submitted, which obviously varies.
     ## It is currently set up for basic_data. As it is there is no output
@@ -126,8 +128,8 @@ def parallel(proc, runs):
         job_server.submit(proc, (run,), (), ("get_data",))
 
 def pool(proc, runs):
-    pool = Pool(processes=len(runs))
-    pool.map(proc, runs)
+    p = Pool(processes=len(runs))
+    p.map(proc, runs)
 
 def get_runs(pdir='processed'):
     runpaths = glob.glob(('/').join([path, pdir, 'r*']))

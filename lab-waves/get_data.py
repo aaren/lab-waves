@@ -1,19 +1,10 @@
-# V2 of get_data. this is a refactoring of v1.
-# want to separate out thresholding and more advanced processing.
-# the thresholding is the slowest part presently and it is quite 
-# stable and well behaved now --> makes sense to only do it once
-# and store the data in some intermediate file.
-# Have implemented this. intermediate files are 'basic/basic_%s' % run
-# basic refers to the data that threshold extracts from the image.
-
-
 # thresholding: goes through an image column by column applying a logical test
 # to each pixel value in the column to determine whether the pixel represents
 # green fluid or not. then, from the top down, the first pixel that passes
 # this test has it's y coordinate output to a list.
-# 
+#
 # so thresholding returns a list that has the length of the pixel array width.
-# 
+#
 # peakdetect is a module that includes a method to make a list of the
 # coordinates of maxima and minima in some signal.
 #
@@ -47,7 +38,7 @@ def parallax_corr(xin, cam, p):
     This is easily corrected for by assuming that features are 2d
     and homogeneous in the y coord (widthways across the tank."""
     # xin is in units of lock-lengths
-    scale = 0.25 
+    scale = 0.25
     x = xin * scale
     # basic tank geometry
     c = centre[cam]
@@ -80,7 +71,7 @@ def norm(inlist, camera, p=0):
     def norm_tuple(intupe):
         offsets = camera_offsets[camera]
         scale = scales[camera]
-        input_norm = [(o - i) / s for o,i,s in zip(offsets, intupe, scale)]
+        input_norm = [(o - i) / s for o, i, s in zip(offsets, intupe, scale)]
         # apply the parallax correction to the tuple x
         if p != 0:
             input_norm[0] = parallax_corr(input_norm[0], camera, p)
@@ -115,7 +106,7 @@ def reject_outliers(inter, r, w):
     Try calculating the gradient of the last few points and
     extrapolating from there.
 
-    This will lead to problems at extrema. Could try quadratic 
+    This will lead to problems at extrema. Could try quadratic
     extrapolation.
 
     w determines the width of window over which to calculate
@@ -130,19 +121,19 @@ def reject_outliers(inter, r, w):
     """
     # Initialise with an average of the first few points, which we
     # hope is sensible.
-    def fit(inter, j, k, deg):  
+    def fit(inter, j, k, deg):
         x = range(j, k)
         h = inter[j:k]
         return np.polyfit(x, h, deg)
 
     # initialise
     m, n = fit(inter, 0, w, 1)
-    init = [ i * m + n for i in range(w)]
+    init = [i * m + n for i in range(w)]
     b = init[:]
 
     for i in range(w, len(inter)):
-        l, m, n = fit(b, i-w, i, 2)
-        pred_i = l * i**2 + m * i + n
+        l, m, n = fit(b, i - w, i, 2)
+        pred_i = l * i * i + m * i + n
         if (pred_i - r < inter[i] < pred_i + r):
             b.append(inter[i])
         else:
@@ -191,7 +182,8 @@ def get_basic_run_data(run):
         tot = "%03d" % len(images)
         for image in images:
             frame = iframe(image)
-            print "thresholding processed",run,camera,frame,"of",tot,"\r",
+            print "thresholding processed", \
+                    run, camera, frame, "of", tot, "\r",
             sys.stdout.flush()
             cam_data[frame] = get_basic_frame_data(image)
     print ""
@@ -208,19 +200,19 @@ def get_basic_data(runs=None):
     for run in runs:
         basic_run_data = get_basic_run_data(run)
         f = data_dir + 'basic/basic_%s' % run
-        print "writing the data to",f
+        print "writing the data to", f
         write_data(basic_run_data, f)
 
 def get_frame_data(image, run_data_container):
     """gets the data for a single image.
     runs the external threshold module to produce the data,
     then normalises it and puts it in a dictionary for storage"""
-    
+
     sp = image.split('/')
     frame = iframe(image)
     camera = sp[-2]
-    
-    basic_data = run_data_container[camera][frame] 
+
+    basic_data = run_data_container[camera][frame]
     interface = basic_data['interface']
     core_current = basic_data['core_current']
     mixed_current = basic_data['mixed_current']
@@ -233,8 +225,9 @@ def get_frame_data(image, run_data_container):
     # Outlier rejection. arg[1] is point to point variability;
     # arg[2] is window over which interface can be considered
     # parabolic in form.
-    fixed_interface = reject_outliers(interface, 10, 250)
-    # SMOOTHING (Savitzky-Golay). Preferable to moving avg.
+    fixed_interface = reject_outliers(interface, 20, 250)
+    # SMOOTHING (Savitzky-Golay). Preferable to moving avg as it
+    # doesn't phase shift or crush peaks.
     smoothed_interface = smooth(fixed_interface, 301)
     # current profile is a bit too messy for the rejection to work
     #core_current = reject_outliers(core_current, 50, 20)
@@ -256,17 +249,18 @@ def get_frame_data(image, run_data_container):
     # SANITY CHECKING
     # overlay given interfaces and points onto the images with specified
     # colours. images are saved to the sanity dirs.
-    interfaces = [interface, core_current, mixed_current, smoothed_interface, fixed_interface]
+    interfaces = [interface, core_current, \
+            mixed_current, smoothed_interface, fixed_interface]
     icolours = ['black', 'blue', 'cyan', 'orange', 'red']
     points = [_max, _min, core_front_coord, mix_front_coord, core_max, mix_max]
-    pcolours = ['red', 'green', 'blue', 'cyan', 'blue', 'cyan'] 
+    pcolours = ['green', 'purple', 'blue', 'cyan', 'blue', 'cyan']
     sanity.sanity_check(interfaces, points, image, icolours, pcolours)
 
     # make a container for the data and populate it
     frame_data = {}
     # need the baseline when doing amplitude deviations
     if frame == iframe('img_0001.jpg'):
-        baseline = [(0,sum(zip(*smoothed_interface)[1])\
+        baseline = [(0, sum(zip(*smoothed_interface)[1])\
                                          / len(smoothed_interface))]
         frame_data['baseline'] = norm(baseline, camera)
 
@@ -312,8 +306,8 @@ def main(runs=None):
         run_data = get_run_data(run)
         data[run] = run_data
         file = data_storage + run
-        print "\nwriting the data to",file,"...\r",
+        print "\nwriting the data to", file, "...\r",
         sys.stdout.flush()
         write_data(data, file)
-        print "writing the data to",file,"...done"
+        print "writing the data to", file, "...done"
         sys.stdout.flush()
