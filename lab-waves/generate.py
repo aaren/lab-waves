@@ -130,6 +130,8 @@ def parallel(proc, runs):
 def pool(proc, runs):
     p = Pool(processes=len(runs))
     p.map(proc, runs)
+    p.close()
+    p.join()
 
 def get_runs(pdir='processed'):
     runpaths = glob.glob(('/').join([path, pdir, 'r*']))
@@ -140,12 +142,12 @@ def test():
     print "hello"
 
 if __name__ == '__main__':
-    if len(argv) == 3:
-        if argv[2] == 'all':
+    if argv[2] == 'all':
             runs = get_runs()
-        elif argv[2]:
-            runs = [argv[2]]
+    elif len(argv) > 2:
+        runs = argv[2:]
     else:
         runs = ['r11_7_07e']
     process = globals().get(argv[1])
+    #process(runs)
     pool(process, runs)
