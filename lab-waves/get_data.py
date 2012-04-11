@@ -208,7 +208,7 @@ def get_basic_run_data(run):
         tot = "%03d" % len(images)
         if len(images) == 0:
             break
-        p = Pool(processes=4)
+        p = Pool(processes=12)
         result = p.map_async(get_basic_frame_data, images)
         p.close()
 
@@ -216,7 +216,7 @@ def get_basic_run_data(run):
             if result.ready():
                 break
             remain = "%03d" % result._number_left
-            print "Thresholding...", remain, "left of", tot, "\r",
+            print "Thresholding...", run, remain, "left of", tot, "\r",
             sys.stdout.flush()
             time.sleep(0.1)
 
