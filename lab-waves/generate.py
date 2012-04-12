@@ -142,10 +142,11 @@ def test():
     print "hello"
 
 if __name__ == '__main__':
-    if argv[2] == 'all':
-            runs = get_runs()
-    elif len(argv) > 2:
-        runs = argv[2:]
+    if len(argv) > 2:
+        if argv[2] == 'all':
+                runs = get_runs()
+        else:
+            runs = argv[2:]
     else:
         runs = ['r11_7_07e']
     process = globals().get(argv[1])

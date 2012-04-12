@@ -91,7 +91,7 @@ def irun(image):
     run = image.split('/')[-3]
     return run
 
-def reject_outliers(inter, r, w):
+def reject_outliers(inter, r, w, degree=2):
     """Running through inter, if any element is outside range r
     either side of the previous element then replace it with the
     value of the previous element.
@@ -118,6 +118,8 @@ def reject_outliers(inter, r, w):
 
     r should be large enough to accommodate the normal variability
     of the data.
+
+    This still struggles with steps.
     """
     # Initialise with an average of the first few points, which we
     # hope is sensible.
@@ -126,14 +128,26 @@ def reject_outliers(inter, r, w):
         h = inter[j:k]
         return np.polyfit(x, h, deg)
 
+    def pred(inter, i, w, deg):
+        """Predict the value of cell i, based on polynomial extrapolation
+        of degree deg over the last w cells for series inter.
+        """
+        coeff = fit(b, i - w, i, deg)
+        [i ** n * coeff[::-1][n] for n in range(len(coeff))]
+        pred_i = sum([i ** n * coeff[::-1][n] for n in range(len(coeff)])
+        return pred_i
+
     # initialise
     m, n = fit(inter, 0, w, 1)
     init = [i * m + n for i in range(w)]
     b = init[:]
 
+    # list comp won't work here as b has to refer to its old self
+    #b = [inter[i] if (pred(b, i, w, d) - r < inter[i] < pred(b, i, w, d) + r) \
+    #                else pred(b, i, w, d) for i in range(w, len(inter))]
+
     for i in range(w, len(inter)):
-        l, m, n = fit(b, i - w, i, 2)
-        pred_i = l * i * i + m * i + n
+        pred_i = pred(b, i, w, degree)
         if (pred_i - r < inter[i] < pred_i + r):
             b.append(inter[i])
         else:
@@ -225,7 +239,7 @@ def get_frame_data(image, run_data_container):
     # Outlier rejection. arg[1] is point to point variability;
     # arg[2] is window over which interface can be considered
     # parabolic in form.
-    fixed_interface = reject_outliers(interface, 20, 250)
+    fixed_interface = reject_outliers(interface, 20, 50)
     # SMOOTHING (Savitzky-Golay). Preferable to moving avg as it
     # doesn't phase shift or crush peaks.
     smoothed_interface = smooth(fixed_interface, 301)

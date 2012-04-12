@@ -29,7 +29,7 @@ def wave(run='r11_7_06c', data_storage_file=None):
     is a list of all the measured x for t=0.
     """
     #data_dir = '/home/eeaol/code/lab-waves/data/'
-    
+
     if run.split('r')[0] == run:
         run = 'r' + run
     if data_storage_file is None:
@@ -68,7 +68,7 @@ def conjoin_data(run, data_file=None):
 
         Xt[arg] = zip(xt['cam1'], xt['cam2'])
         Xt[arg] = [e[0] + e[1] for e in Xt[arg]]
-    
+
     # we can keep Xtm if it is used as shorthand for Xt[arg]
 
     Xtm = Xt['max']
@@ -82,18 +82,18 @@ def conjoin_data(run, data_file=None):
     return Xt
 
 def bounding_init(t_start, Xtm):
-    """Initialise the list of coordinates with the first 
-    three that are furthest in x. This gives an initial 
+    """Initialise the list of coordinates with the first
+    three that are furthest in x. This gives an initial
     bounding region in which to search for more
-    points. 
+    points.
     """
-    x_maxes = [] 
-    for t in range(t_start, t_start+3): 
+    x_maxes = []
+    for t in range(t_start, t_start+3):
         try: x_max = max(Xtm[t])
-        except ValueError: 
-            break 
-        xt = (x_max, t) 
-        x_maxes.append(xt) 
+        except ValueError:
+            break
+        xt = (x_max, t)
+        x_maxes.append(xt)
     return x_maxes
 
 def bounding_lines(x_maxes, m_err, c_err):
@@ -115,8 +115,8 @@ def bounding_lines(x_maxes, m_err, c_err):
     return line_up, line_down
 
 def find_points(t, line_up, line_down, Xtm):
-    """For a given time slice, look for (x,t) that fit 
-    in the given bounding lines. 
+    """For a given time slice, look for (x,t) that fit
+    in the given bounding lines.
 
     Return: a list of tuples (x,t) of the points that fit.
     """
@@ -128,7 +128,7 @@ def find_points(t, line_up, line_down, Xtm):
 # METHOD SUMMARY
 # bounding_init # returns first three coords, given a starting time
 # bounding_line # returns the lines that bound given list of coords
-# find_points # returns list of points that fit inside the bounds 
+# find_points # returns list of points that fit inside the bounds
 #               for a given t
 def remove_from(Xtm, points):
     # Take Xtm and remove supplied points.
@@ -220,15 +220,14 @@ def plot_waves(waves):
         x,t = zip(*wave)
         plt.plot(x, t, 'ro')
 
-def test(n=1, run='r11_7_06c'):
+def test(n=1, run='r11_7_06c', arg='max', start=0, end=25):
     """Produce a plot for visual checking of wave detection.
     TODO: WHAT SHOULD THIS LOOK LIKE??
     """
-    start = 2
-    end = 25
     no_waves = n
-    Xtm = wave(run)
-    nXtm = [[p[0] for p in T] for T in Xtm]
+    Xt = conjoin_data(run)
+    #nXtm = [[p[0] for p in T] for T in Xtm]
+    nXtm = conv(Xt, arg)
 
     plot_xtm(nXtm)
     waves = get_waves(start, end, nXtm, no_waves)
@@ -248,7 +247,7 @@ def fit_waves(waves):
         X = (T - c) / m
         c = 1 / m
         plt.plot(X, T, label="c=%.2f /s" %c)
-    
+
 def plot_front(run='r11_7_06c', data=None, fmt=None):
     if data is None:
         #data_storage = '/home/eeaol/code/lab-waves/data/data/data_store_'
@@ -276,5 +275,12 @@ def plot_front(run='r11_7_06c', data=None, fmt=None):
 
     plt.xlim(0,13)
 
-def plot_xt(Xt):
+def plot_xt(Xt, arg, fmt):
+    Xtm = conv(Xt, arg)
+    xt = [(x,t) for t in range(len(Xtm)) for x in Xtm[t]]
+    x,t = zip(*xt)
+    plt.plot(x, t, fmt)
 
+def plot(arg='max', fmt='bo', run='r11_7_06c'):
+    Xt = conjoin_data(run)
+    plot_xt(Xt, arg, fmt)
