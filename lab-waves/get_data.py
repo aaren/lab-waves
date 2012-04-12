@@ -257,23 +257,6 @@ def main(runs=None):
         print "writing the data to", file
         write_data(data, file)
 
-def obj_dic(d):
-    """a useful method for turning a dict into an object, so that
-    d['blah']['bleh'] is the same as d.blah.bleh.
-    will work with any level of nesting inside the dict.
-    """
-    top = type('new', (object,), d)
-    seqs = tuple, list, set, frozenset
-    for i, j in d.items():
-        if isinstance(j, dict):
-            setattr(top, i, obj_dic(j))
-        elif isinstance(j, seqs):
-            setattr(top, i, type(j)(obj_dic(sj)\
-                    if isinstance(sj, dict) else sj for sj in j))
-        else:
-            setattr(top, i, j)
-    return top
-
 def get_offset_from_front():
     """Looks at the front trajectory and determines the offset
     between the cameras by minimising the step in value between
@@ -288,3 +271,15 @@ def get_offset_from_front():
 
     f2x = zip(*f2xt)[0]
     f2t = zip(*f2xt)[1]
+
+# With the offsets corrected in general, it would make sense to 
+# fuse the camera data sets together before processing further.
+# This is already done in wave_line with the maxima positions.
+# But further to this, it may be sensible to fuse together the
+# data at some more basic level in the interface heights. Do I
+# have time to do this? It would involve a refactoring of wave_line
+# to deal with the data presented as a single block. This 
+# shouldn't be too difficult as wave_line.wave() already returns
+# a single data set (Xtm) from which the rest of the wave_line
+# program works.
+

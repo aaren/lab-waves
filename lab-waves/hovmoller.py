@@ -63,7 +63,7 @@ class hovmoller(object):
 
     # make a map of wave speed in (x,t) by looking
     # at the detected waves
-    def gen_c_map():
+    def gen_c_map(run):
         # some stuff
         return c_map
     
@@ -71,6 +71,8 @@ class hovmoller(object):
         # lookup what the value of h is at some given
         # (x,t). Should be able to work with any input
         # numbers, i.e. interpolates to grid.
+        # initially, this can only look along discrete
+        # time intervals.
 
     def interpolate(region):
         for (x, t) in region:
