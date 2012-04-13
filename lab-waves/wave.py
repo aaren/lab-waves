@@ -17,7 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from aolcore import read_data
-from config import data_dir, data_storage
+from config import data_storage
 
 # # what is the furthest spatial coord?
 # Xtm[0] # means list of (x,t) for frame 0
@@ -71,9 +71,9 @@ def conjoin_data(run, data_file=None):
 
     # we can keep Xtm if it is used as shorthand for Xt[arg]
 
-    Xtm = Xt['max']
-    Xtmin = Xt['min']
-    Xtf = Xt['front']
+    # Xtm = Xt['max']
+    # Xmin = Xt['min']
+    # Xf = Xt['front']
 
     # strip out non physical points (faster then 1:1)
     #for arg in ['max', 'min']:
@@ -88,8 +88,9 @@ def bounding_init(t_start, Xtm):
     points.
     """
     x_maxes = []
-    for t in range(t_start, t_start+3):
-        try: x_max = max(Xtm[t])
+    for t in range(t_start, t_start + 3):
+        try:
+            x_max = max(Xtm[t])
         except ValueError:
             break
         xt = (x_max, t)
@@ -107,8 +108,8 @@ def bounding_lines(x_maxes, m_err, c_err):
             the fitted line by given error.
     """
     # fit a straight line, return [m,c] for line y=mx+c
-    x,T = zip(*x_maxes)
-    m,c = np.polyfit(x,T,1)
+    x, T = zip(*x_maxes)
+    m, c = np.polyfit(x, T, 1)
     # calculate the bounding lines
     line_up = [m + m_err, c + c_err]
     line_down = [m - m_err, c - c_err]
@@ -123,7 +124,7 @@ def find_points(t, line_up, line_down, Xtm):
     x_down = (t - line_up[1]) / line_up[0]
     x_up = (t - line_down[1]) / line_down[0]
 
-    return [(x,t) for x in Xtm[t] if (x_down < x < x_up)]
+    return [(x, t) for x in Xtm[t] if (x_down < x < x_up)]
 
 # METHOD SUMMARY
 # bounding_init # returns first three coords, given a starting time
@@ -164,7 +165,8 @@ def get_t_start(Xtm):
     for t in range(len(Xtm)):
         if len(Xtm[t]) != 0:
             return t
-        else: pass
+        else:
+            pass
 
 def conv(Xt, arg):
     Xta = Xt[arg]
@@ -188,13 +190,13 @@ def get_waves(t_start, t_end, Xtm, n=1):
     """
     waves = []
     for i in range(n):
-        t_start=get_t_start(Xtm)
+        t_start = get_t_start(Xtm)
         x_maxes = track(t_start, t_end, Xtm, m_err=0, c_err=1)
         Xtm = remove_from(Xtm, x_maxes)
         waves.append(x_maxes)
         # put a line through the wave
-        X,T = zip(*x_maxes)
-        m,c = np.polyfit(X,T,1)
+        X, T = zip(*x_maxes)
+        m, c = np.polyfit(X, T, 1)
         me = m
         ce = c + 0.8
         # remove left over points
@@ -206,18 +208,18 @@ def get_waves(t_start, t_end, Xtm, n=1):
 def plot_lines(line):
     x = np.linspace(0, 12, 30)
     t = line[0] * x + line[1]
-    plt.plot(x,t)
+    plt.plot(x, t)
 
 def plot_xtm(Xtm):
     # make a list of (x,t) tuples over all Xtm
-    xt = [(x,t) for t in range(len(Xtm)) for x in Xtm[t]]
-    x,t = zip(*xt)
+    xt = [(x, t) for t in range(len(Xtm)) for x in Xtm[t]]
+    x, t = zip(*xt)
     plt.plot(x, t, 'bo')
 
 def plot_waves(waves):
     """Take a given list of waves and plot them with different colours."""
     for wave in waves:
-        x,t = zip(*wave)
+        x, t = zip(*wave)
         plt.plot(x, t, 'ro')
 
 def test(n=1, run='r11_7_06c', arg='max', start=0, end=25):
@@ -233,7 +235,7 @@ def test(n=1, run='r11_7_06c', arg='max', start=0, end=25):
     waves = get_waves(start, end, nXtm, no_waves)
     plot_waves(waves)
 
-def set():
+def set_plot():
     plt.xlim(0, 12)
     plt.ylim(0, 50)
     plt.xlabel("Distance (lock lengths)")
@@ -241,12 +243,12 @@ def set():
 
 def fit_waves(waves):
     for wave in waves:
-        x,t = zip(*wave)
-        m,c = np.polyfit(x,t,1)
+        x, t = zip(*wave)
+        m, c = np.polyfit(x, t, 1)
         T = np.linspace(1, 25, 25)
         X = (T - c) / m
         c = 1 / m
-        plt.plot(X, T, label="c=%.2f /s" %c)
+        plt.plot(X, T, label="c=%.2f /s" % c)
 
 def plot_front(run='r11_7_06c', data=None, fmt=None):
     if data is None:
@@ -256,8 +258,8 @@ def plot_front(run='r11_7_06c', data=None, fmt=None):
     if fmt is None:
         fmt = 'ko'
 
-    f={}
-    t={}
+    f = {}
+    t = {}
     for cam in ['cam1', 'cam2']:
         cam_data = data[run][cam]
         frames = sorted(cam_data.keys())
@@ -271,16 +273,31 @@ def plot_front(run='r11_7_06c', data=None, fmt=None):
     # t['cam2'] = t['cam2'][20:45]
 
     plt.plot(f['cam1'], t['cam1'], fmt)
-    plt.plot(f['cam2'], t['cam2'], fmt, label = 'g.c. front')
+    plt.plot(f['cam2'], t['cam2'], fmt, label='g.c. front')
 
-    plt.xlim(0,13)
+    plt.xlim(0, 13)
 
 def plot_xt(Xt, arg, fmt):
     Xtm = conv(Xt, arg)
-    xt = [(x,t) for t in range(len(Xtm)) for x in Xtm[t]]
-    x,t = zip(*xt)
+    xt = [(x, t) for t in range(len(Xtm)) for x in Xtm[t]]
+    x, t = zip(*xt)
     plt.plot(x, t, fmt)
 
-def plot(arg='max', fmt='bo', run='r11_7_06c'):
+def plot(args=None, fmts=None, run='r11_7_06c'):
+    """Plot the list of things given in args with the
+    given list of formats.
+    """
+    if args is None:
+        args = ['max', 'front']
+    elif args is not type(list):
+        args = [args]
+    if fmts is None:
+        fmts = ['bo', 'ko']
+    elif fmts is not type(list):
+        fmts = [fmts]
+
     Xt = conjoin_data(run)
-    plot_xt(Xt, arg, fmt)
+    for arg, fmt in zip(args, fmts):
+        plot_xt(Xt, arg, fmt)
+
+    set_plot()
