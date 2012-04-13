@@ -197,7 +197,7 @@ def get_basic_frame_data(image):
     frame_data = (frame, basic_data)
     return frame_data
 
-def get_basic_run_data(run):
+def get_basic_run_data(run, processors=1):
     """grabs all basic data from a run"""
     # run = '11_7_06c'
     # run = run.split('r')[-1]
@@ -208,7 +208,7 @@ def get_basic_run_data(run):
         tot = "%03d" % len(images)
         if len(images) == 0:
             break
-        p = Pool(processes=12)
+        p = Pool(processes=processors)
         result = p.map_async(get_basic_frame_data, images)
         p.close()
 
@@ -224,7 +224,7 @@ def get_basic_run_data(run):
     print ""
     return basic_run_data
 
-def get_basic_data(runs=None):
+def get_basic_data(runs=None, processors=1):
     if runs is None:
         runs = ['r11_7_06c']
     elif type(runs) is not list:
@@ -233,7 +233,7 @@ def get_basic_data(runs=None):
         print "runs must lead with an r!!"
         return 0
     for run in runs:
-        basic_run_data = get_basic_run_data(run)
+        basic_run_data = get_basic_run_data(run, processors)
         f = data_dir + 'basic/basic_%s' % run
         print "writing the data to", f
         write_data(basic_run_data, f)

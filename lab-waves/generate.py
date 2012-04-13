@@ -62,6 +62,12 @@ def basic_data(run):
     """
     get_data.get_basic_data(run)
 
+def f_basic_data(run):
+    """Fast version of basic data (multiprocessing inside the
+    thresholding loop).
+    """
+    get_data.get_basic_data(run, 12)
+
 def data(run):
     """The basic interface depths are further processed to
     pull out maxima / minima using peakdetect. Parallax
@@ -174,6 +180,9 @@ if __name__ == '__main__':
     elif argv[-1] == 'pool':
         runs.pop(-1)
         print "multiprocessing"
+        pool(process, runs)
+    elif argv[-1] == 'fast':
+        processors = 12
         pool(process, runs)
     elif 'r11_' in argv[-1] and len(argv) == 3:
         print "straight processing..."
