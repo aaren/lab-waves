@@ -10,10 +10,12 @@ procf = path + '/proc_data'
 # where is the data going to be stored?? (filename)
 data_dir = path + '/data/'
 data_storage = data_dir + 'data/data_store_'
+pdir = path + '/processed'
+plots_dir = path + '/plots'
 ### /PATH ###
 
 ### **BASIC SETTINGS** ###
-# Note: Modifying these settings requires re-acquiring the basic_data, 
+# Note: Modifying these settings requires re-acquiring the basic_data,
 # which is computationally intensive.
 
 # Specify a vertical region of the image in which to search for the interface.
@@ -23,7 +25,7 @@ region = (130, 540)
 # specify the threshold values to use. fiddling with these has a strong impact
 # on the quality of the interface signal.
 #thresh_green = (80, 120, 50)
-thresh_green = (80, 100, 20)
+thresh_green = (60, 100, 20)
 core_red = (100, 50, 10)
 mixed_red = (100, 75, 10)
 thresh_values = (thresh_green, core_red, mixed_red)
@@ -56,7 +58,7 @@ camera_offsets = {}
 camera_offsets['cam1'] = (2650, 543)
 ## TODO the 2650 value here is the same as a value in threshold module
 ## they need to be the same. DO THEY ACTUALLY???
-## the 2600 value is the distance from the identical place in cam1 to 
+## the 2600 value is the distance from the identical place in cam1 to
 ## the lock in cam1
 camera_offsets['cam2'] = (camera_offsets['cam1'][0] + 2600, 543)
 

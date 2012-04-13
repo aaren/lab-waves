@@ -134,7 +134,7 @@ def reject_outliers(inter, r, w, degree=2):
         """
         coeff = fit(b, i - w, i, deg)
         [i ** n * coeff[::-1][n] for n in range(len(coeff))]
-        pred_i = sum([i ** n * coeff[::-1][n] for n in range(len(coeff)])
+        pred_i = sum([i ** n * coeff[::-1][n] for n in range(len(coeff))])
         return pred_i
 
     # initialise
@@ -241,7 +241,8 @@ def get_frame_data(image, run_data_container):
     # parabolic in form.
     fixed_interface = reject_outliers(interface, 20, 50)
     # SMOOTHING (Savitzky-Golay). Preferable to moving avg as it
-    # doesn't phase shift or crush peaks.
+    # doesn't phase shift or crush peaks. Supplied number is the
+    # window.
     smoothed_interface = smooth(fixed_interface, 301)
     # current profile is a bit too messy for the rejection to work
     #core_current = reject_outliers(core_current, 50, 20)

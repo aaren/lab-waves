@@ -31,7 +31,7 @@ def load_img(image):
     blue = source[2].load()
 
     w, h = im.size
-    
+
     return red, green, blue, w, h
 
 def barrel_corr(image, outdir):
@@ -41,7 +41,7 @@ def barrel_corr(image, outdir):
 
     cam1corr = '"0.000658776 -0.0150048 -0.00123339 1.01557914"'
     cam2corr = '"0.023969 -0.060001 0 1.036032"'
-    
+
     if cam == 'cam1':
         corr = cam1corr
     elif cam == 'cam2':
@@ -57,7 +57,7 @@ def barrel_corr(image, outdir):
     outfile = outdirpath + frame
     command = 'convert -distort Barrel %s %s %s' % (corr, infile, outfile)
 
-    print cam1,"has barrel correction coefficients"
+    print cam,"has barrel correction coefficients"
     print corr
     print "Correcting",run,cam,frame,"\r",
     sys.stdout.flush()
@@ -118,7 +118,7 @@ def bcm():
     measure('r11_7_06g')
 
 def get_run_data(run):
-    proc_runs = pull_col(0, procf, ',') 
+    proc_runs = pull_col(0, procf, ',')
     try:
         line_number = proc_runs.index(run)
         print "%s is in proc_data" % run
@@ -154,7 +154,7 @@ def rescale(image, ratio):
     re.save(image)
 
 def add_text(image, (scale, data)):
-    # opens and crops an image to the box given.     
+    # opens and crops an image to the box given.
     im = Image.open(image)
 
     ratio, run_data = scale, data
@@ -170,7 +170,7 @@ def add_text(image, (scale, data)):
 
     author_text = "Aaron O'Leary, University of Leeds"
     param_a = "run %s, t=%ss: h_1 = %s, rho_0 = %s, rho_1 = %s, rho_2 = %s, "
-    param_b = "alpha = %s, D = %s" 
+    param_b = "alpha = %s, D = %s"
     param_t = param_a + param_b
     param_text = param_t % (p['run_index'], time, p['h_1/H'], p['rho_0'],\
             p['rho_1'], p['rho_2'], p['alpha'], p['D/H'])
@@ -222,13 +222,11 @@ def proc_images(proc, run, source, arg1, arg2):
     #print '%s, %s, cam1, %s' % (proc, run, source)
     for image in glob.glob('%s/%s/cam1/*jpg' % (source, run)):
         print "performing",proc,"on",image,"\r",
-        print ""
         sys.stdout.flush()
         proc(image, arg1)
     #print '%s, %s, cam2, %s' % (proc, run, source)
     for image in glob.glob('%s/%s/cam2/*jpg' % (source, run)):
         print "performing",proc,"on",image,"\r",
-        print ""
         sys.stdout.flush()
         proc(image, arg2)
 
@@ -239,11 +237,11 @@ def std_corrections(run, run_data=None):
     bc_out = 'processed'
     proc_images(barrel_corr, run, path + '/synced', bc_out, bc_out)
 
-    # Rotation correct 
+    # Rotation correct
     theta1 = -float(run_data['rot_1'])
     theta2 = -float(run_data['rot_2'])
     proc_images(rotation_corr, run, path + '/' + bc_out, theta1, theta2)
- 
+
 def text_crop(run, run_data=None):
     if run_data is None:
         run_data = get_run_data(run)

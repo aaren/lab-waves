@@ -8,6 +8,7 @@ import pp
 import proc_im
 import join
 import get_data
+import wave_class
 
 from config import path
 
@@ -85,21 +86,21 @@ def wave(run):
     are tracked and output as distinct objects to make higher
     level data analysis easier.
     """
+    pass
 
 def plot(run):
     """With the structures pulled out by wave(run), it is
     easy to make some plots.
     """
+    wave_class.main(run)
 
 def all(run):
     """To get some raw, synced, lab data into nice plots in
     a single command.
     """
-    measure(run)
-    proc_im_main(run)
+    #proc_im_main(run)
     basic_data(run)
     data(run)
-    wave(run)
     plot(run)
 
 def multi(proc, runs):
@@ -133,6 +134,10 @@ def pool(proc, runs):
     p.close()
     p.join()
 
+def loop(proc, runs):
+    for run in runs:
+        proc(run)
+
 def get_runs(pdir='processed'):
     runpaths = glob.glob(('/').join([path, pdir, 'r*']))
     runs = [runpath.split('/')[-1] for runpath in runpaths]
@@ -142,13 +147,41 @@ def test():
     print "hello"
 
 if __name__ == '__main__':
-    if len(argv) > 2:
+    try:
         if argv[2] == 'all':
-                runs = get_runs()
-        else:
+            runs = get_runs()
+        elif 'r11_' in argv[2]:
             runs = argv[2:]
+        else:
+            print "Supply runs to process. 'all' is valid."
+            exit(0)
+    except IndexError:
+        print "Supply runs to process. 'all' is valid."
+        exit(0)
+
+    try:
+        process = globals().get(argv[1])
+    except IndexError:
+        print "Must supply a process to run."
+        exit(0)
+    except AttributeError:
+        print argv[1], "isn't a process."
+        exit(0)
+
+    if argv[-1] == 'loop':
+        runs.pop(-1)
+        print "looping..."
+        loop(process, runs)
+    elif argv[-1] == 'pool':
+        runs.pop(-1)
+        print "multiprocessing"
+        pool(process, runs)
+    elif 'r11_' in argv[-1] and len(argv) == 3:
+        print "straight processing..."
+        process(argv[-1])
+    elif 'r11_' in argv[-1]:
+        print "multiprocessing..."
+        pool(process, runs)
     else:
-        runs = ['r11_7_07e']
-    process = globals().get(argv[1])
-    #process(runs)
-    pool(process, runs)
+        print "I'm sorry, Aaron. I'm afraid I can't do that."
+        exit('goodbye')

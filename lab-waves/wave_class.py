@@ -1,12 +1,15 @@
 # detection of constant speed coherent structures (i.e. waves)
 
 # Trying here to clean it all up. Specifically by using a class.
+import sys
 
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from aolcore import read_data
-from config import data_storage
+from config import data_storage, pdir, plots_dir
 
 class RunData(object):
     def __init__(self, run):
@@ -42,6 +45,8 @@ class RunData(object):
         xt = [(x, t) for t in range(len(Xtm)) for x in Xtm[t]]
         x, t = zip(*xt)
         plt.plot(x, t, fmt)
+        title = "Wave maxima and current front for %s" % self.index
+        plt.title(title)
 
     def plot(self, args=None, fmts=None):
         """Plot the list of things given in args with the
@@ -60,12 +65,21 @@ class RunData(object):
             self.plot_xt(arg, fmt)
 
         set_plot()
+        #rundir = pdir + '/' + self.index
+        #fname = rundir + '/plot_' + self.index + '.png'
+        fname = "%s/%s.png" % (plots_dir, self.index)
+        plt.savefig(fname)
+        plt.close()
 
-def main():
-    for run in runs:
-        r = RunData(run)
-        r.index = run
-        r.plot()
+def main(run):
+    r = RunData(run)
+    print "plotting", run, "...\r",
+    sys.stdout.flush()
+    r.plot()
+
+def conv(Xt, arg):
+    Xta = Xt[arg]
+    return [[p[0] for p in Xta[i]] for i in range(len(Xta))]
 
 # # what is the furthest spatial coord?
 # Xtm[0] # means list of (x,t) for frame 0
@@ -187,10 +201,6 @@ def get_t_start(Xtm):
         else:
             pass
 
-def conv(Xt, arg):
-    Xta = Xt[arg]
-    return [[p[0] for p in Xta[i]] for i in range(len(Xta))]
-
 def get_waves(t_start, t_end, Xtm, n=1):
     """Get the first n waves from Xtm. After a wave is detected
     its points are removed from the dataset so that the next wave
@@ -259,6 +269,7 @@ def set_plot():
     plt.ylim(0, 50)
     plt.xlabel("Distance (lock lengths)")
     plt.ylabel("Time (s)")
+    plt.grid()
 
 def fit_waves(waves):
     for wave in waves:
