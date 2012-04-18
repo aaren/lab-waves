@@ -66,7 +66,7 @@ def f_basic_data(run):
     """Fast version of basic data (multiprocessing inside the
     thresholding loop).
     """
-    get_data.get_basic_data(run, 12)
+    get_data.get_basic_data(run, 24)
 
 def data(run):
     """The basic interface depths are further processed to
@@ -103,8 +103,8 @@ def all(run):
     """To get some raw, synced, lab data into nice plots in
     a single command.
     """
-    #proc_im_main(run)
-    basic_data(run)
+    proc_im_main(run)
+    f_basic_data(run)
     data(run)
     plot(run)
 
@@ -183,6 +183,8 @@ if __name__ == '__main__':
         pool(process, runs)
     elif argv[-1] == 'fast':
         processors = 12
+        pool(process, runs)
+    elif argv[-1] == 'all':
         pool(process, runs)
     elif 'r11_' in argv[-1] and len(argv) == 3:
         print "straight processing..."

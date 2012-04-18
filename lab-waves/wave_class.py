@@ -8,12 +8,14 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
-from aolcore import read_data
+from aolcore import read_data, get_parameters
 from config import data_storage, pdir, plots_dir
+from config import paramf
 
 class RunData(object):
     def __init__(self, run):
         self.index = run
+        self.params = get_parameters(run, paramf)
 
     def conjoin_data(self, data_file=None):
         run = self.index
@@ -31,6 +33,9 @@ class RunData(object):
                 frames = sorted(cam_data.keys())
                 xt[cam] = [[p for p in cam_data[frame][arg]] for frame in frames]
 
+            if len(xt['cam2']) == 0:
+                xt['cam2'] = [[] for e in xt['cam1']]
+
             Xt[arg] = zip(xt['cam1'], xt['cam2'])
             Xt[arg] = [e[0] + e[1] for e in Xt[arg]]
 
@@ -44,8 +49,13 @@ class RunData(object):
         Xtm = conv(Xt, arg)
         xt = [(x, t) for t in range(len(Xtm)) for x in Xtm[t]]
         x, t = zip(*xt)
-        plt.plot(x, t, fmt)
-        title = "Wave maxima and current front for %s" % self.index
+        plt.plot(x, t, fmt, label=arg)
+        p = self.params
+        title = """Wave maxima and current front for %s
+                   D = %s, alpha = %s, h1 / H = %s
+                   """ % (self.index, p['D/H'], p['alpha'], p['h_1/H'])
+        labels = ('maxima', 'g.c. front')
+        plt.legend(labels, loc=4)
         plt.title(title)
 
     def plot(self, args=None, fmts=None):
@@ -68,8 +78,13 @@ class RunData(object):
         #rundir = pdir + '/' + self.index
         #fname = rundir + '/plot_' + self.index + '.png'
         fname = "%s/%s.png" % (plots_dir, self.index)
+        #plt.show()
         plt.savefig(fname)
         plt.close()
+
+def conv(Xt, arg):
+    Xta = Xt[arg]
+    return [[p[0] for p in Xta[i]] for i in range(len(Xta))]
 
 def main(run):
     r = RunData(run)
@@ -77,9 +92,6 @@ def main(run):
     sys.stdout.flush()
     r.plot()
 
-def conv(Xt, arg):
-    Xta = Xt[arg]
-    return [[p[0] for p in Xta[i]] for i in range(len(Xta))]
 
 # # what is the furthest spatial coord?
 # Xtm[0] # means list of (x,t) for frame 0

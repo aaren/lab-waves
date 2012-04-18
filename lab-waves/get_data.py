@@ -211,6 +211,7 @@ def get_basic_run_data(run, processors=1):
         p = Pool(processes=processors)
         result = p.map_async(get_basic_frame_data, images)
         p.close()
+        p.join()
 
         while True:
             if result.ready():
