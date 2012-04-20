@@ -57,8 +57,8 @@ def barrel_corr(image, outdir):
     outfile = outdirpath + frame
     command = 'convert -distort Barrel %s %s %s' % (corr, infile, outfile)
 
-    print cam,"has barrel correction coefficients"
-    print corr
+    #print cam,"has barrel correction coefficients"
+    #print corr
     print "Correcting",run,cam,frame,"\r",
     sys.stdout.flush()
     os.system(command)
@@ -155,7 +155,13 @@ def rescale(image, ratio):
 
 def add_text(image, (scale, data)):
     # opens and crops an image to the box given.
+
     im = Image.open(image)
+
+    # have to change the out image
+    dirs = image.split('/')[:]
+    dirs[-4] = 'processed'
+    outimage = '/'.join(dirs)
 
     ratio, run_data = scale, data
     run = image.split('/')[-3]
@@ -216,31 +222,48 @@ def add_text(image, (scale, data)):
     #box is a 4-tuple defining the left, upper, right and lower pixel
     box = (left, upper, right, lower)
     cropped = im.crop(box)
-    cropped.save(image)
+    cropped.save(outimage)
 
 def proc_images(proc, run, source, arg1, arg2):
     #print '%s, %s, cam1, %s' % (proc, run, source)
     for image in glob.glob('%s/%s/cam1/*jpg' % (source, run)):
-        print "performing",proc,"on",image,"\r",
-        sys.stdout.flush()
+        #print "performing",proc,"on",image,"\r",
+        #sys.stdout.flush()
         proc(image, arg1)
     #print '%s, %s, cam2, %s' % (proc, run, source)
     for image in glob.glob('%s/%s/cam2/*jpg' % (source, run)):
-        print "performing",proc,"on",image,"\r",
-        sys.stdout.flush()
+        #print "performing",proc,"on",image,"\r",
+        #sys.stdout.flush()
         proc(image, arg2)
 
 def std_corrections(run, run_data=None):
     if run_data is None:
         run_data = get_run_data(run)
     # Barrel correct
-    bc_out = 'processed'
+    bc_out = 'std_corr'
     proc_images(barrel_corr, run, path + '/synced', bc_out, bc_out)
 
     # Rotation correct
     theta1 = -float(run_data['rot_1'])
     theta2 = -float(run_data['rot_2'])
     proc_images(rotation_corr, run, path + '/' + bc_out, theta1, theta2)
+
+    # Resize the images to standard
+    ideal_ruler = 435
+    ruler = int(run_data['bottom_1']) - int(run_data['ruler_25'])
+    ruler_ratio = ideal_ruler / ruler
+    depth_1 = int(run_data['bottom_1']) - int(run_data['surface_1'])
+    depth_2 = int(run_data['bottom_2']) - int(run_data['surface_2'])
+    cam1_ratio = ruler_ratio
+    if depth_2 != 0:
+        depth_ratio = depth_1 / depth_2
+        cam2_ratio = ruler_ratio * depth_ratio
+    elif depth_2 == 0:
+        cam2_ratio = 1
+
+    # Rescale to common size
+    # rescaling means that the offsets, lock_pos etc. are rescaled too.
+    proc_images(rescale, run, path + '/std_corr', cam1_ratio, cam2_ratio)
 
 def text_crop(run, run_data=None):
     if run_data is None:
@@ -257,11 +280,6 @@ def text_crop(run, run_data=None):
         cam2_ratio = ruler_ratio * depth_ratio
     elif depth_2 == 0:
         cam2_ratio = 1
-
-    # Rescale to common size
-    # rescaling means that the offsets, lock_pos etc. are rescaled too.
-    proc_images(rescale, run, path + '/processed', cam1_ratio, cam2_ratio)
-
     # Add text and crop
-    proc_images(add_text, run, path + '/processed', \
+    proc_images(add_text, run, path + '/std_corr', \
             (cam1_ratio, run_data), (cam2_ratio, run_data))

@@ -23,6 +23,11 @@ def measure(run):
     # exist already.
     proc_im.get_run_data(run)
 
+def proc_im_base(run):
+    # Correct barrel distortion and rotation. Will prompt for run
+    # measurements if they do not exist.
+    proc_im.std_corrections(run)
+
 def proc_im_main(run):
     """Raw lab images need some massaging to get them into
     a standard format that can be processed later. The pre-
@@ -33,9 +38,6 @@ def proc_im_main(run):
 
     Barrel correction is tested for ImageMagick 6.7.3-9
     """
-    # Correct barrel distortion and rotation. Will prompt for run
-    # measurements if they do not exist.
-    proc_im.std_corrections(run)
 
     # Add text and crop the image. Will prompt for run measurements
     # if they do not exist.
@@ -103,10 +105,11 @@ def all(run):
     """To get some raw, synced, lab data into nice plots in
     a single command.
     """
+    proc_im_base(run)
     proc_im_main(run)
-    f_basic_data(run)
+    basic_data(run)
     data(run)
-    plot(run)
+    #plot(run)
 
 def multi(proc, runs):
     # not presently used.
