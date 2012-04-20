@@ -181,7 +181,7 @@ def add_text(image, (scale, data)):
         offset = int(run_data['off_1'])
         bottom1 = int(run_data['bottom_1'])
 
-        left = int((offset * cam1_ratio) - 60)
+        left = int((offset * cam1_ratio) - 10)
         right = int((offset * cam1_ratio) + 2750)
         upper = int((bottom1 * cam1_ratio) - (scale_depth + 100))
         lower = int((bottom1 * cam1_ratio) + 150)
@@ -192,7 +192,7 @@ def add_text(image, (scale, data)):
         bottom1 = int(run_data['bottom_2'])
 
         left = int((offset * cam2_ratio) - 2750)
-        right = int((offset * cam2_ratio) + 60)
+        right = int((offset * cam2_ratio) + 150)
         upper = int((bottom1 * cam2_ratio) - (scale_depth + 100))
         lower = int((bottom1 * cam2_ratio) + 150)
 

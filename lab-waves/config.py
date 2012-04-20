@@ -42,7 +42,7 @@ front_depths = {'0.4': 520, '1': 495}
 # specify the positions of rulers and other vertical features that
 # obscure the fluid.
 rulers = {}
-rulers['cam1'] = [(80, 105), (870, 950), (1630, 1660), (1740, 1810)]
+rulers['cam1'] = [(30, 65), (820, 900), (1580, 1610), (1690, 1760)]
 rulers['cam2'] = [(80, 130), (950, 1000), (1820, 1890), \
                   (2665, 2695), (2705, 2725)]
 ### /BASIC SETTINGS ###
@@ -55,12 +55,10 @@ rulers['cam2'] = [(80, 130), (950, 1000), (1820, 1890), \
 # Specify the offsets that each of the cameras have, for normalisation of
 # pixel measurements
 camera_offsets = {}
-camera_offsets['cam1'] = (2650, 543)
-## TODO the 2650 value here is the same as a value in threshold module
-## they need to be the same. DO THEY ACTUALLY???
-## the 2600 value is the distance from the identical place in cam1 to
-## the lock in cam1
-camera_offsets['cam2'] = (camera_offsets['cam1'][0] + 2600, 543)
+camera_offsets['cam1'] = (2610, 543)
+## the 2700 value is the distance to the offset in cam2, minus the
+## distance between the offset and the left edge of cam1
+camera_offsets['cam2'] = (camera_offsets['cam1'][0] + 2700, 543)
 
 # specify the scale, i.e how many pixels to some real measurement in the
 # images. in y we want this to be the total fluid depth. in x make it the
