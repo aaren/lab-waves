@@ -5,17 +5,31 @@ import sys
 
 import numpy as np
 import matplotlib as mpl
-mpl.use('Agg')
+#mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from aolcore import read_data, get_parameters
 from config import data_storage, pdir, plots_dir
 from config import paramf
+import functions as f
 
 class RunData(object):
     def __init__(self, run):
         self.index = run
         self.params = get_parameters(run, paramf)
+        self.h1 = float(self.params['h_1/H'])
+        self.h2 = 1 - self.h1
+        self.D = float(self.params['D/H'])
+        self.r0 = float(self.params['rho_0'])
+        self.r1 = float(self.params['rho_1'])
+        self.r2 = float(self.params['rho_2'])
+        self.a = float(self.params['alpha'])
+        self.c2l = f.two_layer_linear_longwave(self.h1, self.h2, \
+                                                self.r1, self.r2)
+        self.gce = f.gc_empirical(self.D / 2, self.r0, self.r1)
+        self.gct = f.gc_theoretical(self.D / 2, self.r0, self.r1)
+
+class Conjoin(RunData):
 
     def conjoin_data(self, data_file=None):
         run = self.index
@@ -79,8 +93,14 @@ class RunData(object):
         #fname = rundir + '/plot_' + self.index + '.png'
         fname = "%s/%s.png" % (plots_dir, self.index)
         #plt.show()
-        plt.savefig(fname)
-        plt.close()
+        #plt.savefig(fname)
+        #plt.close()
+
+    def plot_speed(self, c):
+        t = np.linspace(0, 50, 51)
+        x = c * (t - 1)
+        plt.plot(x,t)
+
 
 def conv(Xt, arg):
     Xta = Xt[arg]

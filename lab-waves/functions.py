@@ -3,58 +3,53 @@ from __future__ import division
 import numpy as np
 # Two layer linear waves
 g = 9.81
-H = 0.25
-pi = 3.141
-rho0 = 1.150
-rho1 = 1.100
-rho2 = 1.000
-drho = rho1 - rho2
-h1 = 0.25
-h2 = 0.75
-h0 = 0.4
-g_ = g * drho / rho1
-hg = h0 / 2
-a = h1
+H = 0.25 # metres
+pi = 3.1415
 
-class TwoLayer(object):
-    def __init__(self):
-        pass
-    # general
-    @staticmethod
-    def linear(k):
-        c = (g * H * drho / (k * (rho1/np.tanh(k*h1) + rho2 / np.tanh(k*h0))))**.5
-        return c/H
-    # H = lambda --> coth -> 1
-    @staticmethod
-    def equiv(rho1=rho1, rho2=rho2):
-        c = (g * H * (rho1 - rho2) / (2 * pi * (rho1 + rho2)))**.5
-        return c/H
+def rg(rho0, rho1):
+    """Calculate the reduced gravity between two fluids.
+    arguments: rho0 is the higher density, rho1 the lower.
+    """
+    drho = (rho0 - rho1)
+    div = (rho0)
+    g_ = g * drho / div
+    return g_
 
-    # long wave limit
-    @staticmethod
-    def linear_longwave():
-        c = (g * H * drho * (rho1 / h1 + rho2 / h2)**-1)**.5
-        # c units are SI
-        # return units are non dimensional
-        return c/H
 
-    @staticmethod
-    def linear_shallow():
-        return (g_ * h1 * H)**.5 / H
+def two_layer_linear(h1, h2, rho1, rho2, k):
+    drho = rho1 - rho2
+    c = (g * H * drho / (k * (rho1 / np.tanh(k*h1) + \
+                                rho2 / np.tanh(k*h0)))) ** .5
+    return c/H
 
-class GCHomo(object):
-    @staticmethod
-    def empirical():
-        Fr = 0.5 * a**-(1/3)
-        c = Fr * (g_ * hg * H)**.5
-        return c/H
-    @staticmethod
-    def theoretical():
-        Fr = ((2 - a) * (1 - a) / (1 + a))**.5
-        c = Fr * (g_ * hg * H)**.5
-        return c/H
-        
-def plot():
-    t = np.linspace(0, 30, 31)
 
-    
+# long wave limit
+def two_layer_linear_longwave(h1, h2, rho1, rho2):
+    drho = rho1 - rho2
+    c = (g * H * drho * (rho1 / h1 + rho2 / h2)**-1) ** .5
+    # c units are SI
+    # return units are non dimensional
+    return c/H
+
+def shallow_linear(h, rho0, rho1):
+    g_ = rg(rho0, rho1)
+    return (g_ * h * H)**.5 / H
+
+
+def gc_empirical(h, rho0, rho1):
+    """Empirically observed gravity current speed.
+    Arguments: h, g.c. height
+               rho1, ambient density
+               rho0, g.c. density
+    Returns: Speed in lock lengths
+    """
+    Fr = 0.5 * h**-(1/3)
+    g_ = rg(rho0, rho1)
+    c = Fr * (g_ * h * H)**.5
+    return c/H
+
+def gc_theoretical(h, rho0, rho1):
+    Fr = ((2 - h) * (1 - h) / (1 + h))**.5
+    g_ = rg(rho0, rho1)
+    c = Fr * (g_ * h * H)**.5
+    return c/H
