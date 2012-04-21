@@ -22,14 +22,14 @@ def thresh_img(image, thresh_values=None):
     mixed_red = (75, 20, 20)
     if thresh_values:
         thresh_green, thresh_red, mixed_red = thresh_values
-    
+
     # determine the fluid type throughout the image. remember brackets
     # around the logical expressions!!!!!
     # fluid_type is a list of lists. would this not be better implemented as
     # a numpy array?
     fluid_type = [[0 if (source[i,j][0] > thresh_red[0]) &\
                         (source[i,j][1] < thresh_red[1]) &\
-                        (source[i,j][2] < thresh_red[2]) 
+                        (source[i,j][2] < thresh_red[2])
                     else 3 if (source[i,j][0] > mixed_red[0]) &\
                                 (source[i,j][1] < mixed_red[1]) &\
                                 (source[i,j][2] < mixed_red[2])\
@@ -48,7 +48,7 @@ def thresh_img(image, thresh_values=None):
     # is the present way to detect the interface.
     # maybe not necessary. the list of lists works fast enough so why bother
     # fiddling with it??
-    # list comp is evaluated in c anyway, so the performance benefit is 
+    # list comp is evaluated in c anyway, so the performance benefit is
     # probably not worth it, especially when the code is as clear as it is.
 
     # output the list of lists that specifies the fluid type of individual
@@ -60,7 +60,7 @@ def process(image, fluid_type_lists, region, fluid, rulers):
     # Now make lists of the index at which a particular fluid type first
     # occurs.
     # range is a two number tuple, specifying the bounds on the threshold
-    # process, if any. 
+    # process, if any.
     # TODO defaults?************
     # the tuple is (upper pixel in the image, lower pixel in the image),
     # i.e. the first one should be a *lower* number.
@@ -68,11 +68,11 @@ def process(image, fluid_type_lists, region, fluid, rulers):
     top, bottom = region
     depth = []
 
-    # set the horizontal bounds dependent on the camera 
+    # set the horizontal bounds dependent on the camera
     camera = image.split('/')[-2]
 
     if camera == 'cam1':
-        l_lim = 50 
+        l_lim = 80
         r_lim = 2700 # this is approximate and discards lock parallax
     elif camera == 'cam2':
         l_lim = 0
@@ -83,9 +83,9 @@ def process(image, fluid_type_lists, region, fluid, rulers):
     for i in range(l_lim):
         depth.append(0)
 
-    for i in range(l_lim, r_lim): 
+    for i in range(l_lim, r_lim):
         # range does matter as we don't want to go into the lock fluid
-        # this has been standardised across images though so simple to 
+        # this has been standardised across images though so simple to
         # specify the range, although it varies from cam1 to cam2
         # print "indexing column %s" %i
         try:
@@ -107,7 +107,7 @@ def process(image, fluid_type_lists, region, fluid, rulers):
                 pixel = 0
         # print "column %s has pixel depth %s for fluid %s" % (i, pixel, fluid)
         # put the computed interface depth into the list of depths by pixel
-        depth.append(pixel) 
+        depth.append(pixel)
 
     # change the first l_lim depths into something more sensible than zero
     # extrapolation of the subsequent trend
@@ -127,13 +127,13 @@ def process(image, fluid_type_lists, region, fluid, rulers):
     # for i in range(l_lim):
     #     section = depth[l_lim + 1: l_lim + 25]
     #     depth[i] = sum(section)/len(section)
-        
+
     return depth
 
 def interpolate(image, in_list, rulers):
     """ Takes a list of interface depths and changes locations with a ruler
     present from a constant value to an interpolation between the two edges.
-    
+
     arguments:
     image -- the image being operated on (only to find out camera type from
         the path).
@@ -147,7 +147,7 @@ def interpolate(image, in_list, rulers):
         y1 = interface[x1]
         y2 = interface[x2]
         for i in range(x1, x2):
-            interface[i] = (y2 - y1) * ((i - x1) / (x2 - x1)) + y1 
+            interface[i] = (y2 - y1) * ((i - x1) / (x2 - x1)) + y1
 
     camera = image.split('/')[-2]
     for ruler in rulers[camera]:
@@ -160,7 +160,7 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     # generate fluid type list of lists
     # print('generating threshold array...')
     fluid_type = thresh_img(image, thresh_values)
-    
+
     # detect the current front
     # print('detecting the front...')
     # fluid_type_transpose = zip(*fluid_type)
@@ -205,7 +205,7 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
         mix_current[:front_pos_core] = [bottom]*front_pos_core
 
     # interpolate
-    interp_interface = interpolate(image, interface, rulers) 
+    interp_interface = interpolate(image, interface, rulers)
     interp_core_current = interpolate(image, core_current, rulers)
     interp_mix_current = interpolate(image, mix_current, rulers)
 
