@@ -137,7 +137,7 @@ class MyPool(multiprocessing.pool.Pool):
     Process = NoDaemonProcess
 
 def pool(proc, runs):
-    p = MyPool(processes=len(runs))
+    p = MyPool()
     p.map(proc, runs)
     p.close()
     p.join()

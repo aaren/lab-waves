@@ -5,7 +5,7 @@ import sys
 
 import numpy as np
 import matplotlib as mpl
-#mpl.use('Agg')
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from aolcore import read_data, get_parameters
@@ -93,8 +93,8 @@ class Conjoin(RunData):
         #fname = rundir + '/plot_' + self.index + '.png'
         fname = "%s/%s.png" % (plots_dir, self.index)
         #plt.show()
-        #plt.savefig(fname)
-        #plt.close()
+        plt.savefig(fname)
+        plt.close()
 
     def plot_speed(self, c):
         t = np.linspace(0, 50, 51)
@@ -107,7 +107,7 @@ def conv(Xt, arg):
     return [[p[0] for p in Xta[i]] for i in range(len(Xta))]
 
 def main(run):
-    r = RunData(run)
+    r = Conjoin(run)
     print "plotting", run, "...\r",
     sys.stdout.flush()
     r.plot()
