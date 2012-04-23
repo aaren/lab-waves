@@ -155,9 +155,7 @@ def rescale(image, ratio):
 
 def add_text(image, (scale, data)):
     # opens and crops an image to the box given.
-
     im = Image.open(image)
-
     # have to change the out image
     dirs = image.split('/')[:]
     dirs[-4] = 'processed'
@@ -165,42 +163,22 @@ def add_text(image, (scale, data)):
 
     ratio, run_data = scale, data
     run = image.split('/')[-3]
-    camera = image.split('/')[-2]
+    cam = image.split('/')[-2]
     time = int(image.split('_')[-1].split('.')[0]) - 1
 
+    off = {'cam1': run_data['off_1'], 'cam2': run_data['off_2']}
+    bottom = {'cam1': run_data['bottom_1'], 'cam2': run_data['bottom_2']}
     odd = {'cam1': run_data['odd_1'], 'cam2': run_data['odd_2']}
     if odd[camera] == '999':
         return
 
-    p = get_parameters(run, paramf)
-
-    author_text = "Aaron O'Leary, University of Leeds"
-    param_a = "run %s, t=%ss: h_1 = %s, rho_0 = %s, rho_1 = %s, rho_2 = %s, "
-    param_b = "alpha = %s, D = %s"
-    param_t = param_a + param_b
-    param_text = param_t % (p['run_index'], time, p['h_1/H'], p['rho_0'],\
-            p['rho_1'], p['rho_2'], p['alpha'], p['D/H'])
     scale_depth = 440
-
-    if camera == 'cam1':
-        cam1_ratio = ratio
-        offset = int(run_data['off_1'])
-        bottom1 = int(run_data['bottom_1'])
-
-        left = int((offset * cam1_ratio) - 10)
-        right = int((offset * cam1_ratio) + 2750)
-        upper = int((bottom1 * cam1_ratio) - (scale_depth + 100))
-        lower = int((bottom1 * cam1_ratio) + 150)
-
-    elif camera == 'cam2':
-        cam2_ratio = ratio
-        offset = int(run_data['off_2'])
-        bottom1 = int(run_data['bottom_2'])
-
-        left = int((offset * cam2_ratio) - 2750)
-        right = int((offset * cam2_ratio) + 150)
-        upper = int((bottom1 * cam2_ratio) - (scale_depth + 100))
-        lower = int((bottom1 * cam2_ratio) + 150)
+    offset = int(off[cam])
+    bottom1 = int(bottom[cam])
+    left = int((offset * ratio) - crop[cam][0])
+    right = int((offset * ratio) + crop[cam][1])
+    upper = int((bottom1 * ratio) - scale_depth + crop[cam][2]))
+    lower = int((bottom1 * ratio) + crop[cam][3])
 
     draw = ImageDraw.Draw(im)
     draw.rectangle((left, upper, right, upper + 100), fill = 'black')
@@ -211,6 +189,14 @@ def add_text(image, (scale, data)):
     # "University of Leeds" is 520 px wide.
     fonts = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf'
     font = ImageFont.truetype(fonts, 45)
+
+    p = get_parameters(run, paramf)
+    author_text = "Aaron O'Leary, University of Leeds"
+    param_a = "run %s, t=%ss: h_1 = %s, rho_0 = %s, rho_1 = %s, rho_2 = %s, "
+    param_b = "alpha = %s, D = %s"
+    param_t = param_a + param_b
+    param_text = param_t % (p['run_index'], time, p['h_1/H'], p['rho_0'],\
+            p['rho_1'], p['rho_2'], p['alpha'], p['D/H'])
 
     text_hi_pos = (left, upper)
     text_low_pos = (left, lower - 100)

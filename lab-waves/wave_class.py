@@ -1,10 +1,13 @@
 # detection of constant speed coherent structures (i.e. waves)
+# some stuff
 
 # Trying here to clean it all up. Specifically by using a class.
 import sys
 
 import numpy as np
 import matplotlib as mpl
+# Ensure no errors when there is no display.
+# Must be done before pyplot import.
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -30,7 +33,6 @@ class RunData(object):
         self.gct = f.gc_theoretical(self.D / 2, self.r0, self.r1)
 
 class Conjoin(RunData):
-
     def conjoin_data(self, data_file=None):
         run = self.index
         if run.split('r')[0] == run:
