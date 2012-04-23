@@ -52,16 +52,25 @@ rulers['cam2'] = [(80, 130), (950, 1000), (1820, 1890), \
 # tank and each other. This allows for conversion from pixel dimensions
 # to S.I and for the correction of parallax.
 #
-# Specify the offsets that each of the cameras have, for normalisation of
-# pixel measurements
+# where to crop the images? (left, right, upper, lower), relative to
+# offset for left, right; scale_depth for upper; tank bottom for
+# lower.
+crop = {}
+crop['cam1'] = (-10, 2750, -100, 150)
+crop['cam2'] = (-2750, 150, -100, 150)
+
+# distance from offset mark to zero point (lock side of lock gate)
+# in cam1.
+zero_offset = 2600
+# Specify the offsets that each of the cameras have, for
+# normalisation of pixel measurements
 camera_offsets = {}
 ## the cam1 offset is the distance between wherever zero is in cam1
 ## and the left edge of cam1.
-camera_offsets['cam1'] = (2610, 543)
-## the 2750 value is the distance to the offset in cam2, minus the left
-## edge to offset distance in cam1. i.e. the total px distance from the
-## left edge of cam2 and the zero point (the lock side of the lock gate)
-camera_offsets['cam2'] = (camera_offsets['cam1'][0] + 2750, 543)
+camera_offsets['cam1'] = (zero_offset - crop['cam1'][0], 543)
+## the cam2 offset is the distance between wherever zero is in cam1
+## and the left edge of *cam2*
+camera_offsets['cam2'] = (zero_offset - crop['cam2'][0], 543)
 
 # specify the scale, i.e how many pixels to some real measurement in the
 # images. in y we want this to be the total fluid depth. in x make it the
