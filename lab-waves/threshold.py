@@ -76,7 +76,7 @@ def process(image, fluid_type_lists, region, fluid, rulers):
         r_lim = 2700 # this is approximate and discards lock parallax
     elif camera == 'cam2':
         l_lim = 0
-        r_lim = 2800
+        r_lim = 2900
 
     # pad depth out with zero so that the index of depth is equivalent
     # to the pixel image coordinate in x.
