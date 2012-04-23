@@ -7,7 +7,7 @@ import ImageDraw
 def sanity_check(interfaces, points, image, icolours, pcolours):
     """produces an image that has the calculated interface
     and the inferred peak coordinates and front position overlaid.
-    
+
     args: interfaces -- a list of interface depth lists
           maxima -- the list of maxima coordinates
           minima -- the list of minima coordinates
@@ -23,7 +23,7 @@ def sanity_check(interfaces, points, image, icolours, pcolours):
     # plot the measured interface depth onto the image
     for inter, colour in zip(interfaces, icolours):
         draw.line(inter, fill = colour, width = 5)
- 
+
     # plot squares onto the image at the given points
     rectangle_size = (7,7)
     for point, colour in zip(points, pcolours):
@@ -35,7 +35,7 @@ def sanity_check(interfaces, points, image, icolours, pcolours):
     run = image.split('/')[-3]
     camera = image.split('/')[-2]
     frame = image.split('/')[-1]
-    
+
     # derive the root data directory from the image filename that is passed
     root_data_dir = ('/').join(image.split('/')[:-3]) + '/'
     sanity_dir = root_data_dir + run + '/' + camera + '_sanity/'
@@ -45,5 +45,5 @@ def sanity_check(interfaces, points, image, icolours, pcolours):
         pass
 
     im.save(sanity_dir + frame)
-    print "wrote sanity image to",sanity_dir,frame,"\r",
+    print "wrote ", run, "sanity ", frame,"\r",
     sys.stdout.flush()

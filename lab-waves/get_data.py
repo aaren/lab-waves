@@ -209,17 +209,21 @@ def get_basic_run_data(run, processors=1):
         if len(images) == 0:
             break
         p = Pool(processes=processors)
+        # for i, _ in enumerate(p.map_async(get_basic_frame_data, images), 1):
+                # # print "Thresholding... %02d%%\r"
+                # sys.stderr.write('\rThresholding {0:%}'.format(i/len(images)))
         result = p.map_async(get_basic_frame_data, images)
+
+        # while True:
+            # if result.ready():
+                # break
+            # remain = "%03d" % result._number_left
+            # print "Thresholding...", run, remain, "left of", tot, "\r",
+            # sys.stdout.flush()
+            # time.sleep(0.1)
+
         p.close()
         p.join()
-
-        while True:
-            if result.ready():
-                break
-            remain = "%03d" % result._number_left
-            print "Thresholding...", run, remain, "left of", tot, "\r",
-            sys.stdout.flush()
-            time.sleep(0.1)
 
         basic_run_data[camera] = {k: v for k,v in result.get()}
     print ""
@@ -343,8 +347,8 @@ def main(runs=None):
         run_data = get_run_data(run)
         data[run] = run_data
         file = data_storage + run
-        print "\nwriting the data to", file, "...\r",
+        print "\nwriting ", file, "...\r",
         sys.stdout.flush()
         write_data(data, file)
-        print "writing the data to", file, "...done"
+        print "writing ", file, "...done"
         sys.stdout.flush()
