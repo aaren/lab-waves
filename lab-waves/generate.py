@@ -149,6 +149,8 @@ def loop(proc, runs):
 def get_runs(pdir='processed'):
     runpaths = glob.glob(('/').join([path, pdir, 'r*']))
     runs = [runpath.split('/')[-1] for runpath in runpaths]
+    for r in ['r11_7_07e', 'r11_5_25c', 'r11_6_30a', 'r11_6_30b']:
+        runs.remove(r)
     return runs
 
 def test():
