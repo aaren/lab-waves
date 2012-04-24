@@ -57,7 +57,7 @@ rulers['cam2'] = [(80, 130), (950, 1000), (1820, 1890), \
 # lower.
 crop = {}
 crop['cam1'] = (-10, 2750, -100, 150)
-crop['cam2'] = (-2750, 150, -100, 150)
+crop['cam2'] = (-2700, 150, -100, 150)
 
 # distance from offset mark to zero point (lock side of lock gate)
 # in cam1.
