@@ -107,9 +107,9 @@ def all(run):
     """
     # proc_im_base(run)
     # proc_im_main(run)
-    basic_data(run)
-    data(run)
-    plot(run)
+    f_basic_data(run)
+    #data(run)
+    #plot(run)
 
 def multi(proc, runs):
     # not presently used.
@@ -148,8 +148,8 @@ def loop(proc, runs):
 
 def get_runs(pdir='processed'):
     runpaths = glob.glob(('/').join([path, pdir, 'r*']))
-    runs = [runpath.split('/')[-1] for runpath in runpaths]
-    for r in ['r11_7_07e', 'r11_5_25c', 'r11_6_30a', 'r11_6_30b']:
+    runs = sorted([runpath.split('/')[-1] for runpath in runpaths])
+    for r in ['r11_7_07e', 'r11_5_25c', 'r11_6_30a', 'r11_6_30b', 'r11_7_08a']:
         runs.remove(r)
     return runs
 
