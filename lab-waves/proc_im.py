@@ -161,6 +161,9 @@ def add_text(image, (scale, data)):
     dirs = image.split('/')[:]
     dirs[-4] = 'processed'
     outimage = '/'.join(dirs)
+    outdir = '/'.join(dirs[:-1])
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
 
     ratio, run_data = scale, data
     run = image.split('/')[-3]
@@ -176,7 +179,7 @@ def add_text(image, (scale, data)):
     scale_depth = 440
     offset = int(off[cam])
     bottom1 = int(bottom[cam])
-    left = int((offset * ratio) - crop[cam][0])
+    left = int((offset * ratio) + crop[cam][0])
     right = int((offset * ratio) + crop[cam][1])
     upper = int((bottom1 * ratio) - scale_depth + crop[cam][2])
     lower = int((bottom1 * ratio) + crop[cam][3])
@@ -250,7 +253,7 @@ def std_corrections(run, run_data=None):
 
     # Rescale to common size
     # rescaling means that the offsets, lock_pos etc. are rescaled too.
-    proc_images(rescale, run, path + '/std_corr', cam1_ratio, cam2_ratio)
+    proc_images(rescale, run, path + '/' + bc_out, cam1_ratio, cam2_ratio)
 
 def text_crop(run, run_data=None):
     if run_data is None:
