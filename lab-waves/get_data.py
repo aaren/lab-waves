@@ -202,10 +202,11 @@ def get_basic_run_data(run, processors=1):
     # run = '11_7_06c'
     # run = run.split('r')[-1]
     basic_run_data = {}
-    for camera in ('cam1', 'cam2'):
+    cameras = ['cam1', 'cam2']
+    for camera in cameras:
         images = sorted(glob.glob('/'.join([path,
                             'processed', run, camera, '*jpg'])))
-        tot = "%03d" % len(images)
+        tot = "%03d" % (len(images) * len(cameras))
         if len(images) == 0:
             break
         p = Pool(processes=processors)
@@ -214,13 +215,13 @@ def get_basic_run_data(run, processors=1):
                 # sys.stderr.write('\rThresholding {0:%}'.format(i/len(images)))
         result = p.map_async(get_basic_frame_data, images)
 
-        # while True:
-            # if result.ready():
-                # break
-            # remain = "%03d" % result._number_left
-            # print "Thresholding...", run, remain, "left of", tot, "\r",
-            # sys.stdout.flush()
-            # time.sleep(0.1)
+        while True:
+            if result.ready():
+                break
+            remain = "%03d" % result._number_left
+            print "Thresholding...", run, remain, "left of", tot, "\r",
+            sys.stdout.flush()
+            time.sleep(0.5)
 
         p.close()
         p.join()
@@ -240,7 +241,8 @@ def get_basic_data(runs=None, processors=1):
     for run in runs:
         basic_run_data = get_basic_run_data(run, processors)
         f = data_dir + 'basic/basic_%s' % run
-        print "writing the data to", f
+        print "writing", f
+        sys.stdout.flush()
         write_data(basic_run_data, f)
 
 def get_frame_data(image, run_data_container):
