@@ -13,7 +13,7 @@ from config import path as Path
 # images.
 
 def simple_join(rundir, image, gap=0, remove_text=0):
-        print("Joining %s ..." %(rundir))
+        #print("Joining %s ..." %(rundir))
         # If the files exist load them as images, else create a blank
         # placeholder.
         if os.path.exists('%s/cam1/%s' % (rundir, image)):
@@ -70,7 +70,7 @@ def rem_text(im):
 
     im.paste('black', top_bar)
     im.paste('black', bottom_bar)
-    
+
     return im
 
 def join(run, proc_dir):
@@ -80,13 +80,13 @@ def join(run, proc_dir):
         os.mkdir('%s/join' % path, 0755)
     else:
         print("run %s has been joined, skipping..." % run)
-        return 
+        return
     for image in glob.glob('%s/cam1/*' % (path)):
         image = image.split('/')[-1]
         joined_image = simple_join(path, image)
         # save the joined image, first creating a new directory called 'join'
         joined_image.save('%s/join/%s' % (path, image))
-        print("...saved to %s/join/%s" % (path, image))
+        print("Joined %s %s" % (run, image))
 
 def remove_text(run, proc_dir):
     path = '/'.join([Path, proc_dir, run])
@@ -95,8 +95,8 @@ def remove_text(run, proc_dir):
         os.mkdir('%s/join_notext' % path, 0755)
     else:
         print("run %s has been de-texted, skipping..." % run)
-        return 
-    
+        return
+
     for image in glob.glob('%s/join/*' % (path)):
         im = Image.open(image)
         print("Removing text from %s" % image)
@@ -112,7 +112,7 @@ def remove_text(run, proc_dir):
 
         im.paste('black', top_bar)
         im.paste('black', bottom_bar)
-        
+
         im.save(outfile)
 
 def remove_borders(run, proc_dir):
@@ -122,8 +122,8 @@ def remove_borders(run, proc_dir):
         os.mkdir('%s/join_noborder' % path, 0755)
     else:
         print("run %s has been de-bordered, skipping..." % run)
-        return 
-    
+        return
+
     for image in glob.glob('%s/join/*' % (path)):
         im = Image.open(image)
         print("Removing borders from %s" % image)
@@ -131,7 +131,7 @@ def remove_borders(run, proc_dir):
         outfile = '%s/join_noborder/%s' % (path, image)
 
         w, h = im.size
-        
+
         box = (0, 100, w, h-100)
         cropped = im.crop(box)
         cropped.save(outfile)
@@ -154,7 +154,7 @@ def presentation(run, proc_dir='processed'):
         joined_image = simple_join(path, image, 50, 1)
         # save the joined image, first creating a new directory called 'join'
         joined_image.save('%s/presentation/%s' % (path, image))
-        print("...saved to %s/presentation/%s" % (path, image))
+        print("Presentation %s %s" % (run, image))
 
 def animate(run, proc_dir='processed', src='presentation'):
     path = '/'.join([Path, proc_dir, run])
@@ -168,7 +168,7 @@ def animate(run, proc_dir='processed', src='presentation'):
     else:
         pass
     files = glob.glob('%s/%s/img*jpg' % (path, src))
-    images = [np.asarray(Image.open(file)) for file in files] 
+    images = [np.asarray(Image.open(file)) for file in files]
     outfile = path + '/' + run + '-' + src + '.gif'
     print "Generating %s %s animation..." % (run, src)
     images2gif.writeGif(outfile, images, duration=0.5)
