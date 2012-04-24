@@ -86,7 +86,7 @@ def join(run, proc_dir):
         joined_image = simple_join(path, image)
         # save the joined image, first creating a new directory called 'join'
         joined_image.save('%s/join/%s' % (path, image))
-        print("Joined %s %s" % (run, image))
+        print "Joined", run, image, "\r",
 
 def remove_text(run, proc_dir):
     path = '/'.join([Path, proc_dir, run])
@@ -154,7 +154,7 @@ def presentation(run, proc_dir='processed'):
         joined_image = simple_join(path, image, 50, 1)
         # save the joined image, first creating a new directory called 'join'
         joined_image.save('%s/presentation/%s' % (path, image))
-        print("Presentation %s %s" % (run, image))
+        print "Presentation", run, image, "\r",
 
 def animate(run, proc_dir='processed', src='presentation'):
     path = '/'.join([Path, proc_dir, run])
