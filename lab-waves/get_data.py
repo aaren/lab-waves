@@ -209,7 +209,10 @@ def get_basic_run_data(run, processors=1):
         tot = "%03d" % (len(images) * len(cameras))
         if len(images) == 0:
             break
-        p = Pool(processes=processors)
+        if processors == 0:
+            p = Pool()
+        else:
+            p = Pool(processes=processors)
         # for i, _ in enumerate(p.map_async(get_basic_frame_data, images), 1):
                 # # print "Thresholding... %02d%%\r"
                 # sys.stderr.write('\rThresholding {0:%}'.format(i/len(images)))
@@ -220,13 +223,13 @@ def get_basic_run_data(run, processors=1):
                 break
             remain = "%03d" % result._number_left
             print "Thresholding...", run, remain, "left of", tot, "\r",
+            print "Thresholding...", run, remain, "left of", tot
             sys.stdout.flush()
-            time.sleep(0.5)
-
-        p.close()
-        p.join()
+            time.sleep(2)
 
         basic_run_data[camera] = {k: v for k,v in result.get()}
+        p.close()
+        p.join()
     print ""
     return basic_run_data
 

@@ -68,7 +68,7 @@ def f_basic_data(run):
     """Fast version of basic data (multiprocessing inside the
     thresholding loop).
     """
-    get_data.get_basic_data(run, 24)
+    get_data.get_basic_data(run, 0)
 
 def data(run):
     """The basic interface depths are further processed to
@@ -107,8 +107,8 @@ def all(run):
     """
     # proc_im_base(run)
     # proc_im_main(run)
-    f_basic_data(run)
-    #data(run)
+    basic_data(run)
+    data(run)
     #plot(run)
 
 def multi(proc, runs):
@@ -146,10 +146,10 @@ def loop(proc, runs):
     for run in runs:
         proc(run)
 
-def get_runs(pdir='processed'):
+def get_runs(pdir='synced'):
     runpaths = glob.glob(('/').join([path, pdir, 'r*']))
     runs = sorted([runpath.split('/')[-1] for runpath in runpaths])
-    for r in ['r11_7_07e', 'r11_5_25c', 'r11_6_30a', 'r11_6_30b', 'r11_7_08a']:
+    for r in ['r11_7_07e', 'r11_5_25c', 'r11_6_30a', 'r11_6_30b', 'r11_7_08a', 'r11_5_24c']:
         runs.remove(r)
     return runs
 
