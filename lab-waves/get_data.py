@@ -31,7 +31,6 @@ import peakdetect
 from aolcore import write_data, read_data
 from aolcore import get_parameters
 import threshold
-import sanity
 
 from config import *
 
@@ -300,7 +299,7 @@ def get_frame_data(image, run_data_container):
     icolours = ['black', 'blue', 'cyan', 'orange', 'red']
     points = [_max, _min, core_front_coord, mix_front_coord, core_max, mix_max]
     pcolours = ['green', 'purple', 'blue', 'cyan', 'blue', 'cyan']
-    sanity.sanity_check(interfaces, points, image, icolours, pcolours)
+    threshold.sanity_check(interfaces, points, image, icolours, pcolours)
 
     # make a container for the data and populate it
     frame_data = {}
