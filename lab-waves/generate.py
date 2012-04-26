@@ -7,7 +7,7 @@ from sys import argv
 import proc_im
 import join
 import get_data
-import wave_class
+import wave
 
 from config import path
 
@@ -99,7 +99,7 @@ def plot(run):
     """With the structures pulled out by wave(run), it is
     easy to make some plots.
     """
-    wave_class.main(run)
+    wave.main(run)
 
 def all(run):
     """To get some raw, synced, lab data into nice plots in
