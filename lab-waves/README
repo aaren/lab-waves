@@ -1,9 +1,14 @@
-This branch has multiprocessing integrated into the get_data module as well as
-generate. Specifically, get_data.get_basic_run_data creates a pool of workers
-for performing the image thresholding, resulting in a significant speed up when
-only processing a single run.
+Testing
+-------
 
-In order to get around the daemon children problem a couple of classes are
-created in generate, allowing for the execution of pools within pools.
+The code is broken somehow. When processing basic data the process exits with
+multiprocessing errors. These are present with basic_data, f_basic_data, loop
+and pool, ie. all top level permutations of multiprocessing use. Inside
+get_data, multiprocessing has been hard coded, i.e. there is no way to avoid it.
+The processor number can be set to 1 but the code still goes through the
+multiprocessing loop and when the process crashes these are the only errors
+presented.
 
-http://stackoverflow.com/questions/6974695/python-process-pool-non-daemonic
+Here we rewrite get_data so that it can process without using a multiprocessing
+pool, with the aim of isolating the real error.
+
