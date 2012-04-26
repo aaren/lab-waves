@@ -179,12 +179,12 @@ def get_basic_frame_data(image):
     params = get_parameters(run, paramf)
     front_depth = front_depths[params['D/H']]
 
-    #print "thresholding processed", \
-    #        run, camera, frame, "of"
-    #sys.stdout.flush()
+    print "thresholding", run, camera, frame,
+    sys.stdout.flush()
 
     interface, current, mixed_current, core_front_coord, mix_front_coord\
             = threshold.main(image, region, rulers, thresh_values, front_depth)
+    print "done"
 
     basic_data = {}
     basic_data['interface'] = interface
@@ -196,40 +196,45 @@ def get_basic_frame_data(image):
     frame_data = (frame, basic_data)
     return frame_data
 
+# multiprocessing and serial implementation
 def get_basic_run_data(run, processors=1):
     """grabs all basic data from a run"""
     # run = '11_7_06c'
     # run = run.split('r')[-1]
     basic_run_data = {}
     cameras = ['cam1', 'cam2']
+
+    def serial(images, camera, brd):
+        result = [get_basic_frame_data(image) for image in images]
+        return result
+
+    def parallel(images, camera, brd):
+        if processors == 0:
+            p = pool()
+        else:
+            p = pool(processes=processors)
+        result = p.map_async(get_basic_frame_data, images)
+        p.close()
+        p.join()
+        return result.get()
+
     for camera in cameras:
         images = sorted(glob.glob('/'.join([path,
                             'processed', run, camera, '*jpg'])))
-        tot = "%03d" % (len(images) * len(cameras))
+        tot = "%03d" % (len(images))
         if len(images) == 0:
+            print "no images in", camera
             break
-        if processors == 0:
-            p = Pool()
         else:
-            p = Pool(processes=processors)
-        # for i, _ in enumerate(p.map_async(get_basic_frame_data, images), 1):
-                # # print "Thresholding... %02d%%\r"
-                # sys.stderr.write('\rThresholding {0:%}'.format(i/len(images)))
-        result = p.map_async(get_basic_frame_data, images)
+            print camera images
+            pass
+        if processors == 1:
+            result = serial(images, camera, basic_run_data)
+        else:
+            result = parallel(images, camera, basic_run_data)
 
-        while True:
-            if result.ready():
-                break
-            remain = "%03d" % result._number_left
-            print "Thresholding...", run, remain, "left of", tot, "\r",
-            print "Thresholding...", run, remain, "left of", tot
-            sys.stdout.flush()
-            time.sleep(2)
+    brd[camera] = {k: v for k,v in result}
 
-        basic_run_data[camera] = {k: v for k,v in result.get()}
-        p.close()
-        p.join()
-    print ""
     return basic_run_data
 
 def get_basic_data(runs=None, processors=1):
