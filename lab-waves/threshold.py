@@ -8,6 +8,8 @@ import Image
 import ImageDraw
 from numpy import polyfit
 
+from config import crop
+
 def thresh_img(image, thresh_values=None):
     # Threshold the image, determining the fluid type of each individual
     # pixel
@@ -79,7 +81,7 @@ def process(image, fluid_type_lists, region, fluid, rulers):
         r_lim = 2700 # this is approximate and discards lock parallax
     elif camera == 'cam2':
         l_lim = 0
-        r_lim = 2900
+        r_lim = crop['cam2'][1] - crop['cam2'][0]
 
     # pad depth out with zero so that the index of depth is equivalent
     # to the pixel image coordinate in x.

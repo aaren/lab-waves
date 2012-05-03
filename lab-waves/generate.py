@@ -108,7 +108,7 @@ def all(run):
     # proc_im_base(run)
     # proc_im_main(run)
     basic_data(run)
-    data(run)
+    # data(run)
     #plot(run)
 
 def multi(proc, runs):
