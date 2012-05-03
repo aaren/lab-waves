@@ -48,7 +48,7 @@ def interp(data, T):
     return hn
 
 def interp2(hn):
-    h = [hi[1] for hi in hn] 
+    h = [hi[1] for hi in hn]
     x = hn[0][0]
     T = range(len(hn))
     f = interp2d(x, T, h, kind='linear')
@@ -66,7 +66,7 @@ class hovmoller(object):
     def gen_c_map():
         # some stuff
         return c_map
-    
+
     def h(x,t):
         # lookup what the value of h is at some given
         # (x,t). Should be able to work with any input
@@ -83,4 +83,14 @@ class hovmoller(object):
             h1 = h(x1,t1)
             hxt = h0 + (h1-h0) * (t - t0) / (t1 - t0)
             # stick this in an array.
+
+# How about onlt plotting the interfaces as lines? As in the
+# Christie figures. Mine won't look as good due to the temporal
+# separation (same reason the above is necessary), but would still
+# be a good guide.
+#
+# Want to use a 3d matplotlib.
+#
+# 1) plot a single time slice in 3d.
+
 
