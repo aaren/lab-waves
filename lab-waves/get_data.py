@@ -217,6 +217,7 @@ def get_basic_run_data(run, processors=1):
         p.join()
         return result.get()
 
+    basic_run_data = {}
     for camera in cameras:
         images = sorted(glob.glob('/'.join([path,
                             'processed', run, camera, '*jpg'])))
@@ -232,8 +233,7 @@ def get_basic_run_data(run, processors=1):
         else:
             result = parallel(images, camera)
 
-    basic_run_data = {}
-    basic_run_data[camera] = {k: v for k,v in result}
+        basic_run_data[camera] = {k: v for k,v in result}
 
     return basic_run_data
 

@@ -59,7 +59,7 @@ crop['cam2'] = (-2700, 150, -100, 150)
 # It isn't possible to consistently define them otherwise.
 off_rulers = {}
 off_rulers['cam1'] = [(20, 55), (810, 890), (1570, 1600), (1680, 1750)]
-off_rulers['cam2'] = [(-2670, -2610), (-1790, -1730), (-920, -850), (-90, -45)]
+off_rulers['cam2'] = [(-2670, -2610), (-1790, -1730), (-940, -865), (-90, -50), (-45, -25)]
 
 rulers = {}
 for cam in ['cam1', 'cam2']:
@@ -67,7 +67,7 @@ for cam in ['cam1', 'cam2']:
 
 # distance from offset mark to zero point (lock side of lock gate)
 # in cam1.
-zero_offset = 2600
+zero_offset = 2640
 # Specify the offsets that each of the cameras have, for
 # normalisation of pixel measurements
 camera_offsets = {}
@@ -76,7 +76,8 @@ camera_offsets = {}
 camera_offsets['cam1'] = (zero_offset - crop['cam1'][0], 543)
 ## the cam2 offset is the distance between wherever zero is in cam1
 ## and the left edge of *cam2*
-camera_offsets['cam2'] = (zero_offset - crop['cam2'][0], 543)
+fudge = 176
+camera_offsets['cam2'] = (zero_offset - crop['cam2'][0] - fudge, 543)
 
 # specify the scale, i.e how many pixels to some real measurement in the
 # images. in y we want this to be the total fluid depth. in x make it the

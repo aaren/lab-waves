@@ -7,7 +7,7 @@ from sys import argv
 import proc_im
 import join
 import get_data
-import wave
+import waves
 
 from config import path
 
@@ -99,17 +99,17 @@ def plot(run):
     """With the structures pulled out by wave(run), it is
     easy to make some plots.
     """
-    wave.main(run)
+    waves.main(run)
 
 def all(run):
     """To get some raw, synced, lab data into nice plots in
     a single command.
     """
     # proc_im_base(run)
-    # proc_im_main(run)
-    basic_data(run)
-    # data(run)
-    #plot(run)
+    proc_im_main(run)
+    f_basic_data(run)
+    data(run)
+    plot(run)
 
 def multi(proc, runs):
     # not presently used.
