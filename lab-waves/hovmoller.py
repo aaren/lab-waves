@@ -48,7 +48,7 @@ def interp(data, T):
     return hn
 
 def interp2(hn):
-    h = [hi[1] for hi in hn] 
+    h = [hi[1] for hi in hn]
     x = hn[0][0]
     T = range(len(hn))
     f = interp2d(x, T, h, kind='linear')
@@ -58,5 +58,39 @@ def interp2(hn):
 # the normalisation. -- > not true. x has been recalculated over a
 # regular spacing.
 
+
+class hovmoller(object):
+
+    # make a map of wave speed in (x,t) by looking
+    # at the detected waves
+    def gen_c_map():
+        # some stuff
+        return c_map
+
+    def h(x,t):
+        # lookup what the value of h is at some given
+        # (x,t). Should be able to work with any input
+        # numbers, i.e. interpolates to grid.
+
+    def interpolate(region):
+        for (x, t) in region:
+            c = c_map(x,t)
+            t0 = int(t)
+            t1 = t0 + 1
+            x0 = x - c*(t - t0)
+            x1 = x + c*(t1 - t)
+            h0 = h(x0,t0)
+            h1 = h(x1,t1)
+            hxt = h0 + (h1-h0) * (t - t0) / (t1 - t0)
+            # stick this in an array.
+
+# How about onlt plotting the interfaces as lines? As in the
+# Christie figures. Mine won't look as good due to the temporal
+# separation (same reason the above is necessary), but would still
+# be a good guide.
+#
+# Want to use a 3d matplotlib.
+#
+# 1) plot a single time slice in 3d.
 
 
