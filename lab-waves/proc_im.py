@@ -151,7 +151,9 @@ def rescale(image, ratio):
     w, h = im.size
     h_new = int(h * ratio)
     w_new = int(w * ratio)
-    print "rescaling", image, "\r",
+    frame = image.split('_')[-1]
+    print "\rrescaling", frame,
+    sys.stdout.flush()
     re = im.resize((w_new, h_new))
     re.save(image)
 
@@ -172,6 +174,7 @@ def add_text(image, (scale, data)):
     frame = image.split('_')[-1]
     time = int(frame.split('.')[0]) - 1
     print "Crop / text", run, frame, "\r",
+    sys.stdout.flush()
 
     off = {'cam1': run_data['off_1'], 'cam2': run_data['off_2']}
     bottom = {'cam1': run_data['bottom_1'], 'cam2': run_data['bottom_2']}

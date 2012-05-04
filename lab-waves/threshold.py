@@ -261,5 +261,5 @@ def sanity_check(interfaces, points, image, icolours, pcolours):
         pass
 
     im.save(sanity_dir + frame)
-    print "wrote ", run, "sanity ", frame,"\r",
+    print "wrote ", run, camera, "sanity ", frame,"\r",
     sys.stdout.flush()
