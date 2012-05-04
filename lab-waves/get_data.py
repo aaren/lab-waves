@@ -204,6 +204,7 @@ def get_basic_run_data(run, processors=1):
     cameras = ['cam1', 'cam2']
 
     def serial(images, camera):
+        print "processing", run, camera, len(images), "images"
         result = [get_basic_frame_data(image) for image in images]
         return result
 
@@ -226,7 +227,6 @@ def get_basic_run_data(run, processors=1):
             print "no images in", camera
             break
         else:
-            print "processing", run, camera, len(images), "images"
             pass
         if processors == 1:
             result = serial(images, camera)
@@ -248,7 +248,8 @@ def get_basic_data(runs=None, processors=1):
     for run in runs:
         basic_run_data = get_basic_run_data(run, processors)
         f = data_dir + 'basic/basic_%s' % run
-        print "writing", f
+        fname = f.split('/')[-1]
+        print "writing", fname
         sys.stdout.flush()
         write_data(basic_run_data, f)
 
@@ -355,9 +356,10 @@ def main(runs=None):
         data = {}
         run_data = get_run_data(run)
         data[run] = run_data
-        file = data_storage + run
-        print "\nwriting ", file, "...\r",
+        f = data_storage + run
+        # print "\nwriting ", file, "...\r",
         sys.stdout.flush()
-        write_data(data, file)
-        print "writing ", file, "...done"
+        write_data(data, f)
+        fname = f.split('/')[-1]
+        print "wrote ", filename
         sys.stdout.flush()

@@ -86,7 +86,7 @@ def join(run, proc_dir):
         joined_image = simple_join(path, image)
         # save the joined image, first creating a new directory called 'join'
         joined_image.save('%s/join/%s' % (path, image))
-        print "Joined", run, image, "\r",
+        # print "Joined", run, image, "\r",
 
 def remove_text(run, proc_dir):
     path = '/'.join([Path, proc_dir, run])
@@ -99,7 +99,7 @@ def remove_text(run, proc_dir):
 
     for image in glob.glob('%s/join/*' % (path)):
         im = Image.open(image)
-        print("Removing text from %s" % image)
+        # print("Removing text from %s" % image)
         image = image.split('/')[-1]
 
         outfile = '%s/join_notext/%s' % (path, image)
@@ -121,12 +121,12 @@ def remove_borders(run, proc_dir):
     if not os.path.exists('%s/join_noborder' % path):
         os.mkdir('%s/join_noborder' % path, 0755)
     else:
-        print("run %s has been de-bordered, skipping..." % run)
+        # print("run %s has been de-bordered, skipping..." % run)
         return
 
     for image in glob.glob('%s/join/*' % (path)):
         im = Image.open(image)
-        print("Removing borders from %s" % image)
+        # print("Removing borders from %s" % image)
         image = image.split('/')[-1]
         outfile = '%s/join_noborder/%s' % (path, image)
 
@@ -154,7 +154,7 @@ def presentation(run, proc_dir='processed'):
         joined_image = simple_join(path, image, 50, 1)
         # save the joined image, first creating a new directory called 'join'
         joined_image.save('%s/presentation/%s' % (path, image))
-        print "Presentation", run, image, "\r",
+        # print "Presentation", run, image, "\r",
 
 def animate(run, proc_dir='processed', src='presentation'):
     path = '/'.join([Path, proc_dir, run])
