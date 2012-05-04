@@ -105,7 +105,7 @@ def all(run):
     """To get some raw, synced, lab data into nice plots in
     a single command.
     """
-    # proc_im_base(run)
+    proc_im_base(run)
     proc_im_main(run)
     f_basic_data(run)
     data(run)

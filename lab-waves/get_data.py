@@ -224,7 +224,7 @@ def get_basic_run_data(run, processors=1):
                             'processed', run, camera, '*jpg'])))
         tot = "%03d" % (len(images))
         if len(images) == 0:
-            print "no images in", camera
+            print "\nno images in", camera
             break
         else:
             pass
@@ -361,5 +361,5 @@ def main(runs=None):
         sys.stdout.flush()
         write_data(data, f)
         fname = f.split('/')[-1]
-        print "wrote ", filename
+        print "wrote ", fname
         sys.stdout.flush()
