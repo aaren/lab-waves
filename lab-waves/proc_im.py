@@ -222,12 +222,12 @@ def add_text(image, (scale, data)):
 
 def proc_images(proc, run, source, arg1, arg2):
     #print '%s, %s, cam1, %s' % (proc, run, source)
-    for image in glob.glob('%s/%s/cam1/*jpg' % (source, run)):
+    for image in sorted(glob.glob('%s/%s/cam1/*jpg' % (source, run))):
         #print "performing",proc,"on",image,"\r",
         #sys.stdout.flush()
         proc(image, arg1)
     #print '%s, %s, cam2, %s' % (proc, run, source)
-    for image in glob.glob('%s/%s/cam2/*jpg' % (source, run)):
+    for image in sorted(glob.glob('%s/%s/cam2/*jpg' % (source, run))):
         #print "performing",proc,"on",image,"\r",
         #sys.stdout.flush()
         proc(image, arg2)
