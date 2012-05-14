@@ -51,15 +51,15 @@ front_depths = {'0.4': 520, '1': 495}
 # lower. ensure that these are consistent with the source images!
 # e.g. by comparison with proc_data.
 crop = {}
-crop['cam1'] = (-10, 2750, -100, 150)
-crop['cam2'] = (-2700, 150, -100, 150)
+crop['cam1'] = (-130, 2590, -100, 150)
+crop['cam2'] = (-2870, 10, -100, 150)
 
 # specify the positions of rulers and other vertical features that
 # obscure the fluid. These are measurements relative to the offset.
 # It isn't possible to consistently define them otherwise.
 off_rulers = {}
-off_rulers['cam1'] = [(20, 55), (810, 890), (1570, 1600), (1680, 1750)]
-off_rulers['cam2'] = [(-2670, -2610), (-1790, -1730), (-940, -865), (-90, -50), (-45, -25)]
+off_rulers['cam1'] = [(640, 720), (1400, 1430), (1510, 1580)]
+off_rulers['cam2'] = [(-2840, -2780), (-1960, -1900), (-1110, -1035), (-260, -220), (-205, -195)]
 
 rulers = {}
 for cam in ['cam1', 'cam2']:
