@@ -58,8 +58,8 @@ crop['cam2'] = (-2870, 10, -100, 150)
 # obscure the fluid. These are measurements relative to the offset.
 # It isn't possible to consistently define them otherwise.
 off_rulers = {}
-off_rulers['cam1'] = [(640, 720), (1400, 1430), (1510, 1580)]
-off_rulers['cam2'] = [(-2840, -2780), (-1960, -1900), (-1110, -1035), (-260, -220), (-205, -195)]
+off_rulers['cam1'] = [(670, 740), (1410, 1440), (1540, 1610)]
+off_rulers['cam2'] = [(-2840, -2780), (-1960, -1900), (-1110, -1035), (-240, -110)]
 
 rulers = {}
 for cam in ['cam1', 'cam2']:
