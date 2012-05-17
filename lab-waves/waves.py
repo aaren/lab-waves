@@ -33,6 +33,9 @@ class RunData(object):
         self.gct = f.gc_theoretical(self.D / 2, self.r0, self.r1)
 
 class Conjoin(RunData):
+    ###FIXME This is broken. It can't deal with non continuous time
+    ### data. Need to put the time reference into the actual object
+    ### rather than relying on the index of the list.
     def conjoin_data(self, data_file=None):
         run = self.index
         if run.split('r')[0] == run:
