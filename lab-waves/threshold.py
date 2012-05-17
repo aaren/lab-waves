@@ -80,7 +80,7 @@ def process(image, fluid_type_lists, region, fluid, rulers):
         l_lim = 80
         r_lim = 2700 # this is approximate and discards lock parallax
     elif camera == 'cam2':
-        l_lim = 0
+        l_lim = 20
         r_lim = crop['cam2'][1] - crop['cam2'][0]
 
     # pad depth out with zero so that the index of depth is equivalent
