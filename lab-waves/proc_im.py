@@ -245,7 +245,7 @@ def std_corrections(run, run_data=None):
     proc_images(rotation_corr, run, path + '/' + bc_out, theta1, theta2)
 
     # Resize the images to standard
-    ideal_ruler = 435
+    ideal_ruler = 434
     ruler = int(run_data['bottom_1']) - int(run_data['ruler_25'])
     ruler_ratio = ideal_ruler / ruler
     depth_1 = int(run_data['bottom_1']) - int(run_data['surface_1'])
