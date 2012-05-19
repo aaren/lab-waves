@@ -46,13 +46,26 @@ front_depths = {'0.4': 520, '1': 495}
 # tank and each other. This allows for conversion from pixel dimensions
 # to S.I and for the correction of parallax.
 #
-# where to crop the images? (left, right, upper, lower), relative to
-# offset for left, right; scale_depth for upper; tank bottom for
+# where to crop the images? (left, right, upper, lower), all relative to
+# lock position for left, right; scale_depth for upper; tank bottom for
 # lower. ensure that these are consistent with the source images!
 # e.g. by comparison with proc_data.
 crop = {}
-crop['cam1'] = (-130, 2590, -100, 150)
-crop['cam2'] = (-2870, 10, -100, 150)
+ideal_25 = 434
+ideal_m = ideal_25 * 4
+
+c1l = 1.46
+c1r = -0.15
+c2l = 3.10
+c2r = 1.39
+l = {'cam1': c1l, 'cam2': c2l}
+
+crop['cam1'] = (-c1l * ideal_m, \
+                -c1r * ideal_m, \
+                 -100, 150)
+crop['cam2'] = (-(c2l - 1.51) * ideal_m, \
+                -(c2r - 1.51) * ideal_m, \
+                -100, 150)
 
 # specify the positions of rulers and other vertical features that
 # obscure the fluid. These are measurements relative to the offset.
@@ -61,9 +74,14 @@ off_rulers = {}
 off_rulers['cam1'] = [(640, 720), (1400, 1430), (1510, 1580)]
 off_rulers['cam2'] = [(-2840, -2780), (-1960, -1900), (-1110, -1035), (-260, -220), (-205, -195)]
 
+real_rulers = {}
+real_rulers['cam1'] = [(0.49, 0.52), (0.99, 1.02)]
+real_rulers['cam2'] = [(1.46, 1.54), (1.99, 2.02), (2.49, 2.52), (2.99, 3.02)]
+
 rulers = {}
 for cam in ['cam1', 'cam2']:
-    rulers[cam] = [(x - crop[cam][0], y - crop[cam][0]) for x, y in off_rulers[cam]]
+    rulers[cam] = [((l[cam] - y) * ideal_m , \
+                    (l[cam] - x) * ideal_m ) for x, y in real_rulers[cam]]
 
 # distance from offset mark to zero point (lock side of lock gate)
 # in cam1.

@@ -9,6 +9,9 @@ import sys
 import Image
 import ImageFont
 import ImageDraw
+from numpy import matrix
+from numpy import asarray
+from numpy.linalg import solve
 
 from aolcore import pull_col, pull_line
 from aolcore import get_parameters
@@ -176,19 +179,18 @@ def add_text(image, (scale, data)):
     print "Crop / text", run, frame, "\r",
     sys.stdout.flush()
 
-    off = {'cam1': run_data['off_1'], 'cam2': run_data['off_2']}
-    bottom = {'cam1': run_data['bottom_1'], 'cam2': run_data['bottom_2']}
     odd = {'cam1': run_data['odd_1'], 'cam2': run_data['odd_2']}
     if odd[cam] == '999':
         return
 
-    scale_depth = 440
-    offset = int(off[cam])
-    bottom1 = int(bottom[cam])
-    left = int((offset * ratio) + crop[cam][0])
-    right = int((offset * ratio) + crop[cam][1])
-    upper = int((bottom1 * ratio) - scale_depth + crop[cam][2])
-    lower = int((bottom1 * ratio) + crop[cam][3])
+    # define the box to crop the image to.
+    l0x = int(get_data['l0x'])
+    l0y = int(get_data['l0y'])
+    # FIXME: work for both cameras??
+    left = l0x + crop[cam][0]
+    right = l0x + crop[cam][1]
+    upper = l0y - ideal_25 + crop[cam][2]
+    lower = l0y + crop[cam][3]
 
     draw = ImageDraw.Draw(im)
     draw.rectangle((left, upper, right, upper + 100), fill='black')
@@ -237,29 +239,47 @@ def std_corrections(run, run_data=None):
         run_data = get_run_data(run)
     # Barrel correct
     bc_out = 'std_corr'
-    proc_images(barrel_corr, run, path + '/synced', bc_out, bc_out)
+    # proc_images(barrel_corr, run, path + '/synced', bc_out, bc_out)
 
-    # Rotation correct
-    theta1 = -float(run_data['rot_1'])
-    theta2 = -float(run_data['rot_2'])
-    proc_images(rotation_corr, run, path + '/' + bc_out, theta1, theta2)
+    ideal_25 = 435
 
-    # Resize the images to standard
-    ideal_ruler = 435
-    ruler = int(run_data['bottom_1']) - int(run_data['ruler_25'])
-    ruler_ratio = ideal_ruler / ruler
-    depth_1 = int(run_data['bottom_1']) - int(run_data['surface_1'])
-    depth_2 = int(run_data['bottom_2']) - int(run_data['surface_2'])
-    cam1_ratio = ruler_ratio
-    if depth_2 != 0:
-        depth_ratio = depth_1 / depth_2
-        cam2_ratio = ruler_ratio * depth_ratio
-    elif depth_2 == 0:
-        cam2_ratio = 1
+    lock_0 = int(run_data['l0x']), int(run_data['l0y'])
+    lock_surf = int(run_data['lsx']), int(run_data['lsy'])
+    join1_0 = int(run_data['j10x']), int(run_data['j10y'])
+    join1_surf = int(run_data['j1sx']), int(run_data['j1sy'])
 
-    # Rescale to common size
-    # rescaling means that the offsets, lock_pos etc. are rescaled too.
-    proc_images(rescale, run, path + '/' + bc_out, cam1_ratio, cam2_ratio)
+    join2_0 = int(run_data['j20x']), int(run_data['j20y'])
+    join2_surf = int(run_data['j2sx']), int(run_data['j2sy'])
+    ruler_0 = int(run_data['r0x']), int(run_data['r0y'])
+    ruler_surf = int(run_data['rsx']), int(run_data['rsy'])
+    # need some standard vertical lines in both cameras.
+    # cam1: use lock gate and tank join
+    # cam2: tank join and ruler at 2.5m
+    # (checked to be vertical, extrapolate to surface)
+    # so for each camera, 4 locations (8 numbers) need
+    # to be recorded.
+    ideal_base_1 = int(5.88 * ideal_25)
+    ideal_base_2 = int(7.96 * ideal_25)
+
+    x1 = lock_0, lock_surf, join1_0, join1_surf
+    X1 = lock_0, \
+         (lock_0[0], lock_0[1] - ideal_25), \
+         (lock_0[0] - ideal_base_1, lock_0[1]), \
+         (lock_0[0] - ideal_base_1, lock_0[1] - ideal_25)
+
+    x2 = join2_0, join2_surf, ruler_0, ruler_surf
+    X2 = join2_0, \
+         (join2_0[0], join2_0[1] - ideal_25), \
+         (join2_0[0] - ideal_base_2, join2_0[1]), \
+         (join2_0[0] - ideal_base_2, join2_0[1] - ideal_25)
+
+    print x1
+    print X1
+    cam1_coeff = tuple(perspective_coefficients(x1,X1))
+    cam2_coeff = tuple(perspective_coefficients(x2,X2))
+
+    transform('img_0001.jpg', cam1_coeff)
+    # proc_images(transform, run, path + '/' + bc_out, cam1_coeff, cam2_coeff)
 
 def text_crop(run, run_data=None):
     if run_data is None:
@@ -279,3 +299,32 @@ def text_crop(run, run_data=None):
     # Add text and crop
     proc_images(add_text, run, path + '/std_corr', \
             (cam1_ratio, run_data), (cam2_ratio, run_data))
+
+def perspective_coefficients(x,X):
+    """Calculates the perspective coeffcients for a given list of
+    four input points, x, and output X.
+
+    Solves the equation Ac = X.
+    """
+    (x1, y1), (x2, y2), (x3, y3), (x4, y4) = x
+    (X1, Y1), (X2, Y2), (X3, Y3), (X4, Y4) = X
+
+    A = matrix([[x1,y1,1,0,0,0,-X1*x1,-X1*y1],\
+                [0,0,0,x1,y1,1,-Y1*x1,-Y1*y1],\
+                [x2,y2,1,0,0,0,-X2*x2,-X2*y2],\
+                [0,0,0,x2,y2,1,-Y2*x2,-Y2*y2],\
+                [x3,y3,1,0,0,0,-X3*x3,-X3*y3],\
+                [0,0,0,x3,y3,1,-Y3*x3,-Y3*y3],\
+                [x4,y4,1,0,0,0,-X4*x4,-X4*y4],\
+                [0,0,0,x4,y4,1,-Y4*x4,-Y4*y4]])
+
+    c = solve(A, asarray(X).flatten())
+    print c
+
+    return c
+
+def transform(image, coeffs):
+    im = Image.open(image)
+    print coeffs
+    trans = im.transform(im.size, 2, coeffs)
+    trans.save('out.jpg')
