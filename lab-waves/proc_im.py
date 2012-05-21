@@ -12,10 +12,11 @@ import ImageDraw
 from numpy import matrix
 from numpy import asarray
 from numpy.linalg import solve
+from scipy.ndimage.interpolation import geometric_transform
 
 from aolcore import pull_col, pull_line
 from aolcore import get_parameters
-from config import path, paramf, procf, crop
+from config import path, paramf, procf, crop, ideal_25, ideal_base_1, ideal_base_2
 
 # We don't just want to operate on a single image, we want to operate on
 # many. But in the first instance, in determining the offsets for cropping
@@ -24,21 +25,8 @@ from config import path, paramf, procf, crop
 # This is what bc1(run) does; measure(run) will prompt for measurements
 # from the images bc1 creates.
 
-def load_img(image):
-    im = Image.open(image)
-    im.load()
 
-    source = im.split()
-
-    red = source[0].load()
-    green = source[1].load()
-    blue = source[2].load()
-
-    w, h = im.size
-
-    return red, green, blue, w, h
-
-def barrel_corr(image, outdir):
+def barrel_corr(image, outimage, Null=None):
     run = image.split('/')[-3]
     cam = image.split('/')[-2]
     frame = image.split('/')[-1]
@@ -53,16 +41,8 @@ def barrel_corr(image, outdir):
     else:
         print "Camera must be cam1 or cam2"
 
-    outdirpath = '%s/%s/%s/%s/' % (path, outdir, run, cam)
-    if not os.path.exists(outdirpath):
-        os.makedirs(outdirpath)
+    command = 'convert -distort Barrel %s %s %s' % (corr, image, outimage)
 
-    infile = '%s/synced/%s/%s/%s' % (path, run, cam, frame)
-    outfile = outdirpath + frame
-    command = 'convert -distort Barrel %s %s %s' % (corr, infile, outfile)
-
-    #print cam,"has barrel correction coefficients"
-    #print corr
     print "Correcting", run, cam, frame, "\r",
     sys.stdout.flush()
     os.system(command)
@@ -143,38 +123,82 @@ def get_run_data(run):
 
     return run_data
 
-def rotation_corr(image, angle):
-    # rotates the image by a given angle and saves, overwriting the original
-    im = Image.open(image)
-    rot = im.rotate(angle)
-    rot.save(image)
+def proc_images(proc, run, source, output, arg1, arg2):
+    def cam_proc(arg):
+        path = image.split('/')
+        run = path[-3]
+        cam = path[-2]
+        frame = path[-1]
 
-def rescale(image, ratio):
-    im = Image.open(image)
-    w, h = im.size
-    h_new = int(h * ratio)
-    w_new = int(w * ratio)
-    frame = image.split('_')[-1]
-    print "\rrescaling", frame,
-    sys.stdout.flush()
-    re = im.resize((w_new, h_new))
-    re.save(image)
+        path[-4] = output
+        outimage = '/'.join(path)
+        outdirpath = '/'.join(path[:-1])
+        if not os.path.exists(outdirpath):
+            os.makedirs(outdirpath)
+        #print "performing",proc,"on",image,"\r",
+        #sys.stdout.flush()
+        proc(image, outimage, arg)
 
-def add_text(image, (scale, data)):
+    for image in sorted(glob.glob('%s/%s/cam1/*jpg' % (source, run))):
+        cam_proc(arg1)
+    for image in sorted(glob.glob('%s/%s/cam2/*jpg' % (source, run))):
+        cam_proc(arg2)
+
+def barrel_corrections(run, run_data=None):
+    if run_data is None:
+        run_data = get_run_data(run)
+    # Barrel correct
+    bc_out = 'barrel_corr'
+    proc_images(barrel_corr, run, path + '/synced', 'barrel_corr', None, None)
+
+def std_corrections(run, run_data=None):
+    if run_data is None:
+        run_data = get_run_data(run)
+
+    lock_0 = int(run_data['l0x']), int(run_data['l0y'])
+    lock_surf = int(run_data['lsx']), int(run_data['lsy'])
+    join1_0 = int(run_data['j10x']), int(run_data['j10y'])
+    join1_surf = int(run_data['j1sx']), int(run_data['j1sy'])
+
+    join2_0 = int(run_data['j20x']), int(run_data['j20y'])
+    join2_surf = int(run_data['j2sx']), int(run_data['j2sy'])
+    ruler_0 = int(run_data['r0x']), int(run_data['r0y'])
+    ruler_surf = int(run_data['rsx']), int(run_data['rsy'])
+    # need some standard vertical lines in both cameras.
+    # cam1: use lock gate and tank join
+    # cam2: tank join and ruler at 2.5m
+    # (checked to be vertical, extrapolate to surface)
+    # so for each camera, 4 locations (8 numbers) need
+    # to be recorded.
+
+    x1 = lock_0, lock_surf, join1_0, join1_surf
+    X1 = lock_0, \
+         (lock_0[0], lock_0[1] - ideal_25), \
+         (lock_0[0] - ideal_base_1, lock_0[1]), \
+         (lock_0[0] - ideal_base_1, lock_0[1] - ideal_25)
+
+    x2 = join2_0, join2_surf, ruler_0, ruler_surf
+    X2 = join2_0, \
+         (join2_0[0], join2_0[1] - ideal_25), \
+         (join2_0[0] - ideal_base_2, join2_0[1]), \
+         (join2_0[0] - ideal_base_2, join2_0[1] - ideal_25)
+
+    print x1
+    print X1
+    cam1_coeff = tuple(perspective_coefficients(x1,X1))
+    cam2_coeff = tuple(perspective_coefficients(x2,X2))
+
+    # transform('img_0001.jpg', cam1_coeff)
+    proc_images(transform, run, path + '/barrel_corr', 'std_corr', \
+                                                cam1_coeff, cam2_coeff)
+
+def add_text(image, outimage, Null=None):
     # opens and crops an image to the box given.
     im = Image.open(image)
-    # have to change the out image
-    dirs = image.split('/')[:]
-    dirs[-4] = 'processed'
-    outimage = '/'.join(dirs)
-    outdir = '/'.join(dirs[:-1])
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
 
-    ratio, run_data = scale, data
-    run = image.split('/')[-3]
-    cam = image.split('/')[-2]
-    frame = image.split('_')[-1]
+    run, cam, frame = image.split('/')[-3:]
+    run_data = get_run_data(run)
+    frame = frame.split('_')[-1]
     time = int(frame.split('.')[0]) - 1
     print "Crop / text", run, frame, "\r",
     sys.stdout.flush()
@@ -184,13 +208,16 @@ def add_text(image, (scale, data)):
         return
 
     # define the box to crop the image to.
-    l0x = int(get_data['l0x'])
-    l0y = int(get_data['l0y'])
+    l0x = int(run_data['l0x'])
+    l0y = int(run_data['l0y'])
+    j20x = int(run_data['j20x'])
+    j20y = int(run_data['j20y'])
+    ref = {'cam1': (l0x, l0y), 'cam2': (j20x, j20y)}
     # FIXME: work for both cameras??
-    left = l0x + crop[cam][0]
-    right = l0x + crop[cam][1]
-    upper = l0y - ideal_25 + crop[cam][2]
-    lower = l0y + crop[cam][3]
+    left = ref[cam][0] + crop[cam][0]
+    right = ref[cam][1] + crop[cam][1]
+    upper = ref[cam][0] - ideal_25 + crop[cam][2]
+    lower = ref[cam][1] + crop[cam][3]
 
     draw = ImageDraw.Draw(im)
     draw.rectangle((left, upper, right, upper + 100), fill='black')
@@ -222,87 +249,17 @@ def add_text(image, (scale, data)):
     cropped = im.crop(box)
     cropped.save(outimage)
 
-def proc_images(proc, run, source, arg1, arg2):
-    #print '%s, %s, cam1, %s' % (proc, run, source)
-    for image in sorted(glob.glob('%s/%s/cam1/*jpg' % (source, run))):
-        #print "performing",proc,"on",image,"\r",
-        #sys.stdout.flush()
-        proc(image, arg1)
-    #print '%s, %s, cam2, %s' % (proc, run, source)
-    for image in sorted(glob.glob('%s/%s/cam2/*jpg' % (source, run))):
-        #print "performing",proc,"on",image,"\r",
-        #sys.stdout.flush()
-        proc(image, arg2)
-
-def std_corrections(run, run_data=None):
-    if run_data is None:
-        run_data = get_run_data(run)
-    # Barrel correct
-    bc_out = 'std_corr'
-    # proc_images(barrel_corr, run, path + '/synced', bc_out, bc_out)
-
-    ideal_25 = 435
-
-    lock_0 = int(run_data['l0x']), int(run_data['l0y'])
-    lock_surf = int(run_data['lsx']), int(run_data['lsy'])
-    join1_0 = int(run_data['j10x']), int(run_data['j10y'])
-    join1_surf = int(run_data['j1sx']), int(run_data['j1sy'])
-
-    join2_0 = int(run_data['j20x']), int(run_data['j20y'])
-    join2_surf = int(run_data['j2sx']), int(run_data['j2sy'])
-    ruler_0 = int(run_data['r0x']), int(run_data['r0y'])
-    ruler_surf = int(run_data['rsx']), int(run_data['rsy'])
-    # need some standard vertical lines in both cameras.
-    # cam1: use lock gate and tank join
-    # cam2: tank join and ruler at 2.5m
-    # (checked to be vertical, extrapolate to surface)
-    # so for each camera, 4 locations (8 numbers) need
-    # to be recorded.
-    ideal_base_1 = int(5.88 * ideal_25)
-    ideal_base_2 = int(7.96 * ideal_25)
-
-    x1 = lock_0, lock_surf, join1_0, join1_surf
-    X1 = lock_0, \
-         (lock_0[0], lock_0[1] - ideal_25), \
-         (lock_0[0] - ideal_base_1, lock_0[1]), \
-         (lock_0[0] - ideal_base_1, lock_0[1] - ideal_25)
-
-    x2 = join2_0, join2_surf, ruler_0, ruler_surf
-    X2 = join2_0, \
-         (join2_0[0], join2_0[1] - ideal_25), \
-         (join2_0[0] - ideal_base_2, join2_0[1]), \
-         (join2_0[0] - ideal_base_2, join2_0[1] - ideal_25)
-
-    print x1
-    print X1
-    cam1_coeff = tuple(perspective_coefficients(x1,X1))
-    cam2_coeff = tuple(perspective_coefficients(x2,X2))
-
-    transform('img_0001.jpg', cam1_coeff)
-    # proc_images(transform, run, path + '/' + bc_out, cam1_coeff, cam2_coeff)
-
 def text_crop(run, run_data=None):
-    if run_data is None:
-        run_data = get_run_data(run)
-    # Resize the images to standard
-    ideal_ruler = 435
-    ruler = int(run_data['bottom_1']) - int(run_data['ruler_25'])
-    ruler_ratio = ideal_ruler / ruler
-    depth_1 = int(run_data['bottom_1']) - int(run_data['surface_1'])
-    depth_2 = int(run_data['bottom_2']) - int(run_data['surface_2'])
-    cam1_ratio = ruler_ratio
-    if depth_2 != 0:
-        depth_ratio = depth_1 / depth_2
-        cam2_ratio = ruler_ratio * depth_ratio
-    elif depth_2 == 0:
-        cam2_ratio = 1
     # Add text and crop
-    proc_images(add_text, run, path + '/std_corr', \
-            (cam1_ratio, run_data), (cam2_ratio, run_data))
+    proc_images(add_text, run, path + '/std_corr', 'processed', None, None)
 
-def perspective_coefficients(x,X):
+def perspective_coefficients(X,x):
     """Calculates the perspective coeffcients for a given list of
     four input points, x, and output X.
+
+    N.B. This calculates the coefficients needed to obtain the
+    corresponding INPUT to a given OUTPUT, which is what we need
+    for PIL transform.
 
     Solves the equation Ac = X.
     """
@@ -319,12 +276,36 @@ def perspective_coefficients(x,X):
                 [0,0,0,x4,y4,1,-Y4*x4,-Y4*y4]])
 
     c = solve(A, asarray(X).flatten())
-    print c
 
     return c
 
-def transform(image, coeffs):
+def transform(image, outimage, coeffs):
     im = Image.open(image)
-    print coeffs
-    trans = im.transform(im.size, 2, coeffs)
+    run, cam, frame = image.split('/')[-3:]
+    print "Perspective transform", run, cam, frame, "\r",
+    sys.stdout.flush()
+    trans = im.transform(im.size, Image.PERSPECTIVE, coeffs)
+    trans.save(outimage)
+
+def pp(coords, coeffs):
+    """Apply the projective transform to coords using given
+    coeffients.
+    """
+    x, y = coords[0], coords[1]
+    a,b,c,d,e,f,g,h = coeffs
+
+    X = (a*x + b*y + c) / (g*x + h*y + 1)
+    Y = (d*x + e*y + f) / (g*x + h*y + 1)
+
+    return X, Y
+
+def transform2(image, coeffs):
+    im = asarray(Image.open(image))
+    print im[10,10]
+    trans = geometric_transform(im, pp, extra_arguments=(coeffs,))
+    print 'ok'
+
+    print trans[10, 10]
     trans.save('out.jpg')
+
+
