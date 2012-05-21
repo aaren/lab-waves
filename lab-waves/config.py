@@ -50,21 +50,21 @@ front_depths = {'0.4': 520, '1': 495}
 # lock position for left, right; scale_depth for upper; tank bottom for
 # lower. ensure that these are consistent with the source images!
 # e.g. by comparison with proc_data.
-crop = {}
-ideal_25 = 434
+ideal_25 = 400
 ideal_m = ideal_25 * 4
 ideal_base_1 = int(1.47 * ideal_m)
-ideal_base_2 = int(1.59 * ideal_m)
+ideal_base_2 = int(0.99 * ideal_m)
 
 c1l = 1.46
-c1r = -0.15
+c1r = -0.10
 c2l = 3.10
 c2r = 1.39
 l = {'cam1': c1l, 'cam2': c2l}
 
+crop = {}
 crop['cam1'] = (int(-c1l * ideal_m), \
                 int(-c1r * ideal_m), \
-                 -100, 150)
+                 -50, 110)
 crop['cam2'] = (int(-(c2l - 1.51) * ideal_m), \
                 int(-(c2r - 1.51) * ideal_m), \
                 -100, 150)

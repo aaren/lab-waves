@@ -16,7 +16,8 @@ from scipy.ndimage.interpolation import geometric_transform
 
 from aolcore import pull_col, pull_line
 from aolcore import get_parameters
-from config import path, paramf, procf, crop, ideal_25, ideal_base_1, ideal_base_2
+from config import path, paramf, procf, crop
+from config import ideal_25, ideal_base_1, ideal_base_2
 
 # We don't just want to operate on a single image, we want to operate on
 # many. But in the first instance, in determining the offsets for cropping
@@ -187,6 +188,10 @@ def std_corrections(run, run_data=None):
     print X1
     cam1_coeff = tuple(perspective_coefficients(x1,X1))
     cam2_coeff = tuple(perspective_coefficients(x2,X2))
+    print cam1_coeff
+    print x2
+    print X2
+    print cam2_coeff
 
     # transform('img_0001.jpg', cam1_coeff)
     proc_images(transform, run, path + '/barrel_corr', 'std_corr', \
@@ -207,27 +212,27 @@ def add_text(image, outimage, Null=None):
     if odd[cam] == '999':
         return
 
-    # define the box to crop the image to.
+    # define the box to crop the image to relative to the
+    # invariant point in the projection transform (se).
     l0x = int(run_data['l0x'])
     l0y = int(run_data['l0y'])
     j20x = int(run_data['j20x'])
     j20y = int(run_data['j20y'])
     ref = {'cam1': (l0x, l0y), 'cam2': (j20x, j20y)}
-    # FIXME: work for both cameras??
     left = ref[cam][0] + crop[cam][0]
-    right = ref[cam][1] + crop[cam][1]
-    upper = ref[cam][0] - ideal_25 + crop[cam][2]
+    right = ref[cam][0] + crop[cam][1]
+    upper = ref[cam][1] - ideal_25 + crop[cam][2]
     lower = ref[cam][1] + crop[cam][3]
 
     draw = ImageDraw.Draw(im)
-    draw.rectangle((left, upper, right, upper + 100), fill='black')
-    draw.rectangle((left, lower - 100, right, lower), fill='black')
+    draw.rectangle((left, upper, right, upper + 50), fill='black')
+    draw.rectangle((left, lower - 60, right, lower), fill='black')
 
     # this is PLATFORM DEPENDENT
     # in 15 pt Liberation Regular, "Aaron O'Leary" is 360 px wide.
     # "University of Leeds" is 520 px wide.
     fonts = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf'
-    font = ImageFont.truetype(fonts, 45)
+    font = ImageFont.truetype(fonts, 40)
 
     p = get_parameters(run, paramf)
     author_text = "Aaron O'Leary, University of Leeds"
@@ -238,7 +243,7 @@ def add_text(image, outimage, Null=None):
             p['rho_1'], p['rho_2'], p['alpha'], p['D/H'])
 
     text_hi_pos = (left, upper)
-    text_low_pos = (left, lower - 100)
+    text_low_pos = (left, lower - 60)
     text_hi, text_low = param_text, author_text
 
     draw.text(text_hi_pos, text_hi, font=font, fill="white")
