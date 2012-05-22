@@ -51,7 +51,7 @@ def measure(run):
         plt.xlim(0,3000)
         if camera == 'cam1':
             print "What is the extent of lock leakage?"
-            leak = plt.ginput(2,0)[0][0])
+            leak = plt.ginput(2,0)[0][0]
             proc.append(int(pt1[0][0] - leak))
         print "Weird (y/n)"
         proc.append(raw_input('> '))
@@ -67,7 +67,7 @@ def get_run_data(run):
     proc_runs = pull_col(0, procf, ',')
     try:
         line_number = proc_runs.index(run)
-        print "%s is in proc_data" % run
+        # print "%s is in proc_data" % run
     except ValueError:
         print "%s is not in the procf (%s)" % (run, procf)
         print "get the proc_data for this run now? (y/n)"
@@ -287,3 +287,4 @@ def proc_images(proc, run, source, output, arg1, arg2):
         cam_proc(arg1)
     for image in sorted(glob.glob('%s/%s/cam2/*jpg' % (source, run))):
         cam_proc(arg2)
+    print "\n"
