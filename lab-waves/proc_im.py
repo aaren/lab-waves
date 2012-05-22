@@ -27,41 +27,6 @@ from config import ideal_25, ideal_base_1, ideal_base_2
 # from the images bc1 creates.
 
 
-def barrel_corr(image, outimage, Null=None):
-    run = image.split('/')[-3]
-    cam = image.split('/')[-2]
-    frame = image.split('/')[-1]
-
-    cam1corr = '"0.000658776 -0.0150048 -0.00123339 1.01557914"'
-    cam2corr = '"0.023969 -0.060001 0 1.036032"'
-
-    if cam == 'cam1':
-        corr = cam1corr
-    elif cam == 'cam2':
-        corr = cam2corr
-    else:
-        print "Camera must be cam1 or cam2"
-
-    command = 'convert -distort Barrel %s %s %s' % (corr, image, outimage)
-
-    print "Correcting", run, cam, frame, "\r",
-    sys.stdout.flush()
-    os.system(command)
-
-def bc1(run):
-    """Just barrel correct the first image of a run"""
-    indir = '%s/synced/%s' % (path, run)
-    outdir = 'bc1'
-    for camera in ['cam1', 'cam2']:
-        dirs = '/'.join([path, outdir, run, camera])
-        if not os.path.exists(dirs):
-            os.makedirs(dirs)
-            print "made " + dirs
-        else:
-            print "using " + dirs
-        image1 = '%s/%s/img_0001.jpg' % (indir, camera)
-        barrel_corr(image1, outdir)
-
 def measure(run):
     proc = []
     proc.append(run)
@@ -98,10 +63,6 @@ def measure(run):
     f.write(entry)
     f.close()
 
-def bcm():
-    # easy testing
-    measure('r11_7_06g')
-
 def get_run_data(run):
     proc_runs = pull_col(0, procf, ',')
     try:
@@ -124,26 +85,40 @@ def get_run_data(run):
 
     return run_data
 
-def proc_images(proc, run, source, output, arg1, arg2):
-    def cam_proc(arg):
-        path = image.split('/')
-        run = path[-3]
-        cam = path[-2]
-        frame = path[-1]
+def bc1(run):
+    """Just barrel correct the first image of a run"""
+    indir = '%s/synced/%s' % (path, run)
+    outdir = 'bc1'
+    for camera in ['cam1', 'cam2']:
+        dirs = '/'.join([path, outdir, run, camera])
+        if not os.path.exists(dirs):
+            os.makedirs(dirs)
+            print "made " + dirs
+        else:
+            print "using " + dirs
+        image1 = '%s/%s/img_0001.jpg' % (indir, camera)
+        barrel_corr(image1, outdir)
 
-        path[-4] = output
-        outimage = '/'.join(path)
-        outdirpath = '/'.join(path[:-1])
-        if not os.path.exists(outdirpath):
-            os.makedirs(outdirpath)
-        #print "performing",proc,"on",image,"\r",
-        #sys.stdout.flush()
-        proc(image, outimage, arg)
+def barrel_corr(image, outimage, Null=None):
+    run = image.split('/')[-3]
+    cam = image.split('/')[-2]
+    frame = image.split('/')[-1]
 
-    for image in sorted(glob.glob('%s/%s/cam1/*jpg' % (source, run))):
-        cam_proc(arg1)
-    for image in sorted(glob.glob('%s/%s/cam2/*jpg' % (source, run))):
-        cam_proc(arg2)
+    cam1corr = '"0.000658776 -0.0150048 -0.00123339 1.01557914"'
+    cam2corr = '"0.023969 -0.060001 0 1.036032"'
+
+    if cam == 'cam1':
+        corr = cam1corr
+    elif cam == 'cam2':
+        corr = cam2corr
+    else:
+        print "Camera must be cam1 or cam2"
+
+    command = 'convert -distort Barrel %s %s %s' % (corr, image, outimage)
+
+    print "Correcting", run, cam, frame, "\r",
+    sys.stdout.flush()
+    os.system(command)
 
 def barrel_corrections(run, run_data=None):
     if run_data is None:
@@ -151,6 +126,40 @@ def barrel_corrections(run, run_data=None):
     # Barrel correct
     bc_out = 'barrel_corr'
     proc_images(barrel_corr, run, path + '/synced', 'barrel_corr', None, None)
+
+def perspective_coefficients(X,x):
+    """Calculates the perspective coeffcients for a given list of
+    four input points, x, and output X.
+
+    N.B. This calculates the coefficients needed to obtain the
+    corresponding INPUT to a given OUTPUT, which is what we need
+    for PIL transform.
+
+    Solves the equation Ac = X.
+    """
+    (x1, y1), (x2, y2), (x3, y3), (x4, y4) = x
+    (X1, Y1), (X2, Y2), (X3, Y3), (X4, Y4) = X
+
+    A = matrix([[x1,y1,1,0,0,0,-X1*x1,-X1*y1],\
+                [0,0,0,x1,y1,1,-Y1*x1,-Y1*y1],\
+                [x2,y2,1,0,0,0,-X2*x2,-X2*y2],\
+                [0,0,0,x2,y2,1,-Y2*x2,-Y2*y2],\
+                [x3,y3,1,0,0,0,-X3*x3,-X3*y3],\
+                [0,0,0,x3,y3,1,-Y3*x3,-Y3*y3],\
+                [x4,y4,1,0,0,0,-X4*x4,-X4*y4],\
+                [0,0,0,x4,y4,1,-Y4*x4,-Y4*y4]])
+
+    c = solve(A, asarray(X).flatten())
+
+    return c
+
+def transform(image, outimage, coeffs):
+    im = Image.open(image)
+    run, cam, frame = image.split('/')[-3:]
+    print "Perspective transform", run, cam, frame, "\r",
+    sys.stdout.flush()
+    trans = im.transform(im.size, Image.PERSPECTIVE, coeffs)
+    trans.save(outimage)
 
 def std_corrections(run, run_data=None):
     if run_data is None:
@@ -258,59 +267,23 @@ def text_crop(run, run_data=None):
     # Add text and crop
     proc_images(add_text, run, path + '/std_corr', 'processed', None, None)
 
-def perspective_coefficients(X,x):
-    """Calculates the perspective coeffcients for a given list of
-    four input points, x, and output X.
+def proc_images(proc, run, source, output, arg1, arg2):
+    def cam_proc(arg):
+        path = image.split('/')
+        run = path[-3]
+        cam = path[-2]
+        frame = path[-1]
 
-    N.B. This calculates the coefficients needed to obtain the
-    corresponding INPUT to a given OUTPUT, which is what we need
-    for PIL transform.
+        path[-4] = output
+        outimage = '/'.join(path)
+        outdirpath = '/'.join(path[:-1])
+        if not os.path.exists(outdirpath):
+            os.makedirs(outdirpath)
+        #print "performing",proc,"on",image,"\r",
+        #sys.stdout.flush()
+        proc(image, outimage, arg)
 
-    Solves the equation Ac = X.
-    """
-    (x1, y1), (x2, y2), (x3, y3), (x4, y4) = x
-    (X1, Y1), (X2, Y2), (X3, Y3), (X4, Y4) = X
-
-    A = matrix([[x1,y1,1,0,0,0,-X1*x1,-X1*y1],\
-                [0,0,0,x1,y1,1,-Y1*x1,-Y1*y1],\
-                [x2,y2,1,0,0,0,-X2*x2,-X2*y2],\
-                [0,0,0,x2,y2,1,-Y2*x2,-Y2*y2],\
-                [x3,y3,1,0,0,0,-X3*x3,-X3*y3],\
-                [0,0,0,x3,y3,1,-Y3*x3,-Y3*y3],\
-                [x4,y4,1,0,0,0,-X4*x4,-X4*y4],\
-                [0,0,0,x4,y4,1,-Y4*x4,-Y4*y4]])
-
-    c = solve(A, asarray(X).flatten())
-
-    return c
-
-def transform(image, outimage, coeffs):
-    im = Image.open(image)
-    run, cam, frame = image.split('/')[-3:]
-    print "Perspective transform", run, cam, frame, "\r",
-    sys.stdout.flush()
-    trans = im.transform(im.size, Image.PERSPECTIVE, coeffs)
-    trans.save(outimage)
-
-def pp(coords, coeffs):
-    """Apply the projective transform to coords using given
-    coeffients.
-    """
-    x, y = coords[0], coords[1]
-    a,b,c,d,e,f,g,h = coeffs
-
-    X = (a*x + b*y + c) / (g*x + h*y + 1)
-    Y = (d*x + e*y + f) / (g*x + h*y + 1)
-
-    return X, Y
-
-def transform2(image, coeffs):
-    im = asarray(Image.open(image))
-    print im[10,10]
-    trans = geometric_transform(im, pp, extra_arguments=(coeffs,))
-    print 'ok'
-
-    print trans[10, 10]
-    trans.save('out.jpg')
-
-
+    for image in sorted(glob.glob('%s/%s/cam1/*jpg' % (source, run))):
+        cam_proc(arg1)
+    for image in sorted(glob.glob('%s/%s/cam2/*jpg' % (source, run))):
+        cam_proc(arg2)
