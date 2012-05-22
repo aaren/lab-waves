@@ -37,9 +37,11 @@ def measure(run):
         plt.imshow(im)
         plt.xlim(2500,3000)
         plt.ylim(750, 1500)
+        plt.draw()
         print "Select lock base and surface"
         pt1 = plt.ginput(3, 0)
         plt.xlim(0,500)
+        plt.draw()
         print "Select join base and surface"
         pt2 = plt.ginput(3, 0)
 
@@ -49,6 +51,7 @@ def measure(run):
             proc.append(2000 - int(y))
 
         plt.xlim(0,3000)
+        plt.draw()
         if camera == 'cam1':
             print "What is the extent of lock leakage?"
             leak = plt.ginput(2,0)[0][0]
@@ -95,7 +98,8 @@ def bc1(run):
             os.makedirs(dirs)
             print "made " + dirs
         else:
-            print "using " + dirs
+            # print "using " + dirs
+            pass
         image1 = '%s/%s/img_0001.jpg' % (indir, camera)
         barrel_corr(image1, outdir)
 
@@ -121,8 +125,6 @@ def barrel_corr(image, outimage, Null=None):
     os.system(command)
 
 def barrel_corrections(run, run_data=None):
-    if run_data is None:
-        run_data = get_run_data(run)
     # Barrel correct
     bc_out = 'barrel_corr'
     proc_images(barrel_corr, run, path + '/synced', 'barrel_corr', None, None)
@@ -197,10 +199,8 @@ def std_corrections(run, run_data=None):
     print X1
     cam1_coeff = tuple(perspective_coefficients(x1,X1))
     cam2_coeff = tuple(perspective_coefficients(x2,X2))
-    print cam1_coeff
     print x2
     print X2
-    print cam2_coeff
 
     # transform('img_0001.jpg', cam1_coeff)
     proc_images(transform, run, path + '/barrel_corr', 'std_corr', \

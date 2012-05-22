@@ -17,11 +17,13 @@ def measure(run):
     """
     # Barrel correct the first frame of each camera in a run
     # outputs to dir 'bc1' in the path
-    proc_im.bc1(run)
+    # proc_im.bc1(run)
+    # proc_im.barrel_corrections(run)
 
+    proc_im.measure(run)
     # Prompt user for measurements of run data, if they don't
     # exist already.
-    proc_im.get_run_data(run)
+    # proc_im.get_run_data(run)
 
 def proc_im_base(run):
     # Correct barrel distortion and rotation. Will prompt for run

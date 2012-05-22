@@ -67,7 +67,7 @@ crop['cam1'] = (int(-c1l * ideal_m), \
                  -50, 110)
 crop['cam2'] = (int(-(c2l - 1.51) * ideal_m), \
                 int(-(c2r - 1.51) * ideal_m), \
-                -100, 150)
+                -50, 110)
 
 # specify the positions of rulers and other vertical features that
 # obscure the fluid. These are measurements relative to the offset.
