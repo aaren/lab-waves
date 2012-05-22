@@ -12,7 +12,7 @@ import ImageDraw
 from numpy import matrix
 from numpy import asarray
 from numpy.linalg import solve
-from scipy.ndimage.interpolation import geometric_transform
+import matplotlib.pyplot as plt
 
 from aolcore import pull_col, pull_line
 from aolcore import get_parameters
@@ -66,33 +66,33 @@ def measure(run):
     proc = []
     proc.append(run)
     for camera in ['cam1', 'cam2']:
-        command = 'gimp -s -f -d %s/bc1/%s/%s/img_0001.jpg &'\
-                                         % (path, run, camera)
-        os.system(command)
+        plt.figure(figsize=(16,12))
+        img1 = '%s/bc1/%s/%s/img_0001.jpg' % (path, run, camera)
+        im = Image.open(img1)
+        plt.imshow(im)
+        plt.xlim(2500,3000)
+        plt.ylim(750, 1500)
+        print "Select lock base and surface"
+        pt1 = plt.ginput(3, 0)
+        plt.xlim(0,500)
+        print "Select join base and surface"
+        pt2 = plt.ginput(3, 0)
 
-        print "What is the rotation correction for %s? (as measured)" % camera
-        proc.append(raw_input('> '))
+        pts = pt1[0:2] + pt2[0:2]
+        for x,y in pts:
+            proc.append(int(x))
+            proc.append(2000 - int(y))
 
-        print "What is the offset for %s?" % camera
-        proc.append(raw_input('> '))
-
-        print "What is the position of the water surface for %s?" % camera
-        proc.append(raw_input('> '))
-
-        print "What is the position of the tank floor for %s?" % camera
-        proc.append(raw_input('> '))
-
+        plt.xlim(0,3000)
         if camera == 'cam1':
-            print "Where is the 25 in %s" % camera
-            proc.append(raw_input('> '))
-            print "What is the lock position?"
-            proc.append(raw_input('> '))
             print "What is the extent of lock leakage?"
-            proc.append(raw_input('> '))
-
+            leak = plt.ginput(2,0)[0][0])
+            proc.append(int(pt1[0][0] - leak))
         print "Weird (y/n)"
         proc.append(raw_input('> '))
+        plt.close()
 
+    proc = [str(e) for e in proc]
     entry = ','.join(proc) + '\n'
     f = open(procf, 'a')
     f.write(entry)
