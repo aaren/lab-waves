@@ -65,8 +65,8 @@ def rem_text(im):
     returning an image object"""
     w, h = im.size
 
-    top_bar = (0, 0, w, 100)
-    bottom_bar = (0, h-100, w, h)
+    top_bar = (0, 0, w, 50)
+    bottom_bar = (0, h-60, w, h)
 
     im.paste('black', top_bar)
     im.paste('black', bottom_bar)
@@ -107,8 +107,8 @@ def remove_text(run, proc_dir):
 
         w, h = im.size
 
-        top_bar = (0, 0, w, 100)
-        bottom_bar = (0, h-100, w, h)
+        top_bar = (0, 0, w, 50)
+        bottom_bar = (0, h-60, w, h)
 
         im.paste('black', top_bar)
         im.paste('black', bottom_bar)
@@ -132,7 +132,7 @@ def remove_borders(run, proc_dir):
 
         w, h = im.size
 
-        box = (0, 100, w, h-100)
+        box = (0, 50, w, h-60)
         cropped = im.crop(box)
         cropped.save(outfile)
 
