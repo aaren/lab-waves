@@ -56,7 +56,7 @@ ideal_base_1 = int(1.47 * ideal_m)
 ideal_base_2 = int(0.99 * ideal_m)
 
 c1l = 1.46
-c1r = -0.10
+c1r = -0.05
 c2l = 3.10
 c2r = 1.39
 l = {'cam1': c1l, 'cam2': c2l}

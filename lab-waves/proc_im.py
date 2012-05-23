@@ -32,8 +32,12 @@ def measure(run):
     proc.append(run)
     for camera in ['cam1', 'cam2']:
         plt.figure(figsize=(16,12))
-        img1 = '%s/bc1/%s/%s/img_0001.jpg' % (path, run, camera)
-        im = Image.open(img1)
+        img1 = '%s/barrel_corr/%s/%s/img_0001.jpg' % (path, run, camera)
+        try:
+            im = Image.open(img1)
+        except IOError:
+            print "Bad image for %s %s" % (run, camera)
+            break
         plt.imshow(im)
         plt.xlim(2500,3000)
         plt.ylim(750, 1500)
@@ -48,7 +52,7 @@ def measure(run):
         pts = pt1[0:2] + pt2[0:2]
         for x,y in pts:
             proc.append(int(x))
-            proc.append(2000 - int(y))
+            proc.append(im.size[1] - int(y))
 
         plt.xlim(0,3000)
         plt.draw()
