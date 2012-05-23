@@ -198,12 +198,15 @@ def std_corrections(run, run_data=None):
          (join2_0[0] - ideal_base_2, join2_0[1]), \
          (join2_0[0] - ideal_base_2, join2_0[1] - ideal_25)
 
-    print x1
-    print X1
+    # print x1
+    # print X1
+    # print x2
+    # print X2
     cam1_coeff = tuple(perspective_coefficients(x1,X1))
-    cam2_coeff = tuple(perspective_coefficients(x2,X2))
-    print x2
-    print X2
+    if run_data['j20x'] == '0':
+        cam2_coeff = 0
+    else:
+        cam2_coeff = tuple(perspective_coefficients(x2,X2))
 
     # transform('img_0001.jpg', cam1_coeff)
     proc_images(transform, run, path + '/barrel_corr', 'std_corr', \
