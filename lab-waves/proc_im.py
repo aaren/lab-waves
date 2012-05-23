@@ -290,4 +290,4 @@ def proc_images(proc, run, source, output, arg1, arg2):
         cam_proc(arg1)
     for image in sorted(glob.glob('%s/%s/cam2/*jpg' % (source, run))):
         cam_proc(arg2)
-    print "\n"
+    # print "\n"
