@@ -43,6 +43,7 @@ def proc_im_main(run):
 
     # Add text and crop the image. Will prompt for run measurements
     # if they do not exist.
+    proc_im.std_corrections(run)
     proc_im.text_crop(run)
 
     # Create some joined up images in presentation and an

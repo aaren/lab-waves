@@ -77,8 +77,8 @@ def process(image, fluid_type_lists, region, fluid, rulers):
     camera = image.split('/')[-2]
 
     if camera == 'cam1':
-        l_lim = 80
-        r_lim = 2700 # this is approximate and discards lock parallax
+        l_lim = 20
+        r_lim = 2350 # this is approximate and discards lock parallax
     elif camera == 'cam2':
         l_lim = 20
         r_lim = crop['cam2'][1] - crop['cam2'][0]
@@ -173,7 +173,7 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     # much faster, given we know the row we want (70ms / 200us)
     # but the zip transpose is still very quick.
     if not front_depth:
-        front_depth = 510
+        front_depth = 425
     def get_front_pos(fluid, d=5):
         try:
             tot = 0

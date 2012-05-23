@@ -18,6 +18,7 @@ from aolcore import pull_col, pull_line
 from aolcore import get_parameters
 from config import path, paramf, procf, crop
 from config import ideal_25, ideal_base_1, ideal_base_2
+from config import top_bar, bottom_bar
 
 # We don't just want to operate on a single image, we want to operate on
 # many. But in the first instance, in determining the offsets for cropping
@@ -43,7 +44,10 @@ def measure(run):
         plt.draw()
         print "Select lock base and surface"
         pt1 = plt.ginput(3, 0)
-        plt.xlim(0,500)
+        if camera == 'cam1':
+            plt.xlim(0,500)
+        elif camera == 'cam2':
+            plt.xlim(750, 1250)
         plt.draw()
         print "Select join base and surface"
         pt2 = plt.ginput(3, 0)
@@ -240,8 +244,8 @@ def add_text(image, outimage, Null=None):
     lower = ref[cam][1] + crop[cam][3]
 
     draw = ImageDraw.Draw(im)
-    draw.rectangle((left, upper, right, upper + 50), fill='black')
-    draw.rectangle((left, lower - 60, right, lower), fill='black')
+    draw.rectangle((left, upper, right, upper + top_bar), fill='black')
+    draw.rectangle((left, lower - bottom_bar, right, lower), fill='black')
 
     # this is PLATFORM DEPENDENT
     # in 15 pt Liberation Regular, "Aaron O'Leary" is 360 px wide.
@@ -258,7 +262,7 @@ def add_text(image, outimage, Null=None):
             p['rho_1'], p['rho_2'], p['alpha'], p['D/H'])
 
     text_hi_pos = (left, upper)
-    text_low_pos = (left, lower - 60)
+    text_low_pos = (left, lower - bottom_bar)
     text_hi, text_low = param_text, author_text
 
     draw.text(text_hi_pos, text_hi, font=font, fill="white")

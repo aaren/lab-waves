@@ -37,7 +37,7 @@ thresh_values = (thresh_green, core_red, mixed_red)
 
 # Depths at which to scan for the current front. 0.4 is partial, 1 is full
 # depth.
-front_depths = {'0.4': 520, '1': 495}
+front_depths = {'0.4': 425, '1': 400}
 
 ### /BASIC SETTINGS ###
 
@@ -69,6 +69,9 @@ crop['cam2'] = (int(-(c2l - 1.51) * ideal_m), \
                 int(-(c2r - 1.51) * ideal_m), \
                 -50, 110)
 
+top_bar = 50
+bottom_bar = 60
+
 # specify the positions of rulers and other vertical features that
 # obscure the fluid. These are measurements relative to the offset.
 # It isn't possible to consistently define them otherwise.
@@ -82,28 +85,25 @@ real_rulers['cam2'] = [(1.46, 1.54), (1.99, 2.02), (2.49, 2.52), (2.99, 3.02)]
 
 rulers = {}
 for cam in ['cam1', 'cam2']:
-    rulers[cam] = [((l[cam] - y) * ideal_m , \
-                    (l[cam] - x) * ideal_m ) for x, y in real_rulers[cam]]
+    rulers[cam] = [(int((l[cam] - y) * ideal_m) , \
+                    (int(l[cam] - x) * ideal_m) ) for x, y in real_rulers[cam]]
 
-# distance from offset mark to zero point (lock side of lock gate)
-# in cam1.
-zero_offset = 2640
 # Specify the offsets that each of the cameras have, for
 # normalisation of pixel measurements
 camera_offsets = {}
 ## the cam1 offset is the distance between wherever zero is in cam1
 ## and the left edge of cam1.
-camera_offsets['cam1'] = (zero_offset - crop['cam1'][0], 543)
+camera_offsets['cam1'] = (c1l * ideal_m, ideal_25 + top_bar)
 ## the cam2 offset is the distance between wherever zero is in cam1
 ## and the left edge of *cam2*
 fudge = 176
-camera_offsets['cam2'] = (zero_offset - crop['cam2'][0] - fudge, 543)
+camera_offsets['cam2'] = (c2l * ideal_m, ideal_25 + top_bar)
 
 # specify the scale, i.e how many pixels to some real measurement in the
 # images. in y we want this to be the total fluid depth. in x make it the
 # lock length for now (25cm).
-fluid_depth = 543 - 109
-lock_length = 440
+fluid_depth = ideal_25
+lock_length = ideal_25
 scales = {}
 scales['cam1'] = (lock_length, fluid_depth)
 scales['cam2'] = (lock_length, fluid_depth)
