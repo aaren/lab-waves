@@ -26,7 +26,6 @@ from config import ideal_25, ideal_base_1, ideal_base_2
 # This is what bc1(run) does; measure(run) will prompt for measurements
 # from the images bc1 creates.
 
-
 def measure(run):
     proc = []
     proc.append(run)
@@ -164,7 +163,7 @@ def transform(image, outimage, coeffs):
     run, cam, frame = image.split('/')[-3:]
     print "Perspective transform", run, cam, frame, "\r",
     sys.stdout.flush()
-    trans = im.transform(im.size, Image.PERSPECTIVE, coeffs)
+    trans = im.transform(im.size, Image.PERSPECTIVE, coeffs, Image.BILINEAR)
     trans.save(outimage)
 
 def std_corrections(run, run_data=None):
