@@ -11,8 +11,9 @@ from numpy import polyfit
 from config import crop
 
 def thresh_img(image, thresh_values=None):
-    # Threshold the image, determining the fluid type of each individual
-    # pixel
+    # Threshold the image, determining the fluid type of each
+    # individual pixel. Return the list of lists that specifies the
+    # fluid type of individual pixels throughout the image.
 
     # open the image and load it to memory.
     im = Image.open(image)
@@ -28,10 +29,7 @@ def thresh_img(image, thresh_values=None):
     if thresh_values:
         thresh_green, thresh_red, mixed_red = thresh_values
 
-    # determine the fluid type throughout the image. remember brackets
-    # around the logical expressions!!!!!
-    # fluid_type is a list of lists. would this not be better implemented as
-    # a numpy array?
+    # remember brackets around the logical expressions!!!!!
     fluid_type = [[0 if (source[i,j][0] > thresh_red[0]) &\
                         (source[i,j][1] < thresh_red[1]) &\
                         (source[i,j][2] < thresh_red[2])
@@ -44,20 +42,8 @@ def thresh_img(image, thresh_values=None):
                            else 'other' \
                     for j in range(h)] for i in range(w)]
 
-    # i wonder if this can be implemented using numpy arrays and map?
-    # np arrays are much more compact than list of lists. could use map with
-    # an explicit lamda function??
-    # this can be done, but the problem with np arrays is that they can't
-    # be indexed in the same way as lists, so the process function below
-    # would need to be modified as indexing the first occurence of '1' etc.
-    # is the present way to detect the interface.
-    # maybe not necessary. the list of lists works fast enough so why bother
-    # fiddling with it??
-    # list comp is evaluated in c anyway, so the performance benefit is
-    # probably not worth it, especially when the code is as clear as it is.
-
-    # output the list of lists that specifies the fluid type of individual
-    # pixels throughout the image.
+    # surely this can be written as a mapping? just need to find a
+    # way of indexing the result.
     return fluid_type
 
 
@@ -135,6 +121,7 @@ def process(image, fluid_type_lists, region, fluid, rulers):
 
     return depth
 
+
 def interpolate(image, in_list, rulers):
     """ Takes a list of interface depths and changes locations with a ruler
     present from a constant value to an interpolation between the two edges.
@@ -159,6 +146,7 @@ def interpolate(image, in_list, rulers):
         interp(ruler)
 
     return interface
+
 
 def main(image, region, rulers, thresh_values=None, front_depth=None):
     top, bottom = region
