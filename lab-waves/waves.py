@@ -45,18 +45,64 @@ class Conjoin(RunData):
         data = read_data(data_file)
 
         Xt = {}
+        Xtn = {}
         for arg in ['max', 'min', 'front']:
             xt = {}
             for cam in ['cam1', 'cam2']:
                 cam_data = data[run][cam]
                 frames = sorted(cam_data.keys())
-                xt[cam] = [[p for p in cam_data[frame][arg]] for frame in frames]
+                # xt[cam] = [[p for p in cam_data[frame][arg]] for frame in frames]
+                # If e.g. frames are 3-5 and 7-9: frames will
+                # include [3,4,5,7,8,9]. Then for each of these,
+                # xt[cam] will have a list of the frame data
+                # appended. Because the frames are not consecutive,
+                # this will lead to gaps in the conjoined data. The
+                # solution is to construct xt as a dict instead,
+                # with the keys as the frame number. This changes
+                # the implementation of anything that uses xt, and I
+                # suspect non trivially.
+                #
+                # The alternative is to make sure that all of the
+                # frames are included, i.e. make frames from
+                # something other than the key list, or put in
+                # filler frames when the frame isn't in the key
+                # list.
 
-            if len(xt['cam2']) == 0:
-                xt['cam2'] = [[] for e in xt['cam1']]
+                xt[cam] = {str(frame): [p for p in cam_data[frame][arg] \
+                                                        for frame in frames}
 
-            Xt[arg] = zip(xt['cam1'], xt['cam2'])
-            Xt[arg] = [e[0] + e[1] for e in Xt[arg]]
+                # then we access frames by e.g.
+
+                # xt['cam1']['0003']
+
+            # how to conjoin now?
+            # Xt[arg]= {k: xt['cam1'][k] + xt['cam2'][k] for k in xt['cam2']}
+            #
+            # this won't work. only inserts keys that are present in
+            # cam2. more explicitly:
+            #
+            # determine the maximum frame number.
+            cam1f = [int(k) for k in xt['cam1'].keys()
+            cam1max = max(cam1f)
+            cam2f = [int(k) for k in xt['cam2'].keys()]
+            cam2max = max(cam2f)
+            fmax = max([cam1max, cam2max])
+
+            Xt[arg] = {}
+            Xtn[arg] = {}
+            for f in range(fmax):
+                F = '%04d' % f
+                if F in xt['cam1'] and F in xt['cam2']:
+                    Xt[arg][F] = xt['cam1'][F] + xt['cam2'][k]
+                elif F in xt['cam1']:
+                    Xt[arg][F] = xt['cam1'][F]
+                elif F in xt['cam2']:
+                    Xt[arg][F] = xt['cam2'][F]
+                if F in Xt[arg]:
+                    Xtn[arg].append(Xt[arg][F])
+                else:
+                    # stick a blank placeholder in
+                    Xtn[arg].append([])
 
         # strip out non physical points (faster then 1:1)
         #for arg in ['max', 'min']:
