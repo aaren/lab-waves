@@ -37,7 +37,9 @@ thresh_values = (thresh_green, core_red, mixed_red)
 
 # Depths at which to scan for the current front. 0.4 is partial, 1 is full
 # depth.
-front_depths = {'0.4': 425, '1': 400}
+d = {'0.4': 0.1, '1': 0.2 }
+for depth in ['0.4', '1']:
+    front_depths[depth] = int(top_bar + (1 - d[depth]) * ideal_25)
 
 ### /BASIC SETTINGS ###
 
