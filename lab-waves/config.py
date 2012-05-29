@@ -35,11 +35,21 @@ thresh_values = (thresh_green, core_red, mixed_red)
 # more like <75, or greater depending on the mixing. Two values for thresh_red
 # gives an idea of the thickness of the mixed layer on the current.
 
+# Scale for the images
+ideal_25 = 400
+ideal_m = ideal_25 * 4
+ideal_base_1 = int(1.47 * ideal_m)
+ideal_base_2 = int(0.99 * ideal_m)
+
+# Thickness of border above and below images.
+top_bar = 50
+bottom_bar = 60
+
 # Depths at which to scan for the current front. 0.4 is partial, 1 is full
 # depth.
 d = {'0.4': 0.1, '1': 0.2 }
-for depth in ['0.4', '1']:
-    front_depths[depth] = int(top_bar + (1 - d[depth]) * ideal_25)
+front_depths = {'0.4': int(top_bar + (1 - d['0.4']) * ideal_25),\
+                '1' : int(top_bar + (1 - d['1']) * ideal_25)}
 
 ### /BASIC SETTINGS ###
 
@@ -52,54 +62,49 @@ for depth in ['0.4', '1']:
 # lock position for left, right; scale_depth for upper; tank bottom for
 # lower. ensure that these are consistent with the source images!
 # e.g. by comparison with proc_data.
-ideal_25 = 400
-ideal_m = ideal_25 * 4
-ideal_base_1 = int(1.47 * ideal_m)
-ideal_base_2 = int(0.99 * ideal_m)
 
-c1l = 1.46
-c1r = -0.05
-c2l = 3.10
-c2r = 1.39
-l = {'cam1': c1l, 'cam2': c2l}
+cl = {'cam1': 1.46, 'cam2': 3.06}
+cr = {'cam1': -0.05, 'cam2': 1.39}
 
-crop = {}
-crop['cam1'] = (int(-c1l * ideal_m), \
-                int(-c1r * ideal_m), \
-                 -50, 110)
-crop['cam2'] = (int(-(c2l - 1.51) * ideal_m), \
-                int(-(c2r - 1.51) * ideal_m), \
-                -50, 110)
+# Some reference points for cropping. Should be the same as the x
+# coord of the se corner of the reference box chosen in
+# measurements, i.e. the invariant point in the perspective
+# transformation.
+crop_ref = {'cam1': 0.00, 'cam2': 1.51}
 
-top_bar = 50
-bottom_bar = 60
+
+crop= {cam: (int(-(cl[cam] - crop_ref[cam]) * ideal_m), \
+             int(-(cr[cam] - crop_ref[cam]) * ideal_m), \
+             -50, 110) for cam in ('cam1', 'cam2')}
 
 # specify the positions of rulers and other vertical features that
 # obscure the fluid. These are measurements relative to the offset.
 # It isn't possible to consistently define them otherwise.
-off_rulers = {}
-off_rulers['cam1'] = [(670, 740), (1410, 1440), (1540, 1610)]
-off_rulers['cam2'] = [(-2840, -2780), (-1960, -1900), (-1110, -1035), (-240, -110)]
+# off_rulers = {}
+# off_rulers['cam1'] = [(670, 740), (1410, 1440), (1540, 1610)]
+# off_rulers['cam2'] = [(-2840, -2780), (-1960, -1900), (-1110, -1035), (-240, -110)]
 
 real_rulers = {}
-real_rulers['cam1'] = [(0.49, 0.52), (0.99, 1.02)]
+real_rulers['cam1'] = [(0.48, 0.525), (0.99, 1.02)]
 real_rulers['cam2'] = [(1.46, 1.54), (1.99, 2.02), (2.49, 2.52), (2.99, 3.02)]
 
 rulers = {}
 for cam in ['cam1', 'cam2']:
-    rulers[cam] = [(int((l[cam] - y) * ideal_m) , \
-                    (int(l[cam] - x) * ideal_m) ) for x, y in real_rulers[cam]]
+    rulers[cam] = [( int((cl[cam] - y) * ideal_m) , \
+                     int((cl[cam] - x) * ideal_m) )
+                        for x, y in real_rulers[cam]]
+
+print rulers
 
 # Specify the offsets that each of the cameras have, for
 # normalisation of pixel measurements
-camera_offsets = {}
 ## the cam1 offset is the distance between wherever zero is in cam1
 ## and the left edge of cam1.
-camera_offsets['cam1'] = (c1l * ideal_m, ideal_25 + top_bar)
+camera_offsets = {c: (cl[cam] * ideal_m, ideal_25 + top_bar)\
+                                    for c in ('cam1', 'cam2')}
 ## the cam2 offset is the distance between wherever zero is in cam1
 ## and the left edge of *cam2*
 fudge = 176
-camera_offsets['cam2'] = (c2l * ideal_m, ideal_25 + top_bar)
 
 # specify the scale, i.e how many pixels to some real measurement in the
 # images. in y we want this to be the total fluid depth. in x make it the
