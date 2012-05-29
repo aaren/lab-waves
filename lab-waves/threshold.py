@@ -133,7 +133,7 @@ def interpolate(image, in_list, rulers):
 
     return -- a list of interface depths with the interpolation applied.
     """
-    interface = in_list
+    interface = in_list[:]
 
     def interp((x1, x2)):
         y1 = interface[x1]
