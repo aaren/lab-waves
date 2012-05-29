@@ -69,7 +69,7 @@ class Conjoin(RunData):
                 # list.
 
                 xt[cam] = {str(frame): [p for p in cam_data[frame][arg] \
-                                                        for frame in frames}
+                                                        for frame in frames]}
 
                 # then we access frames by e.g.
 
@@ -82,7 +82,7 @@ class Conjoin(RunData):
             # cam2. more explicitly:
             #
             # determine the maximum frame number.
-            cam1f = [int(k) for k in xt['cam1'].keys()
+            cam1f = [int(k) for k in xt['cam1'].keys()]
             cam1max = max(cam1f)
             cam2f = [int(k) for k in xt['cam2'].keys()]
             cam2max = max(cam2f)
