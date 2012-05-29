@@ -43,7 +43,6 @@ def proc_im_main(run):
 
     # Add text and crop the image. Will prompt for run measurements
     # if they do not exist.
-    proc_im.std_corrections(run)
     proc_im.text_crop(run)
 
     # Create some joined up images in presentation and an
@@ -71,7 +70,7 @@ def f_basic_data(run):
     """Fast version of basic data (multiprocessing inside the
     thresholding loop).
     """
-    get_data.get_basic_data(run, 0)
+    get_data.get_basic_data(run, 22)
 
 def data(run):
     """The basic interface depths are further processed to
@@ -108,11 +107,11 @@ def all(run):
     """To get some raw, synced, lab data into nice plots in
     a single command.
     """
-    proc_im_base(run)
+    # proc_im_base(run)
     proc_im_main(run)
     f_basic_data(run)
     data(run)
-    plot(run)
+    # plot(run)
 
 def multi(proc, runs):
     # not presently used.
