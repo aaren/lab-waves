@@ -18,10 +18,6 @@ plots_dir = path + '/plots'
 # Note: Modifying these settings requires re-acquiring the basic_data,
 # which is computationally intensive.
 
-# Specify a vertical region of the image in which to search for the interface.
-# Units are pixels, starting from top of image.
-region = (130, 540)
-
 # specify the threshold values to use. fiddling with these has a strong impact
 # on the quality of the interface signal.
 thresh_green = (80, 120, 50)
@@ -44,6 +40,10 @@ ideal_base_2 = int(0.99 * ideal_m)
 # Thickness of border above and below images.
 top_bar = 50
 bottom_bar = 60
+
+# Specify a vertical region of the image in which to search for the interface.
+# Units are pixels, starting from top of image.
+region = (top_bar + 10, top_bar + 400)
 
 # Depths at which to scan for the current front. 0.4 is partial, 1 is full
 # depth.
