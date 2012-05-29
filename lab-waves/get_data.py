@@ -119,7 +119,8 @@ def reject_outliers(inter, r, w, degree=2):
 
     r and w are dependent on the form of the data. w should be
     set to the length-scale over which the data have the approximate
-    form of a parabola.
+    form of a parabola. Increasing w increases smoothness up to a
+    point - that at which a cubic approximation is better.
 
     r should be large enough to accommodate the normal variability
     of the data.
@@ -275,7 +276,7 @@ def get_frame_data(image, run_data_container):
     # Outlier rejection. arg[1] is point to point variability;
     # arg[2] is window over which interface can be considered
     # parabolic in form.
-    fixed_interface = reject_outliers(interface, 20, 50)
+    fixed_interface = reject_outliers(interface, 20, 200)
     # SMOOTHING (Savitzky-Golay). Preferable to moving avg as it
     # doesn't phase shift or crush peaks. Supplied number is the
     # window.
