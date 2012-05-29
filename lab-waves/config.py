@@ -45,8 +45,8 @@ bottom_bar = 60
 # Units are pixels, starting from top of image.
 region = (top_bar + 10, top_bar + 400)
 
-# Depths at which to scan for the current front. 0.4 is partial, 1 is full
-# depth.
+# Depths at which to scan for the current front. 0.4 is partial, 1
+# is full depth (fractions of H, i.e. non dimensional).
 d = {'0.4': 0.1, '1': 0.2 }
 front_depths = {'0.4': int(top_bar + (1 - d['0.4']) * ideal_25),\
                 '1' : int(top_bar + (1 - d['1']) * ideal_25)}
@@ -93,8 +93,6 @@ for cam in ['cam1', 'cam2']:
     rulers[cam] = [( int((cl[cam] - y) * ideal_m) , \
                      int((cl[cam] - x) * ideal_m) )
                         for x, y in real_rulers[cam]]
-
-print rulers
 
 # Specify the offsets that each of the cameras have, for
 # normalisation of pixel measurements
