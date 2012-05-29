@@ -301,7 +301,7 @@ def get_frame_data(image, run_data_container):
     # overlay given interfaces and points onto the images with specified
     # colours. images are saved to the sanity dirs.
     interfaces = [interface, core_current, \
-            mixed_current, smoothed_interface, fixed_interface]
+            mixed_current, fixed_interface, smoothed_interface]
     icolours = ['black', 'blue', 'cyan', 'orange', 'red']
     points = [_max, _min, core_front_coord, mix_front_coord, core_max, mix_max]
     pcolours = ['green', 'purple', 'blue', 'cyan', 'blue', 'cyan']
