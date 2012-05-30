@@ -83,10 +83,17 @@ class Conjoin(RunData):
             # cam2. more explicitly:
             #
             # determine the maximum frame number.
+
             cam1f = [int(k) for k in xt['cam1'].keys()]
-            cam1max = max(cam1f)
+            try:
+                cam1max = max(cam1f)
+            except ValueError:
+                cam1max = 0
             cam2f = [int(k) for k in xt['cam2'].keys()]
-            cam2max = max(cam2f)
+            try:
+                cam2max = max(cam2f)
+            except ValueError:
+                cam2max = 0
             fmax = max(cam1max, cam2max)
 
             Xt[arg] = {}
