@@ -298,9 +298,9 @@ def get_frame_data(image, run_data_container):
     core_current = list(enumerate(core_current))
     mixed_current = list(enumerate(mixed_current))
 
-    # SANITY CHECKING
-    # overlay given interfaces and points onto the images with specified
-    # colours. images are saved to the sanity dirs.
+    # SANITY CHECKING: overlay given interfaces and points onto the
+    # images with specified colours. images are saved to the sanity
+    # dirs.
     interfaces = [interface, core_current, \
             mixed_current, fixed_interface, smoothed_interface]
     icolours = ['black', 'blue', 'cyan', 'orange', 'red']
