@@ -47,9 +47,8 @@ region = (top_bar + 10, top_bar + 400)
 
 # Depths at which to scan for the current front. 0.4 is partial, 1
 # is full depth (fractions of H, i.e. non dimensional).
-d = {'0.4': 0.1, '1': 0.2 }
-front_depths = {'0.4': int(top_bar + (1 - d['0.4']) * ideal_25),\
-                '1' : int(top_bar + (1 - d['1']) * ideal_25)}
+d = {'0.4': 0.05, '1': 0.15 }
+front_depths = {k: int(top_bar + (1 - d[k]) * ideal_25) for k in d}
 
 ### /BASIC SETTINGS ###
 
@@ -75,7 +74,8 @@ crop_ref = {'cam1': 0.00, 'cam2': 1.51}
 
 crop= {cam: (int(-(cl[cam] - crop_ref[cam]) * ideal_m), \
              int(-(cr[cam] - crop_ref[cam]) * ideal_m), \
-             -50, 110) for cam in ('cam1', 'cam2')}
+            -50, \
+             110) for cam in ('cam1', 'cam2')}
 
 # specify the positions of rulers and other vertical features that
 # obscure the fluid. These are measurements relative to the offset.
@@ -98,8 +98,8 @@ for cam in ['cam1', 'cam2']:
 # normalisation of pixel measurements
 ## the cam1 offset is the distance between wherever zero is in cam1
 ## and the left edge of cam1.
-camera_offsets = {c: (cl[cam] * ideal_m, ideal_25 + top_bar)\
-                                    for c in ('cam1', 'cam2')}
+camera_offsets = {cam: (cl[cam] * ideal_m, ideal_25 + top_bar)\
+                                    for cam in ('cam1', 'cam2')}
 ## the cam2 offset is the distance between wherever zero is in cam1
 ## and the left edge of *cam2*
 fudge = 176
@@ -109,15 +109,11 @@ fudge = 176
 # lock length for now (25cm).
 fluid_depth = ideal_25
 lock_length = ideal_25
-scales = {}
-scales['cam1'] = (lock_length, fluid_depth)
-scales['cam2'] = (lock_length, fluid_depth)
+scales = {cam: (lock_length, fluid_depth) for cam in ('cam1', 'cam2')}
 
 # specify where the centre of the camera was pointing to.
 # used in parallax_corr
-centre = {}
-centre['cam1'] = 0.75
-centre['cam2'] = 2.25
+centre = {'cam1': 0.75, 'cam2': 0.25}
 ### /CAMERA SETUP ###
 
 #####/CONFIG#####
