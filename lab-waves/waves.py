@@ -5,10 +5,10 @@
 import sys
 
 import numpy as np
-import matplotlib as mpl
+# import matplotlib as mpl
 # Ensure no errors when there is no display.
 # Must be done before pyplot import.
-mpl.use('Agg')
+# mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from aolcore import read_data, get_parameters

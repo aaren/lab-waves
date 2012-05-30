@@ -3,6 +3,10 @@ from multiprocessing import Process, Pool, Queue
 import multiprocessing.pool
 import glob
 from sys import argv
+# Ensure no errors when there is no display.  Must be done before
+# pyplot import.
+import matplotlib as mpl
+mpl.use('Agg')
 
 import proc_im
 import join
@@ -107,11 +111,11 @@ def all(run):
     """To get some raw, synced, lab data into nice plots in
     a single command.
     """
-    # proc_im_base(run)
+    proc_im_base(run)
     proc_im_main(run)
     f_basic_data(run)
     data(run)
-    # plot(run)
+    plot(run)
 
 def multi(proc, runs):
     # not presently used.
