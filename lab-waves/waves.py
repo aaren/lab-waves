@@ -52,6 +52,7 @@ class Conjoin(RunData):
                 cam_data = data[run][cam]
                 frames = sorted(cam_data.keys())
                 # xt[cam] = [[p for p in cam_data[frame][arg]] for frame in frames]
+
                 # If e.g. frames are 3-5 and 7-9: frames will
                 # include [3,4,5,7,8,9]. Then for each of these,
                 # xt[cam] will have a list of the frame data
@@ -68,8 +69,8 @@ class Conjoin(RunData):
                 # filler frames when the frame isn't in the key
                 # list.
 
-                xt[cam] = {str(frame): [p for p in cam_data[frame][arg] \
-                                                        for frame in frames]}
+                xt[cam] = {str(frame): [p for p in cam_data[frame][arg]] \
+                                                        for frame in frames}
 
                 # then we access frames by e.g.
 
@@ -86,14 +87,14 @@ class Conjoin(RunData):
             cam1max = max(cam1f)
             cam2f = [int(k) for k in xt['cam2'].keys()]
             cam2max = max(cam2f)
-            fmax = max([cam1max, cam2max])
+            fmax = max(cam1max, cam2max)
 
             Xt[arg] = {}
-            Xtn[arg] = {}
+            Xtn[arg] = []
             for f in range(fmax):
                 F = '%04d' % f
                 if F in xt['cam1'] and F in xt['cam2']:
-                    Xt[arg][F] = xt['cam1'][F] + xt['cam2'][k]
+                    Xt[arg][F] = xt['cam1'][F] + xt['cam2'][F]
                 elif F in xt['cam1']:
                     Xt[arg][F] = xt['cam1'][F]
                 elif F in xt['cam2']:
@@ -107,7 +108,7 @@ class Conjoin(RunData):
         # strip out non physical points (faster then 1:1)
         #for arg in ['max', 'min']:
         #    Xt[arg] = [[x for x in Xt[arg] if x[0] < t] for t in range(len(Xtm))]
-        return Xt
+        return Xtn
 
     def plot_xt(self, arg, fmt):
         Xt = self.conjoin_data()
