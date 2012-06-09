@@ -325,9 +325,9 @@ def get_frame_data(image, run_data_container):
     frame_data['core_min'] = norm(core_min, camera, 0)
     frame_data['mix_max'] = norm(mix_max, camera, 0)
     frame_data['mix_min'] = norm(mix_min, camera, 0)
-    frame_data['core_front'] = norm(core_front_coord, camera, 1)
-    frame_data['mix_front'] = norm(mix_front_coord, camera, 1)
-    frame_data['front'] = norm(front_coord, camera, 1)
+    frame_data['core_front'] = norm(core_front_coord, camera, 2)
+    frame_data['mix_front'] = norm(mix_front_coord, camera, 2)
+    frame_data['front'] = norm(front_coord, camera, 2)
 
     return frame_data
 
