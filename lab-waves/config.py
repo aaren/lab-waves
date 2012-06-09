@@ -71,18 +71,13 @@ cr = {'cam1': -0.05, 'cam2': 1.39}
 # transformation.
 crop_ref = {'cam1': 0.00, 'cam2': 1.51}
 
-
 crop= {cam: (int(-(cl[cam] - crop_ref[cam]) * ideal_m), \
              int(-(cr[cam] - crop_ref[cam]) * ideal_m), \
             -50, \
              110) for cam in ('cam1', 'cam2')}
 
-# specify the positions of rulers and other vertical features that
-# obscure the fluid. These are measurements relative to the offset.
-# It isn't possible to consistently define them otherwise.
-# off_rulers = {}
-# off_rulers['cam1'] = [(670, 740), (1410, 1440), (1540, 1610)]
-# off_rulers['cam2'] = [(-2840, -2780), (-1960, -1900), (-1110, -1035), (-240, -110)]
+# Specify the positions of rulers and other vertical features that
+# obscure the fluid. Measured in metres from the lock.
 
 real_rulers = {}
 real_rulers['cam1'] = [(0.48, 0.525), (0.99, 1.02)]
