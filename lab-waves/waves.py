@@ -121,7 +121,10 @@ class Conjoin(RunData):
         Xt = self.conjoin_data()
         Xtm = conv(Xt, arg)
         xt = [(x, t) for t in range(len(Xtm)) for x in Xtm[t]]
-        x, t = zip(*xt)
+        try:
+            x, t = zip(*xt)
+        except ValueError:
+            x, t = 999, 999
         plt.plot(x, t, fmt, label=arg)
         p = self.params
         title = """Wave maxima and current front for %s
