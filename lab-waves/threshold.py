@@ -173,7 +173,7 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
         except ValueError:
             front_pos = -999999
         # catch the case that the front has neared the end of the tank
-        if front_pos < 110:
+        if front_pos < 20:
             front_pos = -999999
         return front_pos
 
