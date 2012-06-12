@@ -26,6 +26,15 @@ from aolcore import read_data
 from config import data_storage
 
 def points(arg, rdata):
+    """From a given set of run data, i.e. data[run] if extracting
+    from the data storage location, using arg as the key, pull out
+    all of the data from both cameras and put it into a list.
+
+    Each element of the list is a named tuple, with the x, z and t
+    coords of the points found for arg.
+
+    Returns the list of points.
+    """
     arg_list = []
     point = namedtuple(arg, 'x, z, t')
     for cam in ['cam1', 'cam2']:
@@ -99,34 +108,6 @@ def main(run):
     speed = 1 / m
 
     print "Speed is %s" % speed
-
-# TODO: Decide whether to use a tuple (x,z,t) or a dict {'x':,
-# 'z':,'t':} for each of the points.
-
-# ANSWER: Use a named tuple. We then know which arg each point came
-# from in the first place (can we actually access this though??) and
-# the point can be accessed as an object.
-
-# and then select structures from this. This is so much shorter and
-# clearer than the other way!
-
-# Surely this was easier than the far longer method in waves??
-
-# For the human selection of points, we will use ginput. So we plot
-# up a particular type of point, then have the user select points
-# that define the locations of those points. The manner in which
-# this is done varies a bit with the type of feature.
-
-# FRONT: The front is typically a single line of points that might
-# meander a bit. Thus, select a start and end point for each roughly
-# straight line section of it.
-
-# WAVES: These are a number of distinct straight lines with no
-# overlap.
-
-# The common feature is straight lines. If we can detect a straight
-# line then the rest will follow.
-
 
 # Getting subsets of all of the runs is important for dealing with
 # results. How to?
