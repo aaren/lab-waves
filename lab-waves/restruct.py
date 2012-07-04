@@ -62,6 +62,12 @@ def bounding_lines(x_maxes, m_err, c_err):
     lower = line(m - m_err, c - c_err)
     return upper, lower
 
+def in_bounds(point, upper, lower):
+    x_lo = (point.t - upper.c) / upper.m
+    x = point.x
+    x_hi = (point.t - lower.c) / lower.m
+    return (x_lo < x < x_hi)
+
 def get_line(arg):
     """ Given a list of points [(x, z, t), ....], where each point is
     represented by a named tuple, plot all of the points and prompt
@@ -78,12 +84,6 @@ def get_line(arg):
     # calculate the limits
     hi, lo = bounding_lines(pts, 0, 0.5)
     # select points within limits
-    def in_bounds(point, upper, lower):
-        x_lo = (point.t - upper.c) / upper.m
-        x = point.x
-        x_hi = (point.t - lower.c) / lower.m
-        return (x_lo < x < x_hi)
-
     line = [p for p in arg if in_bounds(p, hi, lo)]
     # plot again
     Xs, Zs, Ts = zip(*line)
@@ -108,6 +108,44 @@ def main(run):
     speed = 1 / m
 
     print "Speed is %s" % speed
+
+def get_front(run):
+    data_file = data_storage + run
+    indata = read_data(data_file)
+    rdata = indata[run]
+    front = points('front', rdata)
+
+    # filter out anomalous points.
+    filter_front = [f for f in front if f.x < 20]
+    # sort by time
+    time_front = sorted(filter_front, key=lambda p: p.t)
+
+    # now get the points
+    filtered = []
+    init = time_front[:3]
+    # really we want to iterate through time.
+    t_max = time_front[-1].t
+    for t in range(t_max):
+        # find all points in this time slice
+        pts = [p for p in time_front if p.t == t]
+        # and the last three points in filtered
+        # prepts = [p for p in filtered if (t - 3 < p.t < t)]
+        prepts = filtered[-3:]
+        # make the bounding lines from the previous points
+        hi, lo = bounding_lines(prepts, 0, 0.5)
+        for pt in pts:
+            if in_bounds:
+                filtered.append(pt)
+            else:
+                # append the nearest point in x to the previous
+                closest = min(pts, key=lambda p: abs(prepts[-1].t - p.x))
+                filtered.append(closest)
+
+
+
+
+
+
 
 # Getting subsets of all of the runs is important for dealing with
 # results. How to?
