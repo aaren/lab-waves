@@ -93,17 +93,26 @@ def get_line(data):
         print "Select bad points, middle click if none"
         bad = plt.ginput(0,0)
         if bad:
+            # identify the bad points
+            bad_points = []
             for b in bad:
+                bad_points += [p for p in line if \
+                                        (b[0] - 0.1 < p.x < b[0] + 0.1) \
+                                    and (b[1] - 0.5 < p.t < b[1] + 0.5)]
+            # overplot
+            Xb, Tb = zip(*[(p.x, p.t) for p in bad_points])
+            plt.plot(Xb, Tb, 'go')
+            plt.draw()
             # remove bad points from line
-                line = [p for p in line if (b[0] - 0.1 < p[0] < b[0] + 0.1) \
-                                       and (b[1] - 0.5 < p[1] < b[1] + 0.5)]
+            for b in bad_points:
+                line.remove(b)
         elif not bad:
             break
         else:
             print "Indeterminate badness!"
-        Xs, Ts = zip(*[(p.x, p.t) for p in line])
-        plt.plot(Xs, Ts, 'go')
-    plt.close()
+    Xs, Ts = zip(*[(p.x, p.t) for p in line])
+    plt.plot(Xs, Ts, 'yo')
+    plt.draw()
     return line
 
 def main(run):
