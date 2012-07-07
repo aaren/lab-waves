@@ -68,7 +68,7 @@ def in_bounds(point, upper, lower):
     x_hi = (point.t - lower.c) / lower.m
     return (x_lo < x < x_hi)
 
-def get_line(arg):
+def get_line(data):
     """ Given a list of points [(x, z, t), ....], where each point is
     represented by a named tuple, plot all of the points and prompt
     for user selection of a line section by defining two points.
@@ -76,21 +76,33 @@ def get_line(arg):
     Returns list of points that fall within an error of the defined
     line.
     """
-    # plot the argument
-    X, Z, T = zip(*arg)
+    # plot the points
+    X, T = zip(*[(p.x, p.t) for p in data])
     plt.plot(X, T, 'bo')
     # get user input points
     pts = plt.ginput(2,0)
     # calculate the limits
     hi, lo = bounding_lines(pts, 0, 0.5)
     # select points within limits
-    line = [p for p in arg if in_bounds(p, hi, lo)]
-    # plot again
-    Xs, Zs, Ts = zip(*line)
-    # xt = [(p.x, p.t) for p in line]
+    line = [p for p in data if in_bounds(p, hi, lo)]
+    # plot again in red
+    Xs, Ts = zip(*[(p.x, p.t) for p in line])
     plt.plot(Xs, Ts, 'ro')
-    plt.show()
-    raw_input('')
+    plt.draw()
+    while True:
+        print "Select bad points, middle click if none"
+        bad = plt.ginput(0,0)
+        if bad:
+            for b in bad:
+            # remove bad points from line
+                line = [p for p in line if (b[0] - 0.1 < p[0] < b[0] + 0.1) \
+                                       and (b[1] - 0.5 < p[1] < b[1] + 0.5)]
+        elif not bad:
+            break
+        else:
+            print "Indeterminate badness!"
+        Xs, Ts = zip(*[(p.x, p.t) for p in line])
+        plt.plot(Xs, Ts, 'go')
     plt.close()
     return line
 
@@ -140,12 +152,36 @@ def get_front(run):
                 # append the nearest point in x to the previous
                 closest = min(pts, key=lambda p: abs(prepts[-1].t - p.x))
                 filtered.append(closest)
-
-
-
-
-
-
+    return filtered
 
 # Getting subsets of all of the runs is important for dealing with
 # results. How to?
+class Run(object):
+    def __init__(self, run):
+        self.index = run
+        self.params = get_parameters(run, paramf)
+        self.h1 = float(self.params['h_1/H'])
+        self.h2 = 1 - self.h1
+        self.D = float(self.params['D/H'])
+        self.r0 = float(self.params['rho_0'])
+        self.r1 = float(self.params['rho_1'])
+        self.r2 = float(self.params['rho_2'])
+        self.a = float(self.params['alpha'])
+
+        self.c2l = f.two_layer_linear_longwave(self.h1, self.h2, \
+                                                self.r1, self.r2)
+        self.gce = f.gc_empirical(self.D / 2, self.r0, self.r1)
+        self.gct = f.gc_theoretical(self.D / 2, self.r0, self.r1)
+
+        self.data_file = data_storage + self.index
+
+    def load(self):
+        # Explicitly load the run data
+        self.data = read_data(self.data_file)[run]
+
+# make a list of the run indices
+# indices = pull_col(0, paramf)
+# make a list of run objects
+# runs = [Run(index) for index in indices]
+# select sub groupings, e.g.
+# partial_runs = [r for r in runs if r.D == 0.4]
