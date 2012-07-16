@@ -120,30 +120,32 @@ def main(run):
     indata = read_data(data_file)
     rdata = indata[run]
     maxima = points('max', rdata)
-
     line = get_line(maxima)
+
     X = [p.x for p in line]
     T = [p.t for p in line]
-
     m, c = np.polyfit(X, T, 1)
     speed = 1 / m
-
     print "Speed is %s" % speed
 
 def get_front(run):
+    """ From a particular run, take the front data and extract a
+    single string of data. Needs to be monotonic in t, but allow
+    for multivalued in x.
+    """
     data_file = data_storage + run
     indata = read_data(data_file)
     rdata = indata[run]
     front = points('front', rdata)
 
-    # filter out anomalous points.
+    # filter out anomalous points (produced from earlier
+    # processing)
     filter_front = [f for f in front if f.x < 20]
     # sort by time
     time_front = sorted(filter_front, key=lambda p: p.t)
-
-    # now get the points
-    filtered = []
-    init = time_front[:3]
+    # now get the points. set up a container with some initial
+    # points.
+    proc_front = time_front[:3]
     # really we want to iterate through time.
     t_max = time_front[-1].t
     for t in range(t_max):
@@ -151,16 +153,16 @@ def get_front(run):
         pts = [p for p in time_front if p.t == t]
         # and the last three points in filtered
         # prepts = [p for p in filtered if (t - 3 < p.t < t)]
-        prepts = filtered[-3:]
+        prepts = proc_front[-3:]
         # make the bounding lines from the previous points
         hi, lo = bounding_lines(prepts, 0, 0.5)
         for pt in pts:
             if in_bounds:
-                filtered.append(pt)
+                proc_front.append(pt)
             else:
                 # append the nearest point in x to the previous
                 closest = min(pts, key=lambda p: abs(prepts[-1].t - p.x))
-                filtered.append(closest)
+                proc_front.append(closest)
     return filtered
 
 # Getting subsets of all of the runs is important for dealing with
