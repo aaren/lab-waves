@@ -25,6 +25,29 @@ import matplotlib.pyplot as plt
 from aolcore import read_data
 from config import data_storage
 
+class Run(object):
+    def __init__(self, run):
+        self.index = run
+        self.params = get_parameters(run, paramf)
+        self.h1 = float(self.params['h_1/H'])
+        self.h2 = 1 - self.h1
+        self.D = float(self.params['D/H'])
+        self.r0 = float(self.params['rho_0'])
+        self.r1 = float(self.params['rho_1'])
+        self.r2 = float(self.params['rho_2'])
+        self.a = float(self.params['alpha'])
+
+        self.c2l = f.two_layer_linear_longwave(self.h1, self.h2, \
+                                                self.r1, self.r2)
+        self.gce = f.gc_empirical(self.D / 2, self.r0, self.r1)
+        self.gct = f.gc_theoretical(self.D / 2, self.r0, self.r1)
+
+        self.data_file = data_storage + self.index
+
+    def load(self):
+        # Explicitly load the run data
+        self.data = read_data(self.data_file)[run]
+
 def points(arg, rdata):
     """From a given set of run data, i.e. data[run] if extracting
     from the data storage location, using arg as the key, pull out
@@ -115,19 +138,6 @@ def get_line(data):
     plt.draw()
     return line
 
-def main(run):
-    data_file = data_storage + run
-    indata = read_data(data_file)
-    rdata = indata[run]
-    maxima = points('max', rdata)
-    line = get_line(maxima)
-
-    X = [p.x for p in line]
-    T = [p.t for p in line]
-    m, c = np.polyfit(X, T, 1)
-    speed = 1 / m
-    print "Speed is %s" % speed
-
 def get_front(run):
     """ From a particular run, take the front data and extract a
     single string of data. Needs to be monotonic in t, but allow
@@ -165,31 +175,53 @@ def get_front(run):
                 proc_front.append(closest)
     return filtered
 
+def get_lines(data, arg):
+    """ From given data and argument, e.g. maxima, get a list
+    of lines selected by the user.
+    """
+    lines = []
+    while True:
+        pts = points(arg, data)
+        line = get_line(pts)
+        X = [p.x for p in line]
+        T = [p.t for p in line]
+        m, c = np.polyfit(X, T, 1)
+        Xf = np.linspace(0,20)
+        Tf = m * Xf + c
+        plt.plot(Xf, Tf)
+        lines.append(line)
+        print "Enough lines?? (y/n)"
+        a = raw_input("> ")
+        if a == "y":
+            break
+        elif a == "n":
+            pass
+    return lines
+
+def main(run):
+    # intialise run as instance of Run class
+    r = Run(run)
+    # explicitly load the data
+    r.load()
+    # pull out the maxima from the data as a named tuple
+    maxima = points('max', r.data)
+    # get the waves
+    lines = get_lines(maxima)
+    waves = {'w%s' % i: l for i,l in lines}
+    # get the front
+    front = get_front(run)
+
+    # test plot this to check how separate things are
+    # plot the front
+    Xf = [p.x for p in front]
+    Tf = [p.t for p in front]
+    plt.plot(Xf, Tf, 'k*')
+    # plot the waves
+
+
+
 # Getting subsets of all of the runs is important for dealing with
 # results. How to?
-class Run(object):
-    def __init__(self, run):
-        self.index = run
-        self.params = get_parameters(run, paramf)
-        self.h1 = float(self.params['h_1/H'])
-        self.h2 = 1 - self.h1
-        self.D = float(self.params['D/H'])
-        self.r0 = float(self.params['rho_0'])
-        self.r1 = float(self.params['rho_1'])
-        self.r2 = float(self.params['rho_2'])
-        self.a = float(self.params['alpha'])
-
-        self.c2l = f.two_layer_linear_longwave(self.h1, self.h2, \
-                                                self.r1, self.r2)
-        self.gce = f.gc_empirical(self.D / 2, self.r0, self.r1)
-        self.gct = f.gc_theoretical(self.D / 2, self.r0, self.r1)
-
-        self.data_file = data_storage + self.index
-
-    def load(self):
-        # Explicitly load the run data
-        self.data = read_data(self.data_file)[run]
-
 # make a list of the run indices
 # indices = pull_col(0, paramf)
 # make a list of run objects
