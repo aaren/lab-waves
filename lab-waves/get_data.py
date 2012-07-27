@@ -270,8 +270,33 @@ def get_frame_data(image, run_data_container):
     core_front_coord = basic_data['core_front_coord']
     mix_front_coord = basic_data['mix_front_coord']
 
+    # need to catch case that there is fluid along the bottom
+    # reject the outliers? NO. won't work for front that is shallow.
+    def reject_outliers(data):
+        return [e for e in data if abs(e[0] - np.mean(data)) < np.std(data)]
+    fcfc = reject_outliers(core_front_coord)
+    fmfc = reject_outliers(core_front_coord)
     # Make the front_coord the front_coord furthest from the lock.
-    front_coord = min(core_front_coord, mix_front_coord)
+    front_coord = min(min(fcfc), min(fmfc))
+
+    # TODO / FIXME: deal with red fluid at bottom!
+
+    # use the current interface from the first image to define a
+    # region in which there is red fluid. then filter out all
+    # current front coords that fall within this region
+
+    # OR, use the present images interface. Look for a point where
+    # there is a sharp change in the interface height. Again, this
+    # has problems with shallow currents as this will appear pretty
+    # smooth.
+
+    # This should perhaps be done in the thresholding stage.
+    # but here we have access to the first images interface, in
+    # run_data_container[camera]['0001'], where in thresholding this
+    # data hasn't been written to disk yet.
+
+    # If we take
+
 
     # Outlier rejection. arg[1] is point to point variability;
     # arg[2] is window over which interface can be considered

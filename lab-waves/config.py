@@ -47,7 +47,8 @@ region = (top_bar + 10, top_bar + 400)
 
 # Depths at which to scan for the current front. 0.4 is partial, 1
 # is full depth (fractions of H, i.e. non dimensional).
-d = {'0.4': 0.05, '1': 0.15 }
+s = [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20]
+d = {'0.4': s, '1': s}
 front_depths = {k: int(top_bar + (1 - d[k]) * ideal_25) for k in d}
 
 ### /BASIC SETTINGS ###

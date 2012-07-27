@@ -148,7 +148,7 @@ def interpolate(image, in_list, rulers):
     return interface
 
 
-def main(image, region, rulers, thresh_values=None, front_depth=None):
+def main(image, region, rulers, thresh_values=None, front_depths=None):
     top, bottom = region
     # generate fluid type list of lists
     # print('generating threshold array...')
@@ -159,29 +159,29 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     # fluid_type_transpose = zip(*fluid_type)
     # front_pos = fluid_type_transpose[510].index(0)
     # much faster, given we know the row we want (70ms / 200us)
-    # but the zip transpose is still very quick.
-    if not front_depth:
-        front_depth = 425
-    def get_front_pos(fluid, d=5):
+    # but the zip transpose is still very quick. tradeoff comes when
+    # we want to get more than 140 rows.
+    def get_front_pos(fluid, f_depth=425, d=5):
+        # find the front position at front_depth over d adjacent
+        # depths and average.
         try:
             tot = 0
             for n in range(d):
-                front_pos = [i[front_depth - n] for i in fluid_type].index(fluid)
+                f_pos = [i[f_depth - n] for i in fluid_type].index(fluid)
                 tot += front_pos
-            front_pos = int(tot / d)
+            f_pos = int(tot / d)
         # if the front isn't found
         except ValueError:
-            front_pos = -999999
+            f_pos = -999999
         # catch the case that the front has neared the end of the tank
-        if front_pos < 20:
-            front_pos = -999999
-        return front_pos
+        if f_pos < 20:
+            f_pos = -999999
+        return f_pos
 
-    front_pos_core = get_front_pos(0)
-    front_pos_mix = get_front_pos(3)
-
-    front_coord_core = [(front_pos_core, front_depth)]
-    front_coord_mix = [(front_pos_mix, front_depth)]
+    front_coord_core = [(get_front_pos(0, front_depth), front_depth) \
+                        for front_depth in front_depths]
+    front_coord_mix = [(get_front_pos(3, front_depth), front_depth) \
+                        for front_depth in front_depths]
 
     # detect and interpolate the interfaces
     interface = process(image, fluid_type, region, 1, rulers)
@@ -190,6 +190,11 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
 
     # remove silly current values, i.e. set current depth to zero
     # anywhere ahead of the detected front position.
+    # FIXME: this fails if there is red fluid at the bottom of the
+    # tank (either through leakage or previous run).
+    front_pos_core = min([f[0] for f in front_coord_core])
+    front_pos_mix = min([f[0] for f in front_coord_mix])
+
     if front_pos_core > -1:
         core_current[:front_pos_core] = [bottom]*front_pos_core
     if front_pos_mix > -1:
