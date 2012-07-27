@@ -183,18 +183,18 @@ def get_basic_frame_data(image):
     print "\rthresholding", run, camera, frame,
     sys.stdout.flush()
 
-    interface, current, mixed_current, core_front_coord, mix_front_coord\
-            = threshold.main(image, region, rulers, thresh_values, front_depth)
+    interface, current, mixed_current, core_front_coords, mix_front_coords\
+        = threshold.main(image, region, rulers, thresh_values, front_depth)
     # print "done"
 
     basic_data = {}
     basic_data['interface'] = interface
     basic_data['core_current'] = current
     basic_data['mixed_current'] = mixed_current
-    basic_data['core_front_coord'] = core_front_coord
-    basic_data['mix_front_coord'] = mix_front_coord
-
+    basic_data['core_front_coords'] = core_front_coords
+    basic_data['mix_front_coords'] = mix_front_coords
     frame_data = (frame, basic_data)
+
     return frame_data
 
 # multiprocessing and serial implementation
@@ -267,11 +267,8 @@ def get_frame_data(image, run_data_container):
     interface = basic_data['interface']
     core_current = basic_data['core_current']
     mixed_current = basic_data['mixed_current']
-    core_front_coord = basic_data['core_front_coord']
-    mix_front_coord = basic_data['mix_front_coord']
-
-    # Make the front_coord the front_coord furthest from the lock.
-    front_coord = min(core_front_coord, mix_front_coord)
+    core_front_coords = basic_data['core_front_coords']
+    mix_front_coords = basic_data['mix_front_coords']
 
     # Outlier rejection. arg[1] is point to point variability;
     # arg[2] is window over which interface can be considered
@@ -298,13 +295,95 @@ def get_frame_data(image, run_data_container):
     core_current = list(enumerate(core_current))
     mixed_current = list(enumerate(mixed_current))
 
+
+    # TODO / FIXME: deal with red fluid at bottom!
+
+    # use the current interface from the first image to define a
+    # region in which there is red fluid. then filter out all
+    # current front coords that fall within thcore_interface
+
+    # OR, use the present images interface. Look for a point where
+    # there is a sharp change in the interface height. Again, this
+    # has problems with shallow currents as this will appear pretty
+    # smooth.
+
+    # This should perhaps be done in the thresholding stage.
+    # but here we have access to the first images interface, in
+    # run_data_container[camera]['0001'], where in thresholding this
+    # data hasn't been written to disk yet.
+
+    # If we take the first image core_interface
+    core_i = run_data_container[camera]['0001']['core_current']
+    # put into correct format
+    core_i = list(enumerate(core_i))
+    # bad front coords are those that fall between this and the
+    # tank bottom for all subsequent images.
+    # front coords consists of a list of (x,z) tuples, measured in
+    # image pixels.
+    # the tank base is crop[camera][3] pixels from the bottom
+    # of the image
+    # something like
+    for coord in core_front_coords:
+        print frame, coord, len(core_i)
+        if coord[0] < 0:
+            pass
+        elif coord[0] >= len(core_i):
+            # case that front has been (wrongly) detected behind the
+            # lock gate
+            core_front_coords.remove(coord)
+        elif core_i[coord[0]] < coord[1] - 5 < region[1]:
+            # ignore the point if in bad region, plus some buffer
+            core_front_coords.remove(coord)
+        elif region[0] < coord[1] - 5 < core_i[coord[0]]:
+            # accept the point
+            pass
+        else:
+            print "Something has gone wrong!"
+            sys.exit('Check the front coords')
+
+    # same for the mixed fluid
+    mix_i = run_data_container[camera]['0001']['mixed_current']
+    mix_i = list(enumerate(mix_i))
+    for coord in mix_front_coords:
+        if coord[0] < 0:
+            pass
+        elif coord[0] > len(mix_i):
+            # case that front has been (wrongly) detected behind the
+            # lock gate
+            mix_front_coords.remove(coord)
+        elif mix_i[coord[0]] < coord[1] - 5 < region[1]:
+            # ignore the point if in bad region, plus some buffer
+            mix_front_coords.remove(coord)
+        elif region[0] < coord[1] - 5 < mix_i[coord[0]]:
+            # accept the point
+            pass
+        else:
+            print "Something has gone wrong!"
+            sys.exit('Check the front coords')
+
+    # need to catch case that there is fluid along the bottom
+    # reject the outliers? NO. won't work for front that is shallow.
+    # def _reject_outliers(data):
+        # return [e for e in data if abs(e[0] - np.mean(data)) < np.std(data)]
+    # fcfc = reject_outliers(core_front_coord)
+    # fmfc = reject_outliers(core_front_coord)
+    # Make the front_coord the front_coord furthest from the lock.
+    min_core_front_coord = min(core_front_coords, key=lambda k: abs(k[0]))
+    min_mix_front_coord = min(mix_front_coords, key=lambda k: abs(k[0]))
+    front_coord = [min(min_core_front_coord, min_mix_front_coord)]
+
+    # print "core front coords", core_front_coords
+    print "minimum front coord", min_core_front_coord
+
     # SANITY CHECKING: overlay given interfaces and points onto the
     # images with specified colours. images are saved to the sanity
     # dirs.
     interfaces = [interface, core_current, \
             mixed_current, fixed_interface, smoothed_interface]
     icolours = ['black', 'blue', 'cyan', 'orange', 'red']
-    points = [_max, _min, core_front_coord, mix_front_coord, core_max, mix_max]
+    points = [_max, _min, \
+            core_front_coords, mix_front_coords, \
+            core_max, mix_max]
     pcolours = ['green', 'purple', 'blue', 'cyan', 'blue', 'cyan']
     threshold.sanity_check(interfaces, points, image, icolours, pcolours)
 
@@ -325,8 +404,8 @@ def get_frame_data(image, run_data_container):
     frame_data['core_min'] = norm(core_min, camera, 0)
     frame_data['mix_max'] = norm(mix_max, camera, 0)
     frame_data['mix_min'] = norm(mix_min, camera, 0)
-    frame_data['core_front'] = norm(core_front_coord, camera, 2)
-    frame_data['mix_front'] = norm(mix_front_coord, camera, 2)
+    frame_data['core_front'] = norm(core_front_coords, camera, 2)
+    frame_data['mix_front'] = norm(mix_front_coords, camera, 2)
     frame_data['front'] = norm(front_coord, camera, 2)
 
     return frame_data

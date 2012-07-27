@@ -245,7 +245,6 @@ def main(run):
     waves = {'w%s' % i: l for i,l in enumerate(lines)}
     # get the front
     front = get_front(run)
-    print front
     # test plot this to check how separate things are
     # plot the front
     Xf = [p.x for p in front]
