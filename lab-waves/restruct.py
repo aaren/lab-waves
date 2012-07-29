@@ -64,7 +64,7 @@ def points(arg, rdata):
     for cam in ['cam1', 'cam2']:
         cdata = rdata[cam]
         for f in cdata.keys():
-            arg_list += [point(e[0], e[1], int(f)) for e in cdata[f][arg]]
+            arg_list += [point(e[0], e[1], int(f) - 1) for e in cdata[f][arg]]
     return arg_list
 
 def bounding_lines(x_maxes, m_err, c_err):
@@ -171,6 +171,7 @@ def get_front(run):
     """
     data_file = data_storage + run
     indata = read_data(data_file)
+    print "read data"
     rdata = indata[run]
     front = points('front', rdata)
 
@@ -182,24 +183,14 @@ def get_front(run):
     # now get the points. set up a container with some initial
     # points.
     proc_front = time_front[:3]
-    # really we want to iterate through time.
     t_max = time_front[-1].t
     for t in range(t_max):
-        # find all points in this time slice
         pts = [p for p in time_front if p.t == t]
-        # and the last three points in filtered (have to put into
-        # list of (x,t) form for bounding_lines)
-        # prepts = [p for p in filtered if (t - 3 < p.t < t)]
         prepts = [(p.x, p.t) for p in proc_front[-3:]]
-        # make the bounding lines from the previous points
-        hi, lo = bounding_lines(prepts, 0, 0.5)
         for pt in pts:
-            if in_bounds:
-                proc_front.append(pt)
-            else:
-                # append the nearest point in x to the previous
-                closest = min(pts, key=lambda p: abs(prepts[-1].t - p.x))
-                proc_front.append(closest)
+            # append the nearest point in x to the previous
+            closest = min(pts, key=lambda p: abs(prepts[-1][0] - p.x))
+            proc_front.append(closest)
     return proc_front
 
 def get_lines(data, arg):
@@ -241,8 +232,8 @@ def main(run):
     # explicitly load the data
     r.load()
     # get the waves
-    lines = get_lines(r.data, 'max')
-    waves = {'w%s' % i: l for i,l in enumerate(lines)}
+    # lines = get_lines(r.data, 'max')
+    # waves = {'w%s' % i: l for i,l in enumerate(lines)}
     # get the front
     front = get_front(run)
     # test plot this to check how separate things are
@@ -251,11 +242,11 @@ def main(run):
     Tf = [p.t for p in front]
     plt.plot(Xf, Tf, 'k*')
     # plot the waves
-    for i,w in enumerate(sorted(waves.keys())):
-        Xw = [p.x for p in waves[w]]
-        Tw = [p.t for p in waves[w]]
-        plt.plot(Xw, Tw, '*', \
-            color=plt.get_cmap('hsv')((i+1)/30))
+    # for i,w in enumerate(sorted(waves.keys())):
+        # Xw = [p.x for p in waves[w]]
+        # Tw = [p.t for p in waves[w]]
+        # plt.plot(Xw, Tw, '*', \
+            # color=plt.get_cmap('hsv')((i+1)/30))
     print "how u lik this applz??11"
     plt.show()
 
