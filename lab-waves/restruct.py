@@ -164,7 +164,7 @@ def get_line(data):
     plt.draw()
     return line
 
-def get_front(run):
+def get_front(run, part='front'):
     """ From a particular run, take the front data and extract a
     single string of data. Needs to be monotonic in t, but allow
     for multivalued in x.
@@ -173,7 +173,7 @@ def get_front(run):
     indata = read_data(data_file)
     print "read data"
     rdata = indata[run]
-    front = points('front', rdata)
+    front = points(part, rdata)
 
     # filter out anomalous points (produced from earlier
     # processing)
@@ -232,36 +232,32 @@ def main(run):
     # explicitly load the data
     r.load()
     # get the waves
-    # lines = get_lines(r.data, 'max')
-    # waves = {'w%s' % i: l for i,l in enumerate(lines)}
+    lines = get_lines(r.data, 'max')
+    waves = {'w%s' % i: l for i,l in enumerate(lines)}
     # get the front
     front = get_front(run)
+    head = get_front(run, 'head')
     # test plot this to check how separate things are
     # plot the front
     Xf = [p.x for p in front]
     Tf = [p.t for p in front]
     plt.plot(Xf, Tf, 'k*')
-    # plot the waves
-    # for i,w in enumerate(sorted(waves.keys())):
-        # Xw = [p.x for p in waves[w]]
-        # Tw = [p.t for p in waves[w]]
-        # plt.plot(Xw, Tw, '*', \
-            # color=plt.get_cmap('hsv')((i+1)/30))
+    plot the waves
+    for i,w in enumerate(sorted(waves.keys())):
+        Xw = [p.x for p in waves[w]]
+        Tw = [p.t for p in waves[w]]
+        plt.plot(Xw, Tw, 'o', \
+            color=plt.get_cmap('hsv')((i+1)/30))
     print "how u lik this applz??11"
     plt.show()
+    # write the data
+    # make a containing object for the front and the waves
+    data = type('structures', (object,), waves)
+    data.front = front
+    data.head = head
+    # filename
+    dataf = data_dir + 'simple/simple_%s' % run
+    write_data(data, dataf)
 
 if __name__ == '__main__':
     main('r11_7_06c')
-
-
-
-
-
-
-
-
-# Getting subsets of all of the runs is important for dealing with
-# results. How to?  make a list of the run indices indices =
-# pull_col(0, paramf) make a list of run objects runs = [Run(index)
-# for index in indices] select sub groupings, e.g.  partial_runs =
-# [r for r in runs if r.D == 0.4]
