@@ -48,8 +48,8 @@ region = (top_bar + 10, top_bar + 400)
 # Depths at which to scan for the current front. 0.4 is partial, 1
 # is full depth (fractions of H, i.e. non dimensional).
 # What height to scan for front up to?
-h = 0.4
-s = [i / 100. for i in range(0, int(h * 100 + 1), 2)]
+h = 0.6
+s = [i / 100. for i in range(0, int(h * 100 + 1))]
 d = {'0.4': s, '1': s}
 front_depths = \
         {k: [int(top_bar + (1 - i) * ideal_25) for i in d[k]] for k in d}
