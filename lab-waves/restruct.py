@@ -181,7 +181,7 @@ def get_front(run, part='front'):
     # points.
     proc_front = time_front[:3]
     t_max = time_front[-1].t
-    for t in range(t_max):
+    for t in range(3, t_max):
         pts = [p for p in time_front if p.t == t]
         prepts = [(p.x, p.t) for p in proc_front[-3:]]
         # append the nearest point in x to the previous
@@ -251,7 +251,7 @@ def main(run):
     print "Shall I add some petril?"
     plt.show()
     # data container
-    data = {k: v for k, v in waves}
+    data = waves
     data['front'] = front
     data['head'] = head
     # write the data
