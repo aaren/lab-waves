@@ -379,10 +379,8 @@ def get_frame_data(image, run_data_container):
                 if p[0] < 0:
                     pass
                 elif thresh < p1[0] - p[0] < 99999:
-                    print 1
                     return [p]
                 elif p1[0] - p[0] < -99999:
-                    print 2
                     return [p]
                 else:
                     pass
@@ -391,12 +389,7 @@ def get_frame_data(image, run_data_container):
         return [(-999999, 0)]
     core_head = find_head(core_front_coords)
     mix_head = find_head(mix_front_coords)
-    head = core_head
-    # print ""
-    # print core_front_coords
-    # print front_coord, head
-    # print core_head, mix_head
-    # print ""
+    head_coord = core_head
 
     # SANITY CHECKING: overlay given interfaces and points onto the
     # images with specified colours. images are saved to the sanity
@@ -407,8 +400,11 @@ def get_frame_data(image, run_data_container):
     points = [_max, _min, \
             core_front_coords, mix_front_coords, \
             core_max, mix_max,
-            core_head]
-    pcolours = ['green', 'purple', 'blue', 'cyan', 'green', 'purple', 'black']
+            head_coord, front_coord]
+    pcolours = ['green', 'purple', \
+            'blue', 'cyan', \
+            'green', 'purple', \
+            'black', 'orange']
     threshold.sanity_check(interfaces, points, image, icolours, pcolours)
 
     # make a container for the data and populate it
@@ -431,7 +427,7 @@ def get_frame_data(image, run_data_container):
     frame_data['core_front'] = norm(core_front_coords, camera, 2)
     frame_data['mix_front'] = norm(mix_front_coords, camera, 2)
     frame_data['front'] = norm(front_coord, camera, 2)
-    frame_data['head'] = norm(front_coord, camera, 2)
+    frame_data['head'] = norm(head_coord, camera, 2)
 
     return frame_data
 
