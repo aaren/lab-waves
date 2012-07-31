@@ -22,8 +22,9 @@ from collections import namedtuple
 import numpy as np
 import matplotlib.pyplot as plt
 
-from aolcore import read_data, get_parameters
-from config import data_storage, paramf
+from aolcore import read_data, write_data, write_simple, read_simple
+from aolcore import get_parameters
+from config import data_dir, data_storage, paramf
 import functions as f
 
 class Run(object):
@@ -64,7 +65,8 @@ def points(arg, rdata):
     for cam in ['cam1', 'cam2']:
         cdata = rdata[cam]
         for f in cdata.keys():
-            arg_list += [point(e[0], e[1], int(f) - 1) for e in cdata[f][arg]]
+            arg_list += [point(e[0], e[1], int(f) - 1) \
+                                   for e in cdata[f][arg]]
     return arg_list
 
 def bounding_lines(x_maxes, m_err, c_err):
@@ -139,17 +141,12 @@ def get_line(data):
         missed = plt.ginput(0,0)
         if missed:
             missed_points = []
-            print missed
-            print ""
-            print line
             for m in missed:
                 missed_points += [p for p in data if \
                                         (m[0] - 0.2 < p.x < m[0] + 0.2) \
                                     and (m[1] - 0.5 < p.t < m[1] + 0.5)]
             Xm = [p.x for p in missed_points]
             Tm = [p.t for p in missed_points]
-            print Xm
-            print Tm
             plt.plot(Xm, Tm, 'co')
             plt.draw()
             # add missed points to line
@@ -241,23 +238,26 @@ def main(run):
     # plot the front
     Xf = [p.x for p in front]
     Tf = [p.t for p in front]
-    plt.plot(Xf, Tf, 'k*')
-    plot the waves
+    plt.plot(Xf, Tf, 'ko')
+    # plot the head
+    Xh = [p.x for p in head]
+    Th = [p.t for p in head]
+    plt.plot(Xh, Th, 'k+')
+    # plot the waves
     for i,w in enumerate(sorted(waves.keys())):
         Xw = [p.x for p in waves[w]]
         Tw = [p.t for p in waves[w]]
         plt.plot(Xw, Tw, 'o', \
             color=plt.get_cmap('hsv')((i+1)/30))
-    print "how u lik this applz??11"
+    print "Shall I add some petril?"
     plt.show()
+    # data container
+    data = {k: v for k, v in waves}
+    data['front'] = front
+    data['head'] = head
     # write the data
-    # make a containing object for the front and the waves
-    data = type('structures', (object,), waves)
-    data.front = front
-    data.head = head
-    # filename
-    dataf = data_dir + 'simple/simple_%s' % run
-    write_data(data, dataf)
+    write_simple(run, data)
+
 
 if __name__ == '__main__':
     main('r11_7_06c')
