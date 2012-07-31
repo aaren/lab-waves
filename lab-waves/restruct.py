@@ -184,10 +184,9 @@ def get_front(run, part='front'):
     for t in range(t_max):
         pts = [p for p in time_front if p.t == t]
         prepts = [(p.x, p.t) for p in proc_front[-3:]]
-        for pt in pts:
-            # append the nearest point in x to the previous
-            closest = min(pts, key=lambda p: abs(prepts[-1][0] - p.x))
-            proc_front.append(closest)
+        # append the nearest point in x to the previous
+        closest = min(pts, key=lambda p: abs(prepts[-1][0] - p.x))
+        proc_front.append(closest)
     return proc_front
 
 def get_lines(data, arg):
