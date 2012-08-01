@@ -61,12 +61,13 @@ def main(run):
     Hz = [h.z for h in H]
     Ht = [h.t for h in H]
 
-    # test plot
+    # test plot of simple things
     plt.plot(Ft, Fu)
     plt.plot(Ft, Fu, 'ko')
-    plt.plot(Ft, Fx, 'ro')
+    # plt.plot(Ft, Fx, 'ro')
     plt.plot(Ht, Hz, 'yo')
 
+    # Ungarish theta plot
     plt.figure()
     X = [ufloat((i, 0.04)) for i in Fx]
     H = [ufloat((i, 0.02)) for i in Hz]
@@ -75,15 +76,58 @@ def main(run):
     Theta = [u * h ** 2 / x for u, h, x in zip(U, H, X)]
     theta = [i.nominal_value for i in Theta]
     etheta = [i.std_dev() for i in Theta]
-    plt.plot(Ft, theta)
     plt.plot(Ft, theta, 'ko')
     plt.errorbar(Ft, theta, yerr=etheta)
     plt.xscale('log')
     plt.xlim(1, 40)
     plt.yscale('log')
     plt.ylim(0.00005, 0.1)
+    plt.xticks([1, 5, 10, 15, 20, 25, 30, 35])
     plt.xlabel('time from lock releae (s)')
     plt.ylabel(r'$\Theta$')
+
+    # continuous error bars
+    # surely this needs continuous data??
+
+    # Dynamic reynolds number plot
+    plt.figure()
+    Re = [u * h / 0.000001 for u, h in zip(U, H)]
+    nRe = [i.nominal_value for i in Re]
+    eRe = [i.std_dev() for i in Re]
+    plt.plot(Ft, nRe, 'b-', label='dynamic')
+    plt.plot(Ft, nRe, 'ko')
+    # plt.errorbar(Ft, nRe, yerr=eRe)
+
+    # simplistic reynolds number
+    sRe = [0.25 * 0.16E6 for t in Ft]
+    plt.plot(Ft, sRe, 'k-', label='simple')
+
+    # Ungarish full ratio of inertial to viscous
+    R = [th * 0.04E6 for th in theta]
+    plt.plot(Ft, R, 'r-', label='theoretical')
+
+    plt.xscale('log')
+    plt.xlim(1, 40)
+    plt.yscale('log')
+    plt.ylim(1, 1E6)
+    plt.xlabel('time from lock releae (s)')
+    plt.ylabel(r'$\Re$')
+    plt.legend()
+
+    plt.figure()
+    RT = [r * t for r, t in zip(Re, Theta)]
+    nRT = [i.nominal_value for i in RT]
+    eRT = [i.std_dev() for i in RT]
+    # plt.plot(Ft, nRT)
+    plt.plot(Ft, nRT, 'ko')
+    plt.errorbar(Ft, nRT, yerr=eRT)
+    plt.xscale('log')
+    plt.xlim(1, 40)
+    plt.yscale('log')
+    plt.ylim(1, 1000)
+    plt.xlabel('time from lock releae (s)')
+    plt.ylabel(r'$\Re \theta$')
+
     plt.show()
 
     # smooth
