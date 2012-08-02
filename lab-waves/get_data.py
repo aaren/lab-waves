@@ -312,10 +312,6 @@ def get_frame_data(image, run_data_container):
     # run_data_container[camera]['0001'], where in thresholding this
     # data hasn't been written to disk yet.
 
-    # If we take the first image core_interface
-    core_i = run_data_container[camera]['0001']['core_current']
-    # put into correct format
-    core_i = list(enumerate(core_i))
     # bad front coords are those that fall between this and the
     # tank bottom for all subsequent images.
     # front coords consists of a list of (x,z) tuples, measured in
@@ -323,42 +319,42 @@ def get_frame_data(image, run_data_container):
     # the tank base is crop[camera][3] pixels from the bottom
     # of the image
     # something like
-    for coord in core_front_coords:
-        if coord[0] < 0:
-            pass
-        elif coord[0] >= len(core_i):
-            # case that front has been (wrongly) detected behind the
-            # lock gate
-            core_front_coords.remove(coord)
-        elif core_i[coord[0]] < coord[1] - 5 < region[1]:
-            # ignore the point if in bad region, plus some buffer
-            core_front_coords.remove(coord)
-        elif region[0] < coord[1] - 5 < core_i[coord[0]]:
-            # accept the point
-            pass
-        else:
-            print "Something has gone wrong!"
-            sys.exit('Check the front coords')
+    def filter_front(front_coords, fluid):
+        """fluid should be either 'core' or 'mixed'
+        """
+        t=20
+        # If we take the first image core_interface
+        comp_i = run_data_container[camera]['0001']['%s_current' % fluid]
+        # put into correct format
+        comp_i = list(enumerate(comp_i))
+        f_front_coords = []
+        for coord in front_coords:
+            if coord[0] < 0:
+                f_front_coords.append(coord)
+                pass
+            elif coord[0] >= len(comp_i):
+                # case that front has been (wrongly) detected behind the
+                # lock gate
+                pass
+                # print "behind lock"
+            elif comp_i[coord[0]][1] - t <= coord[1] <= region[1]:
+                # print coord, "bad point! depth", core_i[coord[0]][1]
+                # ignore the point if in bad region, plus some buffer
+                pass
+            elif region[0] < coord[1] < comp_i[coord[0]][1] - t:
+                # accept the point
+                # print coord, "accept"
+                f_front_coords.append(coord)
+            else:
+                print "Something has gone wrong! image", frame
+                print coord, 'core'
+                print comp_i[coord[0]][1] - t, region[1]
+                print region[0], comp_i[coord[0]][1] - t
+                sys.exit('Check the front coords')
+        return f_front_coords
 
-    # same for the mixed fluid
-    mix_i = run_data_container[camera]['0001']['mixed_current']
-    mix_i = list(enumerate(mix_i))
-    for coord in mix_front_coords:
-        if coord[0] < 0:
-            pass
-        elif coord[0] > len(mix_i):
-            # case that front has been (wrongly) detected behind the
-            # lock gate
-            mix_front_coords.remove(coord)
-        elif mix_i[coord[0]] < coord[1] - 5 < region[1]:
-            # ignore the point if in bad region, plus some buffer
-            mix_front_coords.remove(coord)
-        elif region[0] < coord[1] - 5 < mix_i[coord[0]]:
-            # accept the point
-            pass
-        else:
-            print "Something has gone wrong!"
-            sys.exit('Check the front coords')
+    f_core_front_coords = filter_front(core_front_coords, 'core')
+    f_mix_front_coords = filter_front(mix_front_coords, 'mixed')
 
     # need to catch case that there is fluid along the bottom
     # reject the outliers? NO. won't work for front that is shallow.
@@ -367,9 +363,10 @@ def get_frame_data(image, run_data_container):
     # fcfc = reject_outliers(core_front_coord)
     # fmfc = reject_outliers(core_front_coord)
     # Make the front_coord the front_coord furthest from the lock.
-    min_core_front_coord = min(core_front_coords, key=lambda k: abs(k[0]))
-    min_mix_front_coord = min(mix_front_coords, key=lambda k: abs(k[0]))
-    front_coord = [min(min_core_front_coord, min_mix_front_coord)]
+    min_core_front_coord = min(f_core_front_coords, key=lambda k: abs(k[0]))
+    min_mix_front_coord = min(f_mix_front_coords, key=lambda k: abs(k[0]))
+    # front_coord = [min(min_core_front_coord, min_mix_front_coord)]
+    front_coord = [min_core_front_coord]
 
     def find_head(f_coords, thresh=100):
         # find the head of the current by looking for a flat bit
@@ -387,8 +384,8 @@ def get_frame_data(image, run_data_container):
             except IndexError:
                 pass
         return [(-999999, 0)]
-    core_head = find_head(core_front_coords)
-    mix_head = find_head(mix_front_coords)
+    core_head = find_head(f_core_front_coords)
+    mix_head = find_head(f_mix_front_coords)
     head_coord = core_head
 
     # SANITY CHECKING: overlay given interfaces and points onto the
