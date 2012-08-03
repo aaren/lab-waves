@@ -203,22 +203,6 @@ def get_basic_run_data(run, processors=1):
     # run = '11_7_06c'
     # run = run.split('r')[-1]
     cameras = ['cam1', 'cam2']
-
-    def serial(images, camera):
-        print "processing", run, camera, len(images), "images"
-        result = [get_basic_frame_data(image) for image in images]
-        return result
-
-    def parallel(images, camera):
-        if processors == 0:
-            p = Pool()
-        else:
-            p = Pool(processes=processors)
-        result = p.map_async(get_basic_frame_data, images)
-        p.close()
-        p.join()
-        return result.get()
-
     basic_run_data = {}
     for camera in cameras:
         images = sorted(glob.glob('/'.join([path,
@@ -230,9 +214,9 @@ def get_basic_run_data(run, processors=1):
         else:
             pass
         if processors == 1:
-            result = serial(images, camera)
+            result = serial(get_basic_frame_data, images, camera)
         else:
-            result = parallel(images, camera)
+            result = parallel(get_basic_frame_data, images, camera, processors)
 
         basic_run_data[camera] = {k: v for k,v in result}
 
@@ -254,8 +238,9 @@ def get_basic_data(runs=None, processors=1):
         sys.stdout.flush()
         write_data(basic_run_data, f)
 
-def get_frame_data(image, run_data_container):
+def get_frame_data((image, run_data_container)):
     """gets the data for a single image.
+    run_data_container is needed to provide context.
     runs the external threshold module to produce the data,
     then normalises it and puts it in a dictionary for storage"""
 
@@ -416,25 +401,49 @@ def get_frame_data(image, run_data_container):
     frame_data['front'] = norm(front_coord, camera, 2)
     frame_data['head'] = norm(head_coord, camera, 2)
 
-    return frame_data
+    return (frame, frame_data)
 
-def get_run_data(run):
+def serial(function, images, camera):
+    print "processing", run, camera, len(images), "images"
+    result = [function(image) for image in images]
+    result = map(function, images)
+    return result
+
+def parallel(function, images, camera, processors):
+    if processors == 0:
+        p = Pool()
+    else:
+        p = Pool(processes=processors)
+    result = p.map_async(function, images)
+    p.close()
+    p.join()
+    return result.get()
+
+def get_run_data(run, processors=1):
     """grabs all data from a run"""
-    # run = '11_7_06c'
+    cameras = ['cam1', 'cam2']
     basic_run_data = read_data(data_dir + 'basic/basic_%s' % run)
     run_data = {}
-    # TODO: multiprocess this
-    for camera in ('cam1', 'cam2'):
-        run_data[camera] = {}
-        cam_data = run_data[camera]
+    for camera in cameras:
         images = sorted(glob.glob('/'.join([path,
                             'processed', run, camera, '*jpg'])))
-        for image in images:
-            frame = iframe(image)
-            cam_data[frame] = get_frame_data(image, basic_run_data)
+        tot = "%03d" % (len(images))
+        arg_images = [(i,basic_run_data) for i in images]
+        if len(images) == 0:
+            print "\nno images in", camera
+            break
+        else:
+            pass
+        if processors == 1:
+            result = serial(get_frame_data, arg_images, camera)
+        else:
+            result = parallel(get_frame_data, arg_images, camera, processors)
+
+        run_data[camera] = {k: v for k,v in result}
+
     return run_data
 
-def main(runs=None):
+def main(runs=None, processors=1):
     # define the runs to collect data from
     if runs is None:
         runs = ['r11_7_06c']
@@ -443,8 +452,7 @@ def main(runs=None):
     for run in runs:
         # make container for all the run data
         data = {}
-        run_data = get_run_data(run)
-        data[run] = run_data
+        data[run] = get_run_data(run, processors)
         f = data_storage + run
         # print "\nwriting ", file, "...\r",
         sys.stdout.flush()

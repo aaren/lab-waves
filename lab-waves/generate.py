@@ -76,6 +76,11 @@ def f_basic_data(run):
     """
     get_data.get_basic_data(run, 22)
 
+def f_data(run):
+    """Fast version of data.
+    """
+    get_data.main(run, 22)
+
 def data(run):
     """The basic interface depths are further processed to
     pull out maxima / minima using peakdetect. Parallax
