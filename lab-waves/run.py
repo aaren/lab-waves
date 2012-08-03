@@ -26,3 +26,6 @@ class Run(object):
     def load(self):
         # Explicitly load the run data
         self.data = read_data(self.data_file)[self.index]
+
+    def load_basic(self):
+        self.basic = read_data(data_dir + 'basic/basic_%s' % run)
