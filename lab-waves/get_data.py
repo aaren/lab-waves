@@ -170,6 +170,25 @@ def smooth(inter, window):
     smoothed_inter = list(y)
     return smoothed_inter
 
+def serial(function, images, camera):
+    try:
+        run = irun(images[0])
+    except AttributeError:
+        run = irun(images[0][0])
+    print "processing", run, camera, len(images), "images"
+    result = map(function, images)
+    return result
+
+def parallel(function, images, camera, processors):
+    if processors == 0:
+        p = Pool()
+    else:
+        p = Pool(processes=processors)
+    result = p.map_async(function, images)
+    p.close()
+    p.join()
+    return result.get()
+
 def get_basic_frame_data(image):
     # get the list of interface depths, with the depth for the current
     # different for varying lock depth
@@ -280,7 +299,7 @@ def get_frame_data((image, run_data_container)):
     core_current = list(enumerate(core_current))
     mixed_current = list(enumerate(mixed_current))
 
-    def filter_front(front_coords, fluid, t=20):
+    def filter_front(front_coords, fluid, t=10):
         """Takes detected front coords for an image and filters
         out bad ones. This is determined by using the first image
         from the run to set a region in which there is red fluid
@@ -339,11 +358,11 @@ def get_frame_data((image, run_data_container)):
     # Make the front_coord the front_coord furthest from the lock.
     min_core_front_coord = min(f_core_front_coords, key=lambda k: abs(k[0]))
     min_mix_front_coord = min(f_mix_front_coords, key=lambda k: abs(k[0]))
-    # front_coord = [min(min_core_front_coord, min_mix_front_coord)]
+    front_coord = [min(min_core_front_coord, min_mix_front_coord)]
     # core current is less prone to noise
-    front_coord = [min_core_front_coord]
+    # front_coord = [min_core_front_coord]
 
-    def find_head(f_coords, thresh=75):
+    def find_head(f_coords, thresh=50):
         # find the head of the current by looking for a flat bit
         for i,p in enumerate(f_coords):
             try:
@@ -402,22 +421,6 @@ def get_frame_data((image, run_data_container)):
     frame_data['head'] = norm(head_coord, camera, 2)
 
     return (frame, frame_data)
-
-def serial(function, images, camera):
-    print "processing", run, camera, len(images), "images"
-    result = [function(image) for image in images]
-    result = map(function, images)
-    return result
-
-def parallel(function, images, camera, processors):
-    if processors == 0:
-        p = Pool()
-    else:
-        p = Pool(processes=processors)
-    result = p.map_async(function, images)
-    p.close()
-    p.join()
-    return result.get()
 
 def get_run_data(run, processors=1):
     """grabs all data from a run"""
