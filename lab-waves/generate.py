@@ -6,12 +6,12 @@ from sys import argv
 # Ensure no errors when there is no display.  Must be done before
 # pyplot import.
 import matplotlib as mpl
-mpl.use('Agg')
+# mpl.use('Agg')
 
 import proc_im
 import join
 import get_data
-import waves
+from run import Run
 
 from config import path
 
@@ -110,7 +110,7 @@ def plot(run):
     """With the structures pulled out by wave(run), it is
     easy to make some plots.
     """
-    waves.main(run)
+    Run(run).plot_all()
 
 def all(run):
     """To get some raw, synced, lab data into nice plots in

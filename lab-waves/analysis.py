@@ -13,10 +13,10 @@ from config import data_dir, paramf
 
 from run import Run
 
-class Analysis(Run):
+class Analysis(object):
 
     def __init__(self, run):
-        super(Analysis, self).__init__(run)
+        self.__dict__ = Run(run).__dict__
         self.simple = self.read_simple()
 
     def read_simple(self, args='x, z, t'):
