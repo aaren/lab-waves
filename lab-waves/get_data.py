@@ -356,9 +356,22 @@ def get_frame_data((image, run_data_container)):
     f_mix_front_coords = filter_front(mix_front_coords, 'mixed')
 
     # Make the front_coord the front_coord furthest from the lock.
-    min_core_front_coord = min(f_core_front_coords, key=lambda k: abs(k[0]))
-    min_mix_front_coord = min(f_mix_front_coords, key=lambda k: abs(k[0]))
-    front_coord = [min(min_core_front_coord, min_mix_front_coord)]
+    try:
+        min_core_front_coord = min(f_core_front_coords, key=lambda k: abs(k[0]))
+    except ValueError:
+        print irun(image), icam(image), iframe(image), "BAD!"
+        min_core_front_coord = (-9999999, 0)
+    try:
+        min_mix_front_coord = min(f_mix_front_coords, key=lambda k: abs(k[0]))
+    except ValueError:
+        print irun(image), icam(image), iframe(image), "BAD!"
+        min_mix_front_coord = (-9999999, 0)
+    try:
+        front_coord = [min(min_core_front_coord, min_mix_front_coord, \
+                                            key=lambda k: abs(k[0]))]
+    except ValueError:
+        print irun(image), icam(image), iframe(image), "BAD!"
+        front_coord = [(-9999999, 0)]
     # core current is less prone to noise
     # front_coord = [min_core_front_coord]
 
