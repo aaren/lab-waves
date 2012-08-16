@@ -6,7 +6,7 @@ from sys import argv
 # Ensure no errors when there is no display.  Must be done before
 # pyplot import.
 import matplotlib as mpl
-# mpl.use('Agg')
+mpl.use('Agg')
 
 import proc_im
 import join
@@ -112,14 +112,18 @@ def plot(run):
     """
     Run(run).plot_all()
 
-def all(run):
+def all(run, speed='serial'):
     """To get some raw, synced, lab data into nice plots in
     a single command.
     """
-    proc_im_base(run)
-    proc_im_main(run)
-    f_basic_data(run)
-    data(run)
+    # proc_im_base(run)
+    # proc_im_main(run)
+    if speed == 'parallel':
+        # f_basic_data(run)
+        f_data(run)
+    elif speed == 'serial':
+        basic_data(run)
+        data(run)
     plot(run)
 
 def multi(proc, runs):
@@ -155,7 +159,7 @@ def pool(proc, runs):
 
 def loop(proc, runs):
     for run in runs:
-        proc(run)
+        proc(run, 'parallel')
 
 def get_runs(pdir='synced'):
     runpaths = glob.glob(('/').join([path, pdir, 'r*']))
@@ -204,7 +208,7 @@ if __name__ == '__main__':
         pool(process, runs)
     elif 'r11_' in argv[-1] and len(argv) == 3:
         print "straight processing..."
-        process(argv[-1])
+        process(argv[-1], speed='parallel')
     elif 'r11_' in argv[-1]:
         print "multiprocessing..."
         pool(process, runs)
