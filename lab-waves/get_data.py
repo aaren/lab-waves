@@ -38,24 +38,32 @@ def parallax_corr(xin, cam, p):
     """ Lab images suffer from parallax due to the static cameras.
     This is easily corrected for by assuming that features are 2d
     and homogeneous in the y coord (widthways across the tank."""
-    # xin is in units of lock-lengths
+    # xin is in units of lock-lengths - convert to SI
     scale = 0.25
     x = xin * scale
     # basic tank geometry
+    # distance of camera from x=0
     c = centre[cam]
+    # distance from camera to front of tank
     d = 1.45
+    # width of tank
     w = 0.20
     f = (w / (2 * d + w))
-    # given pos in tank x, cam pos c, distance from cam to tank d
-    # and width of tank w, the correction, when projected onto the
-    # centreline of the tank, is
+    # the correction, when projected onto the centreline of the
+    # tank, is
     corr = p * (x - c) * f
     # whether this is positive or negative depends on the position of
     # the front w.r.t the cam position
     if x < c:
-        x_corr = x + corr
+        # mid plane
+        # x_corr = x + corr
+        # front plane
+        x_corr = x + (x - c) * w / d
     elif x > c:
-        x_corr = x - corr
+        # mid plane
+        # x_corr = x - corr
+        # front plane
+        x_corr = x
     else:
         x_corr = x
     # back into lock-lengths
@@ -428,10 +436,10 @@ def get_frame_data((image, run_data_container)):
     frame_data['core_min'] = norm(core_min, camera, 0)
     frame_data['mix_max'] = norm(mix_max, camera, 0)
     frame_data['mix_min'] = norm(mix_min, camera, 0)
-    frame_data['core_front'] = norm(core_front_coords, camera, 2)
-    frame_data['mix_front'] = norm(mix_front_coords, camera, 2)
-    frame_data['front'] = norm(front_coord, camera, 2)
-    frame_data['head'] = norm(head_coord, camera, 2)
+    frame_data['core_front'] = norm(core_front_coords, camera, 1)
+    frame_data['mix_front'] = norm(mix_front_coords, camera, 1)
+    frame_data['front'] = norm(front_coord, camera, 1)
+    frame_data['head'] = norm(head_coord, camera, 1)
 
     return (frame, frame_data)
 

@@ -96,12 +96,11 @@ for cam in ['cam1', 'cam2']:
 # Specify the offsets that each of the cameras have, for
 # normalisation of pixel measurements
 ## the cam1 offset is the distance between wherever zero is in cam1
-## and the left edge of cam1.
+## and the *left* edge of cam1.
+## the cam2 offset is the distance between wherever zero is in cam1
+## and the *left* edge of *cam2*
 camera_offsets = {cam: (cl[cam] * ideal_m, ideal_25 + top_bar)\
                                     for cam in ('cam1', 'cam2')}
-## the cam2 offset is the distance between wherever zero is in cam1
-## and the left edge of *cam2*
-fudge = 176
 
 # specify the scale, i.e how many pixels to some real measurement in the
 # images. in y we want this to be the total fluid depth. in x make it the
@@ -112,7 +111,7 @@ scales = {cam: (lock_length, fluid_depth) for cam in ('cam1', 'cam2')}
 
 # specify where the centre of the camera was pointing to.
 # used in parallax_corr
-centre = {'cam1': 0.75, 'cam2': 0.25}
+centre = {'cam1': 0.75, 'cam2': 2.25}
 ### /CAMERA SETUP ###
 
 #####/CONFIG#####
