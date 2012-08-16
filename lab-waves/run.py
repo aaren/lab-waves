@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import functions as f
 from aolcore import read_data, write_simple
 from aolcore import get_parameters
-from config import data_dir, data_storage, paramf
+from config import data_dir, data_storage, paramf, plots_dir
 
 class Run(object):
 
@@ -60,10 +60,14 @@ class Run(object):
         arg_list = []
         point = namedtuple(arg, 'x, z, t')
         for cam in ['cam1', 'cam2']:
-            cdata = rdata[cam]
-            for f in cdata.keys():
-                arg_list += [point(e[0], e[1], int(f) - 1) \
-                                    for e in cdata[f][arg]]
+            # catch missing cameras
+            try:
+                cdata = rdata[cam]
+                for f in cdata.keys():
+                    arg_list += [point(e[0], e[1], int(f) - 1) \
+                                        for e in cdata[f][arg]]
+            except KeyError:
+                pass
         return arg_list
 
     def plot_all(self):
@@ -76,7 +80,7 @@ class Run(object):
         plt.plot(w_x, w_t, 'bo')
         plt.plot(f_x, f_t, 'ko')
         plt.xlim(0, 12)
-        plt.ylim(0, 50)
+        plt.ylim(0, 60)
         plt.xlabel("Distance (lock lengths)")
         plt.ylabel("Time (s)")
         plt.grid()
