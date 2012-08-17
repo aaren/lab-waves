@@ -59,52 +59,81 @@ class Analysis(object):
         H = sorted(data['head'], key=lambda p: p.t)
         return H
 
+    @property
     def Fx(self):
         return [ufloat((f.x, 0.04)) for f in self.front()]
 
+    @property
     def Fu(self):
         # calculate the front velocity
         # TODO: smooth and reinterpolate so there isn't a half
         # second offset.
-        Fu = list(np.diff(self.Fx()))
-        Fu.insert(0, ufloat((0, 0.01)))
+        Fu = list(np.diff(self.Fx / np.diff(self.Ft)))
+        # here this is offset by 1 and there is one less value
+
+        # really it is offset by 0.5
+
+        tin = self.Ft
+        tout = [np.mean(tin[i:i+2]) for i,v in list(enumerate(tin))[:-1]]
+        Fu = np.interp(tin, tout, Fu)
+
+        # we know that front velocity is 0 at 0
+        # Fu.insert(0, ufloat((0, 0.01)))
+
         return Fu
 
+    @property
     def Ft(self):
         return [f.t for f in self.front()]
 
+    @property
     def Ht(self):
         return [h.t for h in self.head()]
 
+    @property
     def Hz(self):
         return [ufloat((h.z, 0.02)) for h in self.head()]
 
     def test_plot(self):
         # test plot of simple things
-        Fu = [i.nominal_value for i in self.Fu()]
-        Ft = self.Ft()
-        plt.figure()
-        plt.plot(Ft, Fu)
-        plt.plot(Ft, Fu, 'ko')
-        # plt.plot(Ft, Fx, 'ro')
-        Ht = self.Ht()
-        Hz = [i.nominal_value for i in self.Hz()]
-        plt.plot(Ht, Hz, 'yo')
+        Fu = [i.nominal_value for i in self.Fu]
+        Fx = [i.nominal_value for i in self.Fx]
+        Fue = [i.std_dev() for i in self.Fu]
+        Fxe = [i.std_dev() for i in self.Fx]
+        Ft = self.Ft
+        fig = plt.figure()
+        ax1 = fig.add_subplot(111)
+        ax1.errorbar(Ft, Fx, yerr=Fxe, fmt='r.', label=r'$x_n$')
+
+        plt.title(r"$\alpha = %s$ $\rho_0 = %s$ $\rho_1 = %s$ $\rho_2 = %s$ $h_1 = %s$"\
+                            % (self.a, self.r0, self.r1, self.r2, self.h1))
+        plt.xlabel("Time from lock release (s)")
+
+        ax2 = ax1.twinx()
+        ax2.errorbar(Ft, Fu, yerr=Fue)
+        ax2.plot(Ft, Fu, 'ko', label=r'$u_n$')
+        Ht = self.Ht
+        Hz = [i.nominal_value for i in self.Hz]
+        ax2.plot(Ht, Hz, 'yo', label=r'$h_n$')
+
+        plt.savefig('figs/%s_basic.png' % self.index)
 
     def theta(self):
-        Fx = self.Fx()
-        Hz = self.Hz()
-        U = self.Fu()
+        Fx = self.Fx
+        Hz = self.Hz
+        U = self.Fu
         Theta = [u * h ** 2 / x for u, h, x in zip(U, Hz, Fx)]
         return Theta
 
     def ungarish_theta(self):
         # Ungarish theta plot
         plt.figure()
+        plt.title(r"$\alpha = %s$ $\rho_0 = %s$ $\rho_1 = %s$ $\rho_2 = %s$ $h_1 = %s$"\
+                            % (self.a, self.r0, self.r1, self.r2, self.h1))
         theta = [i.nominal_value for i in self.theta()]
         etheta = [i.std_dev() for i in self.theta()]
-        plt.plot(self.Ft(), theta, 'ko')
-        plt.errorbar(self.Ft(), theta, yerr=etheta)
+        plt.plot(self.Ft, theta, 'ko')
+        plt.errorbar(self.Ft, theta, yerr=etheta)
         plt.xscale('log')
         plt.xlim(1, 40)
         plt.yscale('log')
@@ -113,53 +142,58 @@ class Analysis(object):
         plt.xlabel('time from lock releae (s)')
         plt.ylabel(r'$\Theta$')
 
+        plt.savefig('figs/%s_theta.png' % self.index)
+
     def dynamic_reynolds(self):
         # Dynamic reynolds number plot
-        U = self.Fu()
-        H = self.Hz()
+        U = self.Fu
+        H = self.Hz
         plt.figure()
         Re = [u * h / 0.000001 for u, h in zip(U, H)]
         nRe = [i.nominal_value for i in Re]
         eRe = [i.std_dev() for i in Re]
-        plt.plot(self.Ft(), nRe, 'b-', label='dynamic')
-        plt.plot(self.Ft(), nRe, 'ko')
-        # plt.errorbar(Ft, nRe, yerr=eRe)
+        plt.plot(self.Ft, nRe, 'b-', label='dynamic')
+        plt.plot(self.Ft, nRe, 'ko')
+        plt.errorbar(self.Ft, nRe, yerr=eRe)
 
         # simplistic reynolds number
-        sRe = [0.25 * 0.16E6 for t in self.Ft()]
+        sRe = [0.2 * 0.4 * 10E6 for t in self.Ft]
         plt.plot(self.Ft(), sRe, 'k-', label='simple')
 
         # Ungarish full ratio of inertial to viscous
-        Rf = [th * 0.04E6 for th in self.theta()]
+        Rf = [th * 0.2 * 0.4 * 0.4 * 1E6 for th in self.theta()]
         R = [i.nominal_value for i in Rf]
-        plt.plot(self.Ft(), R, 'r-', label='theoretical')
+        plt.plot(self.Ft, R, 'r-', label='ungarish box')
 
+        plt.title(r"$\alpha = %s$ $\rho_0 = %s$ $\rho_1 = %s$ $\rho_2 = %s$ $h_1 = %s$"\
+                            % (self.a, self.r0, self.r1, self.r2, self.h1))
         plt.xscale('log')
         plt.xlim(1, 40)
         plt.yscale('log')
-        plt.ylim(1, 1E6)
+        plt.ylim(1, 1E7)
         plt.xlabel('time from lock releae (s)')
         plt.ylabel(r'$\Re$')
         plt.legend()
 
+        plt.savefig('figs/%s_Recomp.png' % self.index)
+
     def full_ungarish(self):
         plt.figure()
-        U = self.Fu()
-        H = self.Hz()
+        U = self.Fu
+        H = self.Hz
         Re = [u * h / 0.000001 for u, h in zip(U, H)]
         RT = [r * t for r, t in zip(Re, self.theta())]
         nRT = [i.nominal_value for i in RT]
         eRT = [i.std_dev() for i in RT]
         # plt.plot(Ft, nRT)
-        plt.plot(self.Ft(), nRT, 'ko')
-        plt.errorbar(self.Ft(), nRT, yerr=eRT)
+        plt.plot(self.Ft, nRT, 'ko')
+        plt.errorbar(self.Ft, nRT, yerr=eRT)
         plt.xscale('log')
         plt.xlim(1, 40)
         plt.yscale('log')
         plt.ylim(1, 1000)
         plt.xlabel('time from lock releae (s)')
         plt.ylabel(r'$\Re \theta$')
-
 
 def main(run):
     r = Analysis(run)
@@ -169,8 +203,8 @@ def main(run):
     # continuous error bars
     # surely this needs continuous data??
     r.dynamic_reynolds()
-    r.full_ungarish()
-    plt.show()
+    # r.full_ungarish()
+    # plt.show()
 
 
 if __name__ == '__main__':
