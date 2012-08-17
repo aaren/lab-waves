@@ -87,8 +87,11 @@ def wave_para(inlist, camera):
         X, Z = zip(*inlist)
         # FIXME: are these x values evenly distributed???
         # do we need to reinterpolate?
-        gradient = np.gradient(Z)
-        grad_list = zip(X, gradient)
+        # check this works
+        Xi = np.linspace(0, max(X), 500)
+        Zi = np.interp(Xi, X, Z)
+        gradient = np.diff(Zi) / (Xi[1] - Xi[0])
+        grad_list = zip(Xi, gradient)
         return grad_list
 
     g_inlist = get_gradient(inlist)

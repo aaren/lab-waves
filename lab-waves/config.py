@@ -113,6 +113,9 @@ scales = {cam: (lock_length, fluid_depth) for cam in ('cam1', 'cam2')}
 # specify where the centre of the camera was pointing to.
 # used in parallax_corr
 centre = {'cam1': 0.75, 'cam2': 0.25}
+# where was the camera centred in the vertical?
+# units are fractions of the fluid depth
+height = {'cam1': 0.2, 'cam2': 0.2}
 ### /CAMERA SETUP ###
 
 #####/CONFIG#####
