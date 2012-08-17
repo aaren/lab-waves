@@ -81,6 +81,50 @@ def norm(inlist, camera, p=0):
     inlist_norm = [norm_tuple(tupe) for tupe in inlist]
     return inlist_norm
 
+def wave_para(inlist, camera):
+    # compute the gradient of the inlist
+    def get_gradient(inlist):
+        X, Z = zip(*inlist)
+        # FIXME: are these x values evenly distributed???
+        # do we need to reinterpolate?
+        gradient = np.gradient(Z)
+        grad_list = zip(X, gradient)
+        return grad_list
+
+    g_inlist = get_gradient(inlist)
+    outlist = []
+    # measurements
+    w = 0.20
+    c = centre[camera]
+    # FIXME: need to find out what this was!!
+    h = height[camera]
+
+    # how to transform things
+    def transform(xa, za):
+        x = xa + w/d * (xa - c)
+        z = za + w/d * (za - h)
+        return x, z
+
+    for xa, za in inlist:
+        # gradient of the line that goes through xa, za
+        dl = (za - h) / (xa - c)
+        D = g_inlist - dl
+        if D * (xa - c) > 0:
+            # seeing the back of the wave
+            x, z = transform(xa, za)
+        elif D * (xa -c) < 0:
+            # seeing the front of the wave
+            x, z = xa, za
+        elif D == 0:
+            # TODO: or near zero - what are the limits??
+            # discard
+            x, z = -9999999, -9999999
+        else:
+            sys.exit("I don't know what's going on")
+        outlist.append((x,z))
+    return outlist
+
+
 def iframe(image):
     """From an image filename, e.g. img_0001.jpg, get just the
     0001 bit and return it.
