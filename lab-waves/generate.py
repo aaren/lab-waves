@@ -208,7 +208,7 @@ if __name__ == '__main__':
         pool(process, runs)
     elif 'r11_' in argv[-1] and len(argv) == 3:
         print "straight processing..."
-        process(argv[-1], speed='parallel')
+        process(argv[-1])
     elif 'r11_' in argv[-1]:
         print "multiprocessing..."
         pool(process, runs)
