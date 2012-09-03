@@ -103,69 +103,6 @@ def denorm(inlist, camera):
     inlist_denorm = [denorm_tuple(tupe) for tupe in inlist]
     return inlist_denorm
 
-def wave_para(inlist, camera):
-    # make sure inlist is ordered
-    inlist = sorted(inlist, key = lambda p: p[0])
-    # and in SI dimensions
-    sinlist = [((x * 0.25), z) for x,z in inlist]
-
-    # compute the gradient of the inlist
-    def get_gradient(inlist):
-        X, Z = zip(*inlist)
-        # FIXME: are these x values evenly distributed???
-        # do we need to reinterpolate?
-        # check this works
-        Xi = np.linspace(0, max(X), 500)
-        Zi = np.interp(Xi, X, Z)
-        gradient = np.diff(Zi) / (Xi[1] - Xi[0])
-        dZi = list(gradient)
-        Xi = list(Xi)
-        # make same dimension as Xi
-        dZi.insert(0, dZi[0])
-        grad_list = zip(Xi, dZi)
-        return grad_list
-
-    g_inlist = get_gradient(sinlist)
-    soutlist = []
-    # measurements
-    d = 1.45
-    w = 0.20
-    c = centre[camera]
-    h = height[camera]
-
-    # how to transform things
-    def transform(xa, za):
-        x = xa + w/d * (xa - c)
-        z = za + w/d * (za - h)
-        return x, z
-
-    for xa, za in sinlist:
-        # gradient of the line that goes through xa, za
-        dl = (za - h)
-        # gradient of the interface at xa
-        Xa = [r[0] for r in g_inlist]
-        di = g_inlist[bisect_left(Xa, xa)][1]
-        D = di * (xa - c) - dl
-        if D > 0:
-            # seeing the back of the wave
-            x, z = transform(xa, za)
-        elif D < 0:
-            # seeing the front of the wave
-            x, z = xa, za
-        elif D == 0:
-            print "zero!"
-            # TODO: or near zero - what are the limits??
-            # discard
-            x, z = -9999999, -9999999
-        else:
-            sys.exit("I don't know what's going on")
-        soutlist.append((x,z))
-
-    # back into nondim units:
-    outlist = [((x/0.25), z) for x,z in soutlist]
-
-    return outlist
-
 def iframe(image):
     """From an image filename, e.g. img_0001.jpg, get just the
     0001 bit and return it.
@@ -480,20 +417,12 @@ def get_frame_data((image, run_data_container)):
     mix_head = find_head(f_mix_front_coords)
     head_coord = core_head
 
-    # do some corrections to the interface
-    norm_interface = norm(smoothed_interface, camera)
-    c_inter = wave_para(norm_interface, camera)
-    # denormalise so that it can be plotted on a sanity image
-    # and make sure it is sorted so that the sanity line is plotted
-    # sensibly.
-    para_interface = sorted(denorm(c_inter, camera), key = lambda p: p[0])
-
     # SANITY CHECKING: overlay given interfaces and points onto the
     # images with specified colours. images are saved to the sanity
     # dirs.
     interfaces = [interface, core_current, \
-            mixed_current, fixed_interface, smoothed_interface, para_interface]
-    icolours = ['black', 'blue', 'cyan', 'orange', 'red', 'purple']
+            mixed_current, fixed_interface, smoothed_interface]
+    icolours = ['black', 'blue', 'cyan', 'orange', 'red']
     points = [_max, _min, \
             f_core_front_coords, f_mix_front_coords, \
             core_max, mix_max,
@@ -513,7 +442,6 @@ def get_frame_data((image, run_data_container)):
         frame_data['baseline'] = norm(baseline, camera)
 
     frame_data['interface'] = norm(interface, camera)
-    frame_data['corr_interface'] = norm(para_interface, camera)
     frame_data['core_current'] = norm(core_current, camera)
     frame_data['mixed_current'] = norm(mixed_current, camera)
     frame_data['max'] = norm(_max, camera, 0)
