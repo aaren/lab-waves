@@ -126,6 +126,20 @@ def barrel_corr(image, outimage, Null=None):
         print "Camera must be cam1 or cam2"
 
     command = 'convert -distort Barrel %s %s %s' % (corr, image, outimage)
+    # TODO: replace this with a python only command
+    def f((x,y,z), (a,b,c,d)):
+        """Map output pixels to input pixels for a barrel distortion.
+
+        r_src = r * (a * r ** 3 + b * r ** 2 + c * r + d)
+        """
+
+        return x,y,z
+
+    from scipy.ndimage.interpolation import geometric_transform
+
+    i = plt.imread(image)
+    i2 = geometric_transform(i, f, extra_arguments=((a,b,c,d)))
+    # write out
 
     print "Correcting", run, cam, frame, "\r",
     sys.stdout.flush()
