@@ -6,6 +6,7 @@ import sys
 
 import Image
 import ImageDraw
+import numpy as np
 from numpy import polyfit
 
 from config import crop
@@ -46,6 +47,20 @@ def thresh_img(image, thresh_values=None):
     # way of indexing the result.
     return fluid_type
 
+def faster_thresh(image):
+    im = Image.open(image)
+    w, h = im.size
+    im = im.load()
+    thresh_green = (80, 110, 50)
+    thresh_red = (60, 20, 20)
+    mixed_red = (75, 20, 20)
+
+    ftr = np.logical_and(np.logical_and(im[:,:,0] > thresh_red[0], im[:,:,1] < thresh_red[1]), im[:,:,2] < thresh_red[2])
+    ftg = np.logical_and(np.logical_and(im[:,:,0] > thresh_green[0], im[:,:,1] < thresh_green[1]), im[:,:,2] < thresh_green[2])
+    ftb = np.logical_and(np.logical_and(im[:,:,0] > thresh_blue[0], im[:,:,1] > thresh_blue[1]), im[:,:,2] < thresh_blue[2])
+
+    ft = [ftr.tolist(), ftb.tolist(), ftb.tolist()]
+    return ft
 
 def process(image, fluid_type_lists, region, fluid, rulers):
     # Now make lists of the index at which a particular fluid type first
