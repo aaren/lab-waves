@@ -9,10 +9,10 @@ import sys
 import Image
 import ImageFont
 import ImageDraw
-from numpy import matrix
-from numpy import asarray
-from numpy.linalg import solve
+import numpy as np
 import matplotlib.pyplot as plt
+from scipy import ndimage
+from scipy.ndimage.interpolation import geometric_transform
 
 from aolcore import pull_col, pull_line
 from aolcore import get_parameters
@@ -111,12 +111,13 @@ def bc1(run):
         barrel_corr(image1, outdir)
 
 def barrel_corr(image, outimage, Null=None):
-    run = image.split('/')[-3]
-    cam = image.split('/')[-2]
-    frame = image.split('/')[-1]
+    # run = image.split('/')[-3]
+    # cam = image.split('/')[-2]
+    # frame = image.split('/')[-1]
+    cam = 'cam1'
 
-    cam1corr = '"0.000658776 -0.0150048 -0.00123339 1.01557914"'
-    cam2corr = '"0.023969 -0.060001 0 1.036032"'
+    cam1corr = (0.000658776, -0.0150048, -0.00123339, 1.01557914)
+    cam2corr = (0.023969, -0.060001, 0, 1.036032)
 
     if cam == 'cam1':
         corr = cam1corr
@@ -125,25 +126,98 @@ def barrel_corr(image, outimage, Null=None):
     else:
         print "Camera must be cam1 or cam2"
 
-    command = 'convert -distort Barrel %s %s %s' % (corr, image, outimage)
-    # TODO: replace this with a python only command
-    def f((x,y,z), (a,b,c,d)):
-        """Map output pixels to input pixels for a barrel distortion.
-
-        r_src = r * (a * r ** 3 + b * r ** 2 + c * r + d)
-        """
-
-        return x,y,z
-
-    from scipy.ndimage.interpolation import geometric_transform
-
-    i = plt.imread(image)
-    i2 = geometric_transform(i, f, extra_arguments=((a,b,c,d)))
+    im = ndimage.imread(image)
+    dim = im.shape[0:2]
+    imcorr = geometric_transform(im, f, extra_arguments=(dim, corr))
+    return imcorr
     # write out
 
-    print "Correcting", run, cam, frame, "\r",
+    # print "Correcting", run, cam, frame, "\r",
     sys.stdout.flush()
-    os.system(command)
+
+def r_from_centre((x, y), (w, h)):
+    """Calculate the radius from the centre of an image of a point (x, y)
+    in the image.
+    """
+    r = ((w / 2 - x) ** 2 + (h / 2 - y) ** 2) ** .5
+    return r
+
+def barrel_dist_r((x, y), (w, h), (a, b, c, d)):
+    """For given point x, y in the desination, calculate the radius
+    to the equivalent point in the source.
+
+    The radius is normalised such that the described circle will fit
+    entirely into the image.
+
+    i.e. half of the smallest of h, w is used to normalise.
+    """
+    r_dest = r_from_centre((x, y), (w, h))
+    norm = min(w,h) / 2
+    norm_r_dest = r_dest / norm
+    norm_r_src = barrel_dist(norm_r_dest, (a, b, c, d))
+    r_src = norm_r_src * norm
+    return r_src
+
+def barrel_dist(r, (a, b, c, d)):
+    """For given radius in the destination, calculate the equivalent
+    radius in the source for given coefficients.
+
+    r has to be in units normalised to half the minimum side length.
+
+    That is, the circle that r describes must fit entirely into the image.
+    """
+    r_src = r * (a * r ** 3 + b * r ** 2 + c * r + d)
+    return r_src
+
+def f((x,y,z), (w, h), (a,b,c,d)):
+    """Map destination pixels to source pixels for barrel
+    distortion coefficients a, b, c, d and an image of
+    dimensions (w, h).
+
+    There are two equations to solve.
+
+    Given an (x, y) input we can calculate the radius of this point
+    in both the source and desination images.
+
+    Secondly, we conserve the direction of the vector from the centre
+    of the image to the point in both images.
+
+    i.e. (w / 2 - x_src) / (h / 2 - y_src) = (w / 2 - x_dest) / (h / 2 - y_dest)
+
+    This gives us a quadratic in y_src.
+    """
+    if x == w / 2 and y == h / 2:
+        return x, y, z
+    elif y == h / 2:
+        x_src = barrel_dist_r((x, y), (w, h), (a, b, c, d))
+        y_src = y
+        return x_src, y_src, z
+
+    tan = (w / 2 - x) / (h / 2 - y)
+
+    r = barrel_dist_r((x, y), (w, h), (a, b, c, d))
+    # coefficients A x ** 2 + B * x + C = 0
+    A = 1 + tan ** 2
+    B = (h * (1 + tan ** 2) - 2 * w * tan)
+    C = w ** 2 / 2 + (h ** 2 / 4) * (1 + tan) + (w * h / 2) * tan - r ** 2
+
+    roots = np.roots((A, B, C))
+    # this is the correct root selection. It comes out like this
+    # because of the simple formula used to equalise the angles.
+    if x < w / 2 and y < h / 2:
+        y_src = roots[1]
+    elif x < w / 2 and y > h / 2:
+        y_src = roots[0]
+    elif x >= w / 2 and y < h / 2:
+        y_src = roots[0]
+    elif x >= w / 2 and y >= h / 2:
+        y_src = roots[0]
+    else:
+        exit("I don't know what you're talking about")
+
+    x_src = tan * (y_src - h / 2) + w / 2
+
+    return x_src, y_src, z
 
 def barrel_corrections(run, run_data=None):
     # Barrel correct
@@ -163,16 +237,16 @@ def perspective_coefficients(X,x):
     (x1, y1), (x2, y2), (x3, y3), (x4, y4) = x
     (X1, Y1), (X2, Y2), (X3, Y3), (X4, Y4) = X
 
-    A = matrix([[x1,y1,1,0,0,0,-X1*x1,-X1*y1],\
-                [0,0,0,x1,y1,1,-Y1*x1,-Y1*y1],\
-                [x2,y2,1,0,0,0,-X2*x2,-X2*y2],\
-                [0,0,0,x2,y2,1,-Y2*x2,-Y2*y2],\
-                [x3,y3,1,0,0,0,-X3*x3,-X3*y3],\
-                [0,0,0,x3,y3,1,-Y3*x3,-Y3*y3],\
-                [x4,y4,1,0,0,0,-X4*x4,-X4*y4],\
-                [0,0,0,x4,y4,1,-Y4*x4,-Y4*y4]])
+    A = np.matrix([[x1,y1,1,0,0,0,-X1*x1,-X1*y1],\
+                   [0,0,0,x1,y1,1,-Y1*x1,-Y1*y1],\
+                   [x2,y2,1,0,0,0,-X2*x2,-X2*y2],\
+                   [0,0,0,x2,y2,1,-Y2*x2,-Y2*y2],\
+                   [x3,y3,1,0,0,0,-X3*x3,-X3*y3],\
+                   [0,0,0,x3,y3,1,-Y3*x3,-Y3*y3],\
+                   [x4,y4,1,0,0,0,-X4*x4,-X4*y4],\
+                   [0,0,0,x4,y4,1,-Y4*x4,-Y4*y4]])
 
-    c = solve(A, asarray(X).flatten())
+    c = np.linalg.solve(A, np.asarray(X).flatten())
 
     return c
 
