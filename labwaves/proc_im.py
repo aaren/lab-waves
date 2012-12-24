@@ -135,92 +135,54 @@ def barrel_corr(image, outimage, Null=None):
     # print "Correcting", run, cam, frame, "\r",
     sys.stdout.flush()
 
-def r_from_centre((x, y), (w, h)):
-    """Calculate the radius from the centre of an image of a point (x, y)
-    in the image.
-    """
-    r = ((w / 2 - x) ** 2 + (h / 2 - y) ** 2) ** .5
-    return r
-
-def barrel_dist_r((x, y), (w, h), (a, b, c, d)):
-    """For given point x, y in the desination, calculate the radius
-    to the equivalent point in the source.
-
-    The radius is normalised such that the described circle will fit
-    entirely into the image.
-
-    i.e. half of the smallest of h, w is used to normalise.
-    """
-    r_dest = r_from_centre((x, y), (w, h))
-    norm = min(w,h) / 2
-    norm_r_dest = r_dest / norm
-    norm_r_src = barrel_dist(norm_r_dest, (a, b, c, d))
-    r_src = norm_r_src * norm
-    return r_src
-
-def barrel_dist(r, (a, b, c, d)):
-    """For given radius in the destination, calculate the equivalent
-    radius in the source for given coefficients.
-
-    r has to be in units normalised to half the minimum side length.
-
-    That is, the circle that r describes must fit entirely into the image.
-    """
-    r_src = r * (a * r ** 3 + b * r ** 2 + c * r + d)
-    return r_src
-
-def f((x,y,z), (w, h), (a,b,c,d)):
+def f((x,y), (w, h), (a,b,c,d)):
     """Map destination pixels to source pixels for barrel
     distortion coefficients a, b, c, d and an image of
     dimensions (w, h).
 
-    There are two equations to solve.
-
     Given an (x, y) input we can calculate the radius of this point
     in both the source and desination images.
+
+    r = ((w / 2 - x) ** 2 + (h / 2 - y) ** 2) ** .5
 
     Secondly, we conserve the direction of the vector from the centre
     of the image to the point in both images.
 
-    i.e. (w / 2 - x_src) / (h / 2 - y_src) = (w / 2 - x_dest) / (h / 2 - y_dest)
+    i.e. sin(theta_dest) = sin(theta_src)
 
-    This gives us a quadratic in y_src.
+         (w / 2 - x_dest) / r_dest = (w / 2 - x_src) / r_src
+
+    and  cos(theta_dest) = cos(theta_src)
+
+         (h / 2 - y_dest) / r_dest = (h / 2 - y_src) / r_src
+
+    We calculate the source radius from the destination radius as
+
+    r_src = r_dest * (a * r_dest ** 3 + b * r_dest ** 2 + c * r_dest + d)
+
+    where (a, b, c, d) are specific to a given lens / camera and are
+    the coefficients that allow for correction of lens distortion.
+
+    In this formula, all radii are normalised to half the smaller of
+    the sides of the image. That is, such that the unit circle fits
+    entirely within the image.
     """
-    print '\r', x, y,
+    # print '\r', x, y,
+    # centre condition
     if x == w / 2 and y == h / 2:
         return x, y, z
-    elif y == h / 2:
-        x_src = barrel_dist_r((x, y), (w, h), (a, b, c, d))
-        y_src = y
-        return x_src, y_src, z
 
-    tan = (w / 2 - x) / (h / 2 - y)
+    r_dest = ((w / 2 - x) ** 2 + (h / 2 - y) ** 2) ** .5
 
-    r = barrel_dist_r((x, y), (w, h), (a, b, c, d))
-    # coefficients A x ** 2 + B * x + C = 0
-    A = 1 + tan ** 2
-    B = (h * (1 + tan ** 2) - 2 * w * tan)
-    C = w ** 2 / 2 + (h ** 2 / 4) * (1 + tan) + (w * h / 2) * tan - r ** 2
+    # normalise
+    nr = r_dest / (min(w, h) / 2)
+    # ratio r is nr_src / nr_dest
+    r = (a * nr ** 3 + b * nr ** 2 + c * nr + d)
 
-    r1 = (-B + np.sqrt(0j + B ** 2 - 4 * A * C)) / (2 * A)
-    r2 = (-B - np.sqrt(0j + B ** 2 - 4 * A * C)) / (2 * A)
-    roots = (r1, r2)
-    # this is the correct root selection. It comes out like this
-    # because of the simple formula used to equalise the angles.
-    if x < w / 2 and y < h / 2:
-        y_src = roots[1]
-    elif x < w / 2 and y > h / 2:
-        y_src = roots[0]
-    elif x >= w / 2 and y < h / 2:
-        y_src = roots[0]
-    elif x >= w / 2 and y >= h / 2:
-        y_src = roots[0]
-    else:
-        exit("I don't know what you're talking about")
+    x_src = r * x + (w / 2) * (1 - r)
+    y_src = r * y + (w / 2) * (1 - r)
 
-    x_src = tan * (y_src - h / 2) + w / 2
-
-    return x_src, y_src, z
+    return x_src, y_src
 
 def barrel_corrections(run, run_data=None):
     # Barrel correct
