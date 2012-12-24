@@ -186,6 +186,7 @@ def f((x,y,z), (w, h), (a,b,c,d)):
 
     This gives us a quadratic in y_src.
     """
+    print '\r', x, y,
     if x == w / 2 and y == h / 2:
         return x, y, z
     elif y == h / 2:
@@ -201,7 +202,9 @@ def f((x,y,z), (w, h), (a,b,c,d)):
     B = (h * (1 + tan ** 2) - 2 * w * tan)
     C = w ** 2 / 2 + (h ** 2 / 4) * (1 + tan) + (w * h / 2) * tan - r ** 2
 
-    roots = np.roots((A, B, C))
+    r1 = (-B + np.sqrt(0j + B ** 2 - 4 * A * C)) / (2 * A)
+    r2 = (-B - np.sqrt(0j + B ** 2 - 4 * A * C)) / (2 * A)
+    roots = (r1, r2)
     # this is the correct root selection. It comes out like this
     # because of the simple formula used to equalise the angles.
     if x < w / 2 and y < h / 2:
