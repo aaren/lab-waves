@@ -110,7 +110,7 @@ def bc1(run):
         image1 = '%s/%s/img_0001.jpg' % (indir, camera)
         barrel_corr(image1, outdir)
 
-def barrel_corr(image, outimage, Null=None):
+def barrel_corr(image, outimage, Null=None, res=8):
     # run = image.split('/')[-3]
     # cam = image.split('/')[-2]
     # frame = image.split('/')[-1]
@@ -126,14 +126,66 @@ def barrel_corr(image, outimage, Null=None):
     else:
         print "Camera must be cam1 or cam2"
 
-    im = ndimage.imread(image)
-    dim = im.shape[0:2]
-    imcorr = geometric_transform(im, f, extra_arguments=(dim, corr))
-    return imcorr
-    # write out
+    def get_rects((w, h), res=2):
+        """Put a grid over an image and get the coords
+        of the edges of each grid box, (left, lower, right, upper).
+        i.e. (x_left, y_lower, x_right, y_upper)
+
+        The specified resolution is the size of each grid
+        square.
+        """
+        r = res
+        rects = [[(i, j, i + r, j + r) for i in range(0, w, res)]
+                                        for j in range(0, h, res)]
+        flat = [i for s in rects for i in s]
+        return flat
+
+    def trans(rect):
+        """Find the corresponding source coords of the
+        corners of each given rect."""
+        # FIXME: I think mesh might actually take two rects as
+        # input, i.e. two tuples of length 4 describing the edges.
+        # But the source doesn't back this up as a mesh is just read
+        # as a list of quads. `for box, quad in data: quadtrans...`
+        # input to quad is definitely length 8
+        ul = rect[0], rect[1]
+        ll = rect[0], rect[3]
+        lr = rect[2], rect[1]
+        ur = rect[2], rect[3]
+        P = (ul, ll, lr, ur)
+        Quad = [f(p, im.size, corr) for p in P]
+        # quad = itertools.chain(Quad)
+        quad = sum(Quad, ())
+        return quad
+
+    corr = (0.1, 0.1, 0.1, 1)
+    im = Image.open(image)
+    print "creating table.."
+    rects = get_rects(im.size, res)
+    # print [trans(rect) for rect in rects]
+    data = ((rect, trans(rect)) for rect in rects)
+    print "transforming..."
+    print im.size
+    imc = im.transform(im.size, Image.MESH, data, Image.NEAREST, fill=1)
+    imc.save(outimage)
+
+    # simplest possible mesh example
+    data = [((0,400,400,800), (0,400,0,800,400,800,400,400)),
+            ((800,400,1200,800), (800,400,800,800,1200,800,1200,400))]
+    # for box, quad in data:
+        # print box, quad
+    imm = im.transform(im.size, Image.MESH, data)
+    imm.save('mesh.jpg')
+
+    # quad example
+    data = data[0][1]
+    # print data
+    imq = im.transform(im.size, Image.QUAD, data)
+    imq.save('quad.jpg')
 
     # print "Correcting", run, cam, frame, "\r",
     sys.stdout.flush()
+    return imc
 
 def f((x,y), (w, h), (a,b,c,d)):
     """Map destination pixels to source pixels for barrel
@@ -167,10 +219,10 @@ def f((x,y), (w, h), (a,b,c,d)):
     the sides of the image. That is, such that the unit circle fits
     entirely within the image.
     """
-    # print '\r', x, y,
+    print '\r', x, y,
     # centre condition
     if x == w / 2 and y == h / 2:
-        return x, y, z
+        return x, y
 
     r_dest = ((w / 2 - x) ** 2 + (h / 2 - y) ** 2) ** .5
 
@@ -182,7 +234,7 @@ def f((x,y), (w, h), (a,b,c,d)):
     x_src = r * x + (w / 2) * (1 - r)
     y_src = r * y + (w / 2) * (1 - r)
 
-    return x_src, y_src
+    return int(x_src), int(y_src)
 
 def barrel_corrections(run, run_data=None):
     # Barrel correct
