@@ -3,6 +3,10 @@ from multiprocessing import Process, Pool, Queue
 import multiprocessing.pool
 import glob
 from sys import argv
+# Ensure no errors when there is no display.  Must be done before
+# pyplot import.
+import matplotlib as mpl
+mpl.use('Agg')
 
 import proc_im
 import join
@@ -17,11 +21,13 @@ def measure(run):
     """
     # Barrel correct the first frame of each camera in a run
     # outputs to dir 'bc1' in the path
-    proc_im.bc1(run)
+    # proc_im.bc1(run)
+    # proc_im.barrel_corrections(run)
 
+    proc_im.measure(run)
     # Prompt user for measurements of run data, if they don't
     # exist already.
-    proc_im.get_run_data(run)
+    # proc_im.get_run_data(run)
 
 def proc_im_base(run):
     # Correct barrel distortion and rotation. Will prompt for run
@@ -68,7 +74,7 @@ def f_basic_data(run):
     """Fast version of basic data (multiprocessing inside the
     thresholding loop).
     """
-    get_data.get_basic_data(run, 0)
+    get_data.get_basic_data(run, 22)
 
 def data(run):
     """The basic interface depths are further processed to

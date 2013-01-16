@@ -18,10 +18,6 @@ plots_dir = path + '/plots'
 # Note: Modifying these settings requires re-acquiring the basic_data,
 # which is computationally intensive.
 
-# Specify a vertical region of the image in which to search for the interface.
-# Units are pixels, starting from top of image.
-region = (130, 540)
-
 # specify the threshold values to use. fiddling with these has a strong impact
 # on the quality of the interface signal.
 thresh_green = (80, 120, 50)
@@ -35,9 +31,28 @@ thresh_values = (thresh_green, core_red, mixed_red)
 # more like <75, or greater depending on the mixing. Two values for thresh_red
 # gives an idea of the thickness of the mixed layer on the current.
 
-# Depths at which to scan for the current front. 0.4 is partial, 1 is full
-# depth.
-front_depths = {'0.4': 520, '1': 495}
+# Scale for the images
+ideal_25 = 400
+ideal_m = ideal_25 * 4
+ideal_base_1 = int(1.47 * ideal_m)
+ideal_base_2 = int(0.99 * ideal_m)
+
+# Thickness of border above and below images.
+top_bar = 50
+bottom_bar = 60
+
+# Specify a vertical region of the image in which to search for the interface.
+# Units are pixels, starting from top of image.
+region = (top_bar + 10, top_bar + 400)
+
+# Depths at which to scan for the current front. 0.4 is partial, 1
+# is full depth (fractions of H, i.e. non dimensional).
+# What height to scan for front up to?
+h = 0.6
+s = [i / 100. for i in range(0, int(h * 100 + 1))]
+d = {'0.4': s, '1': s}
+front_depths = \
+        {k: [int(top_bar + (1 - i) * ideal_25) for i in d[k]] for k in d}
 
 ### /BASIC SETTINGS ###
 
@@ -46,53 +61,58 @@ front_depths = {'0.4': 520, '1': 495}
 # tank and each other. This allows for conversion from pixel dimensions
 # to S.I and for the correction of parallax.
 #
-# where to crop the images? (left, right, upper, lower), relative to
-# offset for left, right; scale_depth for upper; tank bottom for
+# where to crop the images? (left, right, upper, lower), all relative to
+# lock position for left, right; scale_depth for upper; tank bottom for
 # lower. ensure that these are consistent with the source images!
 # e.g. by comparison with proc_data.
-crop = {}
-crop['cam1'] = (-10, 2750, -100, 150)
-crop['cam2'] = (-2700, 150, -100, 150)
 
-# specify the positions of rulers and other vertical features that
-# obscure the fluid. These are measurements relative to the offset.
-# It isn't possible to consistently define them otherwise.
-off_rulers = {}
-off_rulers['cam1'] = [(20, 55), (810, 890), (1570, 1600), (1680, 1750)]
-off_rulers['cam2'] = [(-2670, -2610), (-1790, -1730), (-940, -865), (-90, -50), (-45, -25)]
+cl = {'cam1': 1.46, 'cam2': 3.06}
+cr = {'cam1': -0.05, 'cam2': 1.39}
+
+# Some reference points for cropping. Should be the same as the x
+# coord of the se corner of the reference box chosen in
+# measurements, i.e. the invariant point in the perspective
+# transformation.
+crop_ref = {'cam1': 0.00, 'cam2': 1.51}
+
+crop= {cam: (int(-(cl[cam] - crop_ref[cam]) * ideal_m), \
+             int(-(cr[cam] - crop_ref[cam]) * ideal_m), \
+            -50, \
+             110) for cam in ('cam1', 'cam2')}
+
+# Specify the positions of rulers and other vertical features that
+# obscure the fluid. Measured in metres from the lock.
+
+real_rulers = {}
+real_rulers['cam1'] = [(0.48, 0.525), (0.99, 1.02)]
+real_rulers['cam2'] = [(1.46, 1.54), (1.99, 2.02), (2.49, 2.52), (2.99, 3.02)]
 
 rulers = {}
 for cam in ['cam1', 'cam2']:
-    rulers[cam] = [(x - crop[cam][0], y - crop[cam][0]) for x, y in off_rulers[cam]]
+    rulers[cam] = [( int((cl[cam] - y) * ideal_m) , \
+                     int((cl[cam] - x) * ideal_m) )
+                        for x, y in real_rulers[cam]]
 
-# distance from offset mark to zero point (lock side of lock gate)
-# in cam1.
-zero_offset = 2640
 # Specify the offsets that each of the cameras have, for
 # normalisation of pixel measurements
-camera_offsets = {}
 ## the cam1 offset is the distance between wherever zero is in cam1
 ## and the left edge of cam1.
-camera_offsets['cam1'] = (zero_offset - crop['cam1'][0], 543)
+camera_offsets = {cam: (cl[cam] * ideal_m, ideal_25 + top_bar)\
+                                    for cam in ('cam1', 'cam2')}
 ## the cam2 offset is the distance between wherever zero is in cam1
 ## and the left edge of *cam2*
 fudge = 176
-camera_offsets['cam2'] = (zero_offset - crop['cam2'][0] - fudge, 543)
 
 # specify the scale, i.e how many pixels to some real measurement in the
 # images. in y we want this to be the total fluid depth. in x make it the
 # lock length for now (25cm).
-fluid_depth = 543 - 109
-lock_length = 440
-scales = {}
-scales['cam1'] = (lock_length, fluid_depth)
-scales['cam2'] = (lock_length, fluid_depth)
+fluid_depth = ideal_25
+lock_length = ideal_25
+scales = {cam: (lock_length, fluid_depth) for cam in ('cam1', 'cam2')}
 
 # specify where the centre of the camera was pointing to.
 # used in parallax_corr
-centre = {}
-centre['cam1'] = 0.75
-centre['cam2'] = 2.25
+centre = {'cam1': 0.75, 'cam2': 0.25}
 ### /CAMERA SETUP ###
 
 #####/CONFIG#####

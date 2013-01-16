@@ -7,6 +7,7 @@ import numpy as np
 import images2gif
 
 from config import path as Path
+from config import top_bar, bottom_bar
 # A collection of tools for joining together processed images
 # join joins cam1 and cam2 images together for a single run,
 # based on the standard offset at the edge of processed lab
@@ -65,11 +66,11 @@ def rem_text(im):
     returning an image object"""
     w, h = im.size
 
-    top_bar = (0, 0, w, 100)
-    bottom_bar = (0, h-100, w, h)
+    t_bar = (0, 0, w, top_bar)
+    b_bar = (0, h-bottom_bar, w, h)
 
-    im.paste('black', top_bar)
-    im.paste('black', bottom_bar)
+    im.paste('black', t_bar)
+    im.paste('black', b_bar)
 
     return im
 
@@ -107,11 +108,11 @@ def remove_text(run, proc_dir):
 
         w, h = im.size
 
-        top_bar = (0, 0, w, 100)
-        bottom_bar = (0, h-100, w, h)
+        t_bar = (0, 0, w, top_bar)
+        b_bar = (0, h-bottom_bar, w, h)
 
-        im.paste('black', top_bar)
-        im.paste('black', bottom_bar)
+        im.paste('black', t_bar)
+        im.paste('black', b_bar)
 
         im.save(outfile)
 
@@ -132,7 +133,7 @@ def remove_borders(run, proc_dir):
 
         w, h = im.size
 
-        box = (0, 100, w, h-100)
+        box = (0, top_bar, w, h-bottom_bar)
         cropped = im.crop(box)
         cropped.save(outfile)
 

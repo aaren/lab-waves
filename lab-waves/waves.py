@@ -5,10 +5,10 @@
 import sys
 
 import numpy as np
-import matplotlib as mpl
+# import matplotlib as mpl
 # Ensure no errors when there is no display.
 # Must be done before pyplot import.
-mpl.use('Agg')
+# mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from aolcore import read_data, get_parameters
@@ -33,6 +33,9 @@ class RunData(object):
         self.gct = f.gc_theoretical(self.D / 2, self.r0, self.r1)
 
 class Conjoin(RunData):
+    ###FIXME This is broken. It can't deal with non continuous time
+    ### data. Need to put the time reference into the actual object
+    ### rather than relying on the index of the list.
     def conjoin_data(self, data_file=None):
         run = self.index
         if run.split('r')[0] == run:
@@ -42,29 +45,86 @@ class Conjoin(RunData):
         data = read_data(data_file)
 
         Xt = {}
+        Xtn = {}
         for arg in ['max', 'min', 'front']:
             xt = {}
             for cam in ['cam1', 'cam2']:
                 cam_data = data[run][cam]
                 frames = sorted(cam_data.keys())
-                xt[cam] = [[p for p in cam_data[frame][arg]] for frame in frames]
+                # xt[cam] = [[p for p in cam_data[frame][arg]] for frame in frames]
 
-            if len(xt['cam2']) == 0:
-                xt['cam2'] = [[] for e in xt['cam1']]
+                # If e.g. frames are 3-5 and 7-9: frames will
+                # include [3,4,5,7,8,9]. Then for each of these,
+                # xt[cam] will have a list of the frame data
+                # appended. Because the frames are not consecutive,
+                # this will lead to gaps in the conjoined data. The
+                # solution is to construct xt as a dict instead,
+                # with the keys as the frame number. This changes
+                # the implementation of anything that uses xt, and I
+                # suspect non trivially.
+                #
+                # The alternative is to make sure that all of the
+                # frames are included, i.e. make frames from
+                # something other than the key list, or put in
+                # filler frames when the frame isn't in the key
+                # list.
 
-            Xt[arg] = zip(xt['cam1'], xt['cam2'])
-            Xt[arg] = [e[0] + e[1] for e in Xt[arg]]
+                xt[cam] = {str(frame): [p for p in cam_data[frame][arg]] \
+                                                        for frame in frames}
+
+                # then we access frames by e.g.
+
+                # xt['cam1']['0003']
+
+            # how to conjoin now?
+            # Xt[arg]= {k: xt['cam1'][k] + xt['cam2'][k] for k in xt['cam2']}
+            #
+            # this won't work. only inserts keys that are present in
+            # cam2. more explicitly:
+            #
+            # determine the maximum frame number.
+
+            cam1f = [int(k) for k in xt['cam1'].keys()]
+            try:
+                cam1max = max(cam1f)
+            except ValueError:
+                cam1max = 0
+            cam2f = [int(k) for k in xt['cam2'].keys()]
+            try:
+                cam2max = max(cam2f)
+            except ValueError:
+                cam2max = 0
+            fmax = max(cam1max, cam2max)
+
+            Xt[arg] = {}
+            Xtn[arg] = []
+            for f in range(fmax):
+                F = '%04d' % f
+                if F in xt['cam1'] and F in xt['cam2']:
+                    Xt[arg][F] = xt['cam1'][F] + xt['cam2'][F]
+                elif F in xt['cam1']:
+                    Xt[arg][F] = xt['cam1'][F]
+                elif F in xt['cam2']:
+                    Xt[arg][F] = xt['cam2'][F]
+                if F in Xt[arg]:
+                    Xtn[arg].append(Xt[arg][F])
+                else:
+                    # stick a blank placeholder in
+                    Xtn[arg].append([])
 
         # strip out non physical points (faster then 1:1)
         #for arg in ['max', 'min']:
         #    Xt[arg] = [[x for x in Xt[arg] if x[0] < t] for t in range(len(Xtm))]
-        return Xt
+        return Xtn
 
     def plot_xt(self, arg, fmt):
         Xt = self.conjoin_data()
         Xtm = conv(Xt, arg)
         xt = [(x, t) for t in range(len(Xtm)) for x in Xtm[t]]
-        x, t = zip(*xt)
+        try:
+            x, t = zip(*xt)
+        except ValueError:
+            x, t = 999, 999
         plt.plot(x, t, fmt, label=arg)
         p = self.params
         title = """Wave maxima and current front for %s

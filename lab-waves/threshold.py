@@ -11,8 +11,9 @@ from numpy import polyfit
 from config import crop
 
 def thresh_img(image, thresh_values=None):
-    # Threshold the image, determining the fluid type of each individual
-    # pixel
+    # Threshold the image, determining the fluid type of each
+    # individual pixel. Return the list of lists that specifies the
+    # fluid type of individual pixels throughout the image.
 
     # open the image and load it to memory.
     im = Image.open(image)
@@ -28,10 +29,7 @@ def thresh_img(image, thresh_values=None):
     if thresh_values:
         thresh_green, thresh_red, mixed_red = thresh_values
 
-    # determine the fluid type throughout the image. remember brackets
-    # around the logical expressions!!!!!
-    # fluid_type is a list of lists. would this not be better implemented as
-    # a numpy array?
+    # remember brackets around the logical expressions!!!!!
     fluid_type = [[0 if (source[i,j][0] > thresh_red[0]) &\
                         (source[i,j][1] < thresh_red[1]) &\
                         (source[i,j][2] < thresh_red[2])
@@ -44,20 +42,8 @@ def thresh_img(image, thresh_values=None):
                            else 'other' \
                     for j in range(h)] for i in range(w)]
 
-    # i wonder if this can be implemented using numpy arrays and map?
-    # np arrays are much more compact than list of lists. could use map with
-    # an explicit lamda function??
-    # this can be done, but the problem with np arrays is that they can't
-    # be indexed in the same way as lists, so the process function below
-    # would need to be modified as indexing the first occurence of '1' etc.
-    # is the present way to detect the interface.
-    # maybe not necessary. the list of lists works fast enough so why bother
-    # fiddling with it??
-    # list comp is evaluated in c anyway, so the performance benefit is
-    # probably not worth it, especially when the code is as clear as it is.
-
-    # output the list of lists that specifies the fluid type of individual
-    # pixels throughout the image.
+    # surely this can be written as a mapping? just need to find a
+    # way of indexing the result.
     return fluid_type
 
 
@@ -77,10 +63,10 @@ def process(image, fluid_type_lists, region, fluid, rulers):
     camera = image.split('/')[-2]
 
     if camera == 'cam1':
-        l_lim = 80
-        r_lim = 2700 # this is approximate and discards lock parallax
+        l_lim = 20
+        r_lim = 2350 # this is approximate and discards lock parallax
     elif camera == 'cam2':
-        l_lim = 0
+        l_lim = 20
         r_lim = crop['cam2'][1] - crop['cam2'][0]
 
     # pad depth out with zero so that the index of depth is equivalent
@@ -135,6 +121,7 @@ def process(image, fluid_type_lists, region, fluid, rulers):
 
     return depth
 
+
 def interpolate(image, in_list, rulers):
     """ Takes a list of interface depths and changes locations with a ruler
     present from a constant value to an interpolation between the two edges.
@@ -146,7 +133,7 @@ def interpolate(image, in_list, rulers):
 
     return -- a list of interface depths with the interpolation applied.
     """
-    interface = in_list
+    interface = in_list[:]
 
     def interp((x1, x2)):
         y1 = interface[x1]
@@ -160,7 +147,8 @@ def interpolate(image, in_list, rulers):
 
     return interface
 
-def main(image, region, rulers, thresh_values=None, front_depth=None):
+
+def main(image, region, rulers, thresh_values=None, front_depths=None):
     top, bottom = region
     # generate fluid type list of lists
     # print('generating threshold array...')
@@ -171,43 +159,48 @@ def main(image, region, rulers, thresh_values=None, front_depth=None):
     # fluid_type_transpose = zip(*fluid_type)
     # front_pos = fluid_type_transpose[510].index(0)
     # much faster, given we know the row we want (70ms / 200us)
-    # but the zip transpose is still very quick.
-    if not front_depth:
-        front_depth = 510
-    def get_front_pos(fluid, d=5):
+    # but the zip transpose is still very quick. tradeoff comes when
+    # we want to get more than 140 rows.
+    def get_front_pos(fluid, f_depth=425, d=5):
+        # find the front position at front_depth over d adjacent
+        # depths and average.
         try:
             tot = 0
             for n in range(d):
-                front_pos = [i[front_depth - n] for i in fluid_type].index(fluid)
-                tot += front_pos
-            front_pos = int(tot / d)
+                f_pos = [i[f_depth - n] for i in fluid_type].index(fluid)
+                tot += f_pos
+            f_pos = int(tot / d)
         # if the front isn't found
         except ValueError:
-            front_pos = -999999
+            f_pos = -999999
         # catch the case that the front has neared the end of the tank
-        if front_pos < 110:
-            front_pos = -999999
-        return front_pos
+        # FIXME: is this still necessary or are we throwing away
+        # data?
+        if f_pos < 20:
+            f_pos = -999999
+        return f_pos
 
-    front_pos_core = get_front_pos(0)
-    front_pos_mix = get_front_pos(3)
+    front_coord_core = [(get_front_pos(0, front_depth), front_depth) \
+                        for front_depth in front_depths]
+    front_coord_mix = [(get_front_pos(3, front_depth), front_depth) \
+                        for front_depth in front_depths]
 
-    front_coord_core = [(front_pos_core, front_depth)]
-    front_coord_mix = [(front_pos_mix, front_depth)]
-
-    # detect and interpolate the interfaces
+    # detect the interfaces
     interface = process(image, fluid_type, region, 1, rulers)
     core_current = process(image, fluid_type, region, 0, rulers)
     mix_current = process(image, fluid_type, region, 3, rulers)
 
-    # remove silly current values, i.e. set current depth to zero
-    # anywhere ahead of the detected front position.
-    if front_pos_core > -1:
-        core_current[:front_pos_core] = [bottom]*front_pos_core
-    if front_pos_mix > -1:
-        mix_current[:front_pos_mix] = [bottom]*front_pos_mix
-    elif front_pos_mix == -999999 and front_pos_core != -999999:
-        mix_current[:front_pos_core] = [bottom]*front_pos_core
+    # qc the data by ignoring values that are outside the tank
+    for i,d in enumerate(core_current):
+        if top < d < bottom:
+            pass
+        else:
+            core_current[i] = bottom
+    for i,d in enumerate(mix_current):
+        if top < d < bottom:
+            pass
+        else:
+            mix_current[i] = bottom
 
     # interpolate
     interp_interface = interpolate(image, interface, rulers)

@@ -1,6 +1,10 @@
 # Some useful functions that I use a lot.
-import cPickle as pickle
 import sys
+from collections import namedtuple
+import cPickle as pickle
+import json
+
+from config import data_dir
 
 def pull_col(i, tsv, delim='\t'):
     # extract column i from a tsv file as a list
@@ -44,7 +48,7 @@ def obj_dic(d):
 def write_data(data_dict, filename):
     """uses pickle to write a dict to disk for persistent storage"""
     output = open(filename, 'wb') # b is binary
-    pickle.dump(data_dict, output)
+    pickle.dump(data_dict, output, protocol=-1)
     output.close()
 
 def read_data(filename):
@@ -54,8 +58,42 @@ def read_data(filename):
     input.close()
     return data_dict
 
-def get_parameters(run, paramf, delim=None): 
-    p_runs = pull_col(0, paramf, delim) 
+def write_simple(run, data):
+    """Writes out a JSON file for the given run and
+    using the given data.
+    """
+    dataf = data_dir + 'simple/simple_%s.json' % run
+    fout = open(dataf, 'w')
+    fout.write(json.dumps(data))
+    fout.close()
+
+def read_simple(run, args='x, z, t'):
+    """Reads in a JSON file that is in the format
+
+    {keys: [[x,z,t], [x,z,t], ...]}
+
+    and returns a data structure in the format
+
+    {keys: [key(x=a, z=b, t=c), ...]}
+
+    i.e. a dict of lists of namedtuples. If the
+    namedtuple attributes are different from
+    'x, z, t', these can be given as an argument
+    but you must know a priori what these are as
+    the JSON container doesn't store these.
+    """
+    dataf = data_dir + 'simple/simple_%s.json' % run
+    fin = open(dataf, 'r')
+    idata = json.loads(fin.read())
+    fin.close()
+    ndata = {}
+    for k in idata:
+        point = namedtuple(k, args)
+        ndata[k] = [point(*p) for p in idata[k]]
+    return ndata
+
+def get_parameters(run, paramf, delim=None):
+    p_runs = pull_col(0, paramf, delim)
     run_params = pull_line(p_runs.index(run), paramf, delim)
     headers = pull_line(0, paramf, delim)
     parameters = dict(zip(headers, run_params))

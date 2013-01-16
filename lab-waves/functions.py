@@ -11,7 +11,7 @@ def rg(rho0, rho1):
     arguments: rho0 is the higher density, rho1 the lower.
     """
     drho = (rho0 - rho1)
-    div = (rho0)
+    div = (rho1)
     g_ = g * drho / div
     return g_
 
@@ -38,7 +38,7 @@ def shallow_linear(h, rho0, rho1):
 
 def gc_empirical(h, rho0, rho1):
     """Empirically observed gravity current speed.
-    Arguments: h, g.c. height
+    Arguments: h, g.c. height (fractional!, i.e. actually h/H)
                rho1, ambient density
                rho0, g.c. density
     Returns: Speed in lock lengths
