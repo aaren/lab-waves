@@ -6,6 +6,8 @@ from collections import namedtuple
 import cPickle as pickle
 import json
 
+import numpy as np
+
 from config import data_dir
 
 def pull_col(i, tsv, delim='\t'):
@@ -95,10 +97,11 @@ def read_simple(run, args='x, z, t'):
     return ndata
 
 def get_parameters(run, paramf, delim=None):
-    p_runs = pull_col(0, paramf, delim)
-    run_params = pull_line(p_runs.index(run), paramf, delim)
-    headers = pull_line(0, paramf, delim)
-    parameters = dict(zip(headers, run_params))
+    headers = ['run_index', 'h_1/H', 'rho_0', 'rho_1', 'rho_2', 'alpha', 'D/H']
+    types = ['S10', 'f8', 'f8', 'f8', 'f8', 'f8', 'f8']
+    d = np.genfromtxt(paramf, dtype=types, names=headers)
+    run_params = d[np.where(d['run_index'] == run)]
+    parameters = dict(zip(headers, run_params.item()))
     return parameters
 
 def cprint(string):
