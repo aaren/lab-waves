@@ -22,6 +22,7 @@ import glob
 import sys
 from multiprocessing import Pool
 import time
+from bisect import bisect_left
 
 import numpy as np
 
@@ -38,24 +39,32 @@ def parallax_corr(xin, cam, p):
     """ Lab images suffer from parallax due to the static cameras.
     This is easily corrected for by assuming that features are 2d
     and homogeneous in the y coord (widthways across the tank."""
-    # xin is in units of lock-lengths
+    # xin is in units of lock-lengths - convert to SI
     scale = 0.25
     x = xin * scale
     # basic tank geometry
+    # distance of camera from x=0
     c = centre[cam]
+    # distance from camera to front of tank
     d = 1.45
+    # width of tank
     w = 0.20
     f = (w / (2 * d + w))
-    # given pos in tank x, cam pos c, distance from cam to tank d
-    # and width of tank w, the correction, when projected onto the
-    # centreline of the tank, is
+    # the correction, when projected onto the centreline of the
+    # tank, is
     corr = p * (x - c) * f
     # whether this is positive or negative depends on the position of
     # the front w.r.t the cam position
     if x < c:
-        x_corr = x + corr
+        # mid plane
+        # x_corr = x + corr
+        # front plane
+        x_corr = x + (x - c) * w / d
     elif x > c:
-        x_corr = x - corr
+        # mid plane
+        # x_corr = x - corr
+        # front plane
+        x_corr = x
     else:
         x_corr = x
     # back into lock-lengths
@@ -80,6 +89,19 @@ def norm(inlist, camera, p=0):
         return input_norm
     inlist_norm = [norm_tuple(tupe) for tupe in inlist]
     return inlist_norm
+
+def denorm(inlist, camera):
+    """Does the opposite of norm - takes real values and converts
+    them to pixels.
+    """
+    def denorm_tuple(intupe):
+        offsets = camera_offsets[camera]
+        scale = scales[camera]
+        input_denorm = [int(o - x * s) for o, x, s in zip(offsets, intupe, scale)]
+        input_denorm = tuple(input_denorm)
+        return input_denorm
+    inlist_denorm = [denorm_tuple(tupe) for tupe in inlist]
+    return inlist_denorm
 
 def iframe(image):
     """From an image filename, e.g. img_0001.jpg, get just the
@@ -170,6 +192,25 @@ def smooth(inter, window):
     smoothed_inter = list(y)
     return smoothed_inter
 
+def serial(function, images, camera):
+    try:
+        run = irun(images[0])
+    except AttributeError:
+        run = irun(images[0][0])
+    print "processing", run, camera, len(images), "images"
+    result = map(function, images)
+    return result
+
+def parallel(function, images, camera, processors):
+    if processors == 0:
+        p = Pool()
+    else:
+        p = Pool(processes=processors)
+    result = p.map_async(function, images)
+    p.close()
+    p.join()
+    return result.get()
+
 def get_basic_frame_data(image):
     # get the list of interface depths, with the depth for the current
     # different for varying lock depth
@@ -203,22 +244,6 @@ def get_basic_run_data(run, processors=1):
     # run = '11_7_06c'
     # run = run.split('r')[-1]
     cameras = ['cam1', 'cam2']
-
-    def serial(images, camera):
-        print "processing", run, camera, len(images), "images"
-        result = [get_basic_frame_data(image) for image in images]
-        return result
-
-    def parallel(images, camera):
-        if processors == 0:
-            p = Pool()
-        else:
-            p = Pool(processes=processors)
-        result = p.map_async(get_basic_frame_data, images)
-        p.close()
-        p.join()
-        return result.get()
-
     basic_run_data = {}
     for camera in cameras:
         images = sorted(glob.glob('/'.join([path,
@@ -230,9 +255,9 @@ def get_basic_run_data(run, processors=1):
         else:
             pass
         if processors == 1:
-            result = serial(images, camera)
+            result = serial(get_basic_frame_data, images, camera)
         else:
-            result = parallel(images, camera)
+            result = parallel(get_basic_frame_data, images, camera, processors)
 
         basic_run_data[camera] = {k: v for k,v in result}
 
@@ -254,8 +279,9 @@ def get_basic_data(runs=None, processors=1):
         sys.stdout.flush()
         write_data(basic_run_data, f)
 
-def get_frame_data(image, run_data_container):
+def get_frame_data((image, run_data_container)):
     """gets the data for a single image.
+    run_data_container is needed to provide context.
     runs the external threshold module to produce the data,
     then normalises it and puts it in a dictionary for storage"""
 
@@ -295,83 +321,83 @@ def get_frame_data(image, run_data_container):
     core_current = list(enumerate(core_current))
     mixed_current = list(enumerate(mixed_current))
 
+    def filter_front(front_coords, fluid, t=10):
+        """Takes detected front coords for an image and filters
+        out bad ones. This is determined by using the first image
+        from the run to set a region in which there is red fluid
+        (either resulting from lock leakage or a previous run)
+        and then ignoring all points that fall within this region.
 
-    # TODO / FIXME: deal with red fluid at bottom!
+        Points that have -999999 values are kept, as they are useful
+        for detecting the top of the current.
 
-    # use the current interface from the first image to define a
-    # region in which there is red fluid. then filter out all
-    # current front coords that fall within thcore_interface
+        arguments:
+            front_coords is the list of points where the front has
+            been detected, [(x,z),...], units pixels.
 
-    # OR, use the present images interface. Look for a point where
-    # there is a sharp change in the interface height. Again, this
-    # has problems with shallow currents as this will appear pretty
-    # smooth.
+            fluid should be either 'core' or 'mixed'
 
-    # This should perhaps be done in the thresholding stage.
-    # but here we have access to the first images interface, in
-    # run_data_container[camera]['0001'], where in thresholding this
-    # data hasn't been written to disk yet.
+            t is a pixel buffer around the bad region. e.g. t=20 means
+            that points within 20 pixels of the bad region count as bad.
 
-    # If we take the first image core_interface
-    core_i = run_data_container[camera]['0001']['core_current']
-    # put into correct format
-    core_i = list(enumerate(core_i))
-    # bad front coords are those that fall between this and the
-    # tank bottom for all subsequent images.
-    # front coords consists of a list of (x,z) tuples, measured in
-    # image pixels.
-    # the tank base is crop[camera][3] pixels from the bottom
-    # of the image
-    # something like
-    for coord in core_front_coords:
-        if coord[0] < 0:
-            pass
-        elif coord[0] >= len(core_i):
-            # case that front has been (wrongly) detected behind the
-            # lock gate
-            core_front_coords.remove(coord)
-        elif core_i[coord[0]] < coord[1] - 5 < region[1]:
-            # ignore the point if in bad region, plus some buffer
-            core_front_coords.remove(coord)
-        elif region[0] < coord[1] - 5 < core_i[coord[0]]:
-            # accept the point
-            pass
-        else:
-            print "Something has gone wrong!"
-            sys.exit('Check the front coords')
+        returns:
+            a list of sanitised front_coords
+        """
+        # If we take the first image core_interface
+        comp_i = run_data_container[camera]['0001']['%s_current' % fluid]
+        # put into correct format
+        comp_i = list(enumerate(comp_i))
+        f_front_coords = []
+        for coord in front_coords:
+            if coord[0] < 0:
+                # case that front coord is -99999 or something.
+                f_front_coords.append(coord)
+                pass
+            elif coord[0] >= len(comp_i):
+                # case that front has been (wrongly) detected behind the
+                # lock gate
+                pass
+                # print "behind lock"
+            elif comp_i[coord[0]][1] - t <= coord[1] <= region[1]:
+                # ignore the point if in bad region, plus some buffer
+                # print coord, "bad point! depth", core_i[coord[0]][1]
+                pass
+            elif region[0] < coord[1] < comp_i[coord[0]][1] - t:
+                # accept the point if in good region
+                # print coord, "accept"
+                f_front_coords.append(coord)
+            else:
+                print "Something has gone wrong! image", frame
+                print coord, 'core'
+                print comp_i[coord[0]][1] - t, region[1]
+                print region[0], comp_i[coord[0]][1] - t
+                sys.exit('Check the front coords')
+        return f_front_coords
 
-    # same for the mixed fluid
-    mix_i = run_data_container[camera]['0001']['mixed_current']
-    mix_i = list(enumerate(mix_i))
-    for coord in mix_front_coords:
-        if coord[0] < 0:
-            pass
-        elif coord[0] > len(mix_i):
-            # case that front has been (wrongly) detected behind the
-            # lock gate
-            mix_front_coords.remove(coord)
-        elif mix_i[coord[0]] < coord[1] - 5 < region[1]:
-            # ignore the point if in bad region, plus some buffer
-            mix_front_coords.remove(coord)
-        elif region[0] < coord[1] - 5 < mix_i[coord[0]]:
-            # accept the point
-            pass
-        else:
-            print "Something has gone wrong!"
-            sys.exit('Check the front coords')
+    f_core_front_coords = filter_front(core_front_coords, 'core')
+    f_mix_front_coords = filter_front(mix_front_coords, 'mixed')
 
-    # need to catch case that there is fluid along the bottom
-    # reject the outliers? NO. won't work for front that is shallow.
-    # def _reject_outliers(data):
-        # return [e for e in data if abs(e[0] - np.mean(data)) < np.std(data)]
-    # fcfc = reject_outliers(core_front_coord)
-    # fmfc = reject_outliers(core_front_coord)
     # Make the front_coord the front_coord furthest from the lock.
-    min_core_front_coord = min(core_front_coords, key=lambda k: abs(k[0]))
-    min_mix_front_coord = min(mix_front_coords, key=lambda k: abs(k[0]))
-    front_coord = [min(min_core_front_coord, min_mix_front_coord)]
+    try:
+        min_core_front_coord = min(f_core_front_coords, key=lambda k: abs(k[0]))
+    except ValueError:
+        print irun(image), icam(image), iframe(image), "BAD!"
+        min_core_front_coord = (-9999999, 0)
+    try:
+        min_mix_front_coord = min(f_mix_front_coords, key=lambda k: abs(k[0]))
+    except ValueError:
+        print irun(image), icam(image), iframe(image), "BAD!"
+        min_mix_front_coord = (-9999999, 0)
+    try:
+        front_coord = [min(min_core_front_coord, min_mix_front_coord, \
+                                            key=lambda k: abs(k[0]))]
+    except ValueError:
+        print irun(image), icam(image), iframe(image), "BAD!"
+        front_coord = [(-9999999, 0)]
+    # core current is less prone to noise
+    # front_coord = [min_core_front_coord]
 
-    def find_head(f_coords, thresh=100):
+    def find_head(f_coords, thresh=50):
         # find the head of the current by looking for a flat bit
         for i,p in enumerate(f_coords):
             try:
@@ -387,8 +413,8 @@ def get_frame_data(image, run_data_container):
             except IndexError:
                 pass
         return [(-999999, 0)]
-    core_head = find_head(core_front_coords)
-    mix_head = find_head(mix_front_coords)
+    core_head = find_head(f_core_front_coords)
+    mix_head = find_head(f_mix_front_coords)
     head_coord = core_head
 
     # SANITY CHECKING: overlay given interfaces and points onto the
@@ -398,7 +424,7 @@ def get_frame_data(image, run_data_container):
             mixed_current, fixed_interface, smoothed_interface]
     icolours = ['black', 'blue', 'cyan', 'orange', 'red']
     points = [_max, _min, \
-            core_front_coords, mix_front_coords, \
+            f_core_front_coords, f_mix_front_coords, \
             core_max, mix_max,
             head_coord, front_coord]
     pcolours = ['green', 'purple', \
@@ -424,29 +450,37 @@ def get_frame_data(image, run_data_container):
     frame_data['core_min'] = norm(core_min, camera, 0)
     frame_data['mix_max'] = norm(mix_max, camera, 0)
     frame_data['mix_min'] = norm(mix_min, camera, 0)
-    frame_data['core_front'] = norm(core_front_coords, camera, 2)
-    frame_data['mix_front'] = norm(mix_front_coords, camera, 2)
-    frame_data['front'] = norm(front_coord, camera, 2)
-    frame_data['head'] = norm(head_coord, camera, 2)
+    frame_data['core_front'] = norm(core_front_coords, camera, 1)
+    frame_data['mix_front'] = norm(mix_front_coords, camera, 1)
+    frame_data['front'] = norm(front_coord, camera, 1)
+    frame_data['head'] = norm(head_coord, camera, 1)
 
-    return frame_data
+    return (frame, frame_data)
 
-def get_run_data(run):
+def get_run_data(run, processors=1):
     """grabs all data from a run"""
-    # run = '11_7_06c'
+    cameras = ['cam1', 'cam2']
     basic_run_data = read_data(data_dir + 'basic/basic_%s' % run)
     run_data = {}
-    for camera in ('cam1', 'cam2'):
-        run_data[camera] = {}
-        cam_data = run_data[camera]
+    for camera in cameras:
         images = sorted(glob.glob('/'.join([path,
                             'processed', run, camera, '*jpg'])))
-        for image in images:
-            frame = iframe(image)
-            cam_data[frame] = get_frame_data(image, basic_run_data)
+        tot = "%03d" % (len(images))
+        arg_images = [(i,basic_run_data) for i in images]
+        if len(images) == 0:
+            print "\nno images in", camera
+            break
+        else:
+            pass
+        if processors == 1:
+            result = serial(get_frame_data, arg_images, camera)
+        else:
+            result = parallel(get_frame_data, arg_images, camera, processors)
+
+        run_data[camera] = {k: v for k,v in result}
     return run_data
 
-def main(runs=None):
+def main(runs=None, processors=1):
     # define the runs to collect data from
     if runs is None:
         runs = ['r11_7_06c']
@@ -455,8 +489,7 @@ def main(runs=None):
     for run in runs:
         # make container for all the run data
         data = {}
-        run_data = get_run_data(run)
-        data[run] = run_data
+        data[run] = get_run_data(run, processors)
         f = data_storage + run
         # print "\nwriting ", file, "...\r",
         sys.stdout.flush()

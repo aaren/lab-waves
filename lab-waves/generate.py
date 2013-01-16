@@ -11,7 +11,7 @@ mpl.use('Agg')
 import proc_im
 import join
 import get_data
-import waves
+from run import Run
 
 from config import path
 
@@ -76,6 +76,11 @@ def f_basic_data(run):
     """
     get_data.get_basic_data(run, 22)
 
+def f_data(run):
+    """Fast version of data.
+    """
+    get_data.main(run, 22)
+
 def data(run):
     """The basic interface depths are further processed to
     pull out maxima / minima using peakdetect. Parallax
@@ -105,16 +110,20 @@ def plot(run):
     """With the structures pulled out by wave(run), it is
     easy to make some plots.
     """
-    waves.main(run)
+    Run(run).plot_all()
 
-def all(run):
+def all(run, speed='serial'):
     """To get some raw, synced, lab data into nice plots in
     a single command.
     """
-    proc_im_base(run)
-    proc_im_main(run)
-    f_basic_data(run)
-    data(run)
+    # proc_im_base(run)
+    # proc_im_main(run)
+    if speed == 'parallel':
+        # f_basic_data(run)
+        f_data(run)
+    elif speed == 'serial':
+        basic_data(run)
+        data(run)
     plot(run)
 
 def multi(proc, runs):
@@ -150,7 +159,7 @@ def pool(proc, runs):
 
 def loop(proc, runs):
     for run in runs:
-        proc(run)
+        proc(run, 'parallel')
 
 def get_runs(pdir='synced'):
     runpaths = glob.glob(('/').join([path, pdir, 'r*']))
