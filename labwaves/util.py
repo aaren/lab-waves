@@ -10,8 +10,9 @@ import numpy as np
 
 from config import data_dir
 
+
 def pull_col(i, tsv, delim='\t'):
-    # extract column i from a tsv file as a list
+    """extract column i from a tsv file as a list"""
     f = open(tsv)
     f.seek(0)
     lines = f.read().split('\n')
@@ -23,14 +24,16 @@ def pull_col(i, tsv, delim='\t'):
         col.append(line_entries[j][i])
     return col
 
+
 def pull_line(j, tsv, delim='\t'):
-    # pull line j from a tsv file as a list
+    """pull line j from a tsv file as a list"""
     f = open(tsv)
     f.seek(0)
     lines = f.read().split('\n')
     f.close()
     line = lines[j].split(delim)
     return line
+
 
 def obj_dic(d):
     """a useful method for turning a dict into an object, so that
@@ -43,17 +46,19 @@ def obj_dic(d):
         if isinstance(j, dict):
             setattr(top, i, obj_dic(j))
         elif isinstance(j, seqs):
-            setattr(top, i, type(j)(obj_dic(sj)\
+            setattr(top, i, type(j)(obj_dic(sj)
                     if isinstance(sj, dict) else sj for sj in j))
         else:
             setattr(top, i, j)
     return top
 
+
 def write_data(data_dict, filename):
     """uses pickle to write a dict to disk for persistent storage"""
-    output = open(filename, 'wb') # b is binary
+    output = open(filename, 'wb')  # b is binary
     pickle.dump(data_dict, output, protocol=-1)
     output.close()
+
 
 def read_data(filename):
     """reads in a dict from pickled file and returns it"""
@@ -61,6 +66,7 @@ def read_data(filename):
     data_dict = pickle.load(input)
     input.close()
     return data_dict
+
 
 def write_simple(run, data):
     """Writes out a JSON file for the given run and
@@ -70,6 +76,7 @@ def write_simple(run, data):
     fout = open(dataf, 'w')
     fout.write(json.dumps(data))
     fout.close()
+
 
 def read_simple(run, args='x, z, t'):
     """Reads in a JSON file that is in the format
@@ -96,6 +103,7 @@ def read_simple(run, args='x, z, t'):
         ndata[k] = [point(*p) for p in idata[k]]
     return ndata
 
+
 def get_parameters(run, paramf, delim=None):
     headers = ['run_index', 'h_1/H', 'rho_0', 'rho_1', 'rho_2', 'alpha', 'D/H']
     types = ['S10', 'f8', 'f8', 'f8', 'f8', 'f8', 'f8']
@@ -104,8 +112,9 @@ def get_parameters(run, paramf, delim=None):
     parameters = dict(zip(headers, run_params.item()))
     return parameters
 
+
 def cprint(string):
-    print string,"\r",
+    print string, "\r",
     sys.stdout.flush()
 def makedirs_p(path):
     """Emulate mkdir -p. Doesn't throw error if directory
