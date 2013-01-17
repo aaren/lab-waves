@@ -1,6 +1,5 @@
 import os
 import glob
-import sys
 
 import Image
 import numpy as np
@@ -12,6 +11,7 @@ from config import top_bar, bottom_bar
 # join joins cam1 and cam2 images together for a single run,
 # based on the standard offset at the edge of processed lab
 # images.
+
 
 def simple_join(rundir, image, gap=0, remove_text=0):
         #print("Joining %s ..." %(rundir))
@@ -26,7 +26,6 @@ def simple_join(rundir, image, gap=0, remove_text=0):
         else:
             cam2 = Image.new("RGB", (2810, 690))
 
-
         # images are 2810x690 (+/- 1 on both) with the offset 60 from the end.
         inset = 60
         # get the image dimensions, just in case they vary from above slightly
@@ -34,7 +33,7 @@ def simple_join(rundir, image, gap=0, remove_text=0):
         w2, h2 = cam2.size
 
         # remove text?
-        if remove_text==1:
+        if remove_text == 1:
             cam1 = rem_text(cam1)
         else:
             pass
@@ -61,18 +60,20 @@ def simple_join(rundir, image, gap=0, remove_text=0):
 
         return joined_image
 
+
 def rem_text(im):
     """Take an image object and paste over the text areas,
     returning an image object"""
     w, h = im.size
 
     t_bar = (0, 0, w, top_bar)
-    b_bar = (0, h-bottom_bar, w, h)
+    b_bar = (0, h - bottom_bar, w, h)
 
     im.paste('black', t_bar)
     im.paste('black', b_bar)
 
     return im
+
 
 def join(run, proc_dir):
     path = '/'.join([Path, proc_dir, run])
@@ -88,6 +89,7 @@ def join(run, proc_dir):
         # save the joined image, first creating a new directory called 'join'
         joined_image.save('%s/join/%s' % (path, image))
         # print "Joined", run, image, "\r",
+
 
 def remove_text(run, proc_dir):
     path = '/'.join([Path, proc_dir, run])
@@ -105,16 +107,16 @@ def remove_text(run, proc_dir):
 
         outfile = '%s/join_notext/%s' % (path, image)
 
-
         w, h = im.size
 
         t_bar = (0, 0, w, top_bar)
-        b_bar = (0, h-bottom_bar, w, h)
+        b_bar = (0, h - bottom_bar, w, h)
 
         im.paste('black', t_bar)
         im.paste('black', b_bar)
 
         im.save(outfile)
+
 
 def remove_borders(run, proc_dir):
     path = '/'.join([Path, proc_dir, run])
@@ -133,9 +135,10 @@ def remove_borders(run, proc_dir):
 
         w, h = im.size
 
-        box = (0, top_bar, w, h-bottom_bar)
+        box = (0, top_bar, w, h - bottom_bar)
         cropped = im.crop(box)
         cropped.save(outfile)
+
 
 def presentation(run, proc_dir='processed'):
     """Prepares run for presentation by joining the images together
@@ -156,6 +159,7 @@ def presentation(run, proc_dir='processed'):
         # save the joined image, first creating a new directory called 'join'
         joined_image.save('%s/presentation/%s' % (path, image))
         # print "Presentation", run, image, "\r",
+
 
 def animate(run, proc_dir='processed', src='presentation'):
     path = '/'.join([Path, proc_dir, run])

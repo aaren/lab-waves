@@ -10,6 +10,7 @@ print runs
 
 sync_dir = path + '/synced/'
 
+
 def cut(run):
     info = get_parameters(run, cutf, ',')
     cutno = int(info['cut'])
@@ -28,4 +29,3 @@ def cut(run):
 
 for run in runs:
     cut(run)
-

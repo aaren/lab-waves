@@ -20,13 +20,13 @@ from scipy.interpolate import interp2d
 from scipy.interpolate import interp1d
 import numpy as np
 
-from get_datav3 import read_data
 
 # data = read_data('data/data_store_r11_7_06c')
 
 # first try and do it with a single camera
 
 # data[run][cam][frame]['interface']
+
 
 def interp1(interface):
     int_x = zip(*interface)[0]
@@ -42,10 +42,12 @@ def interp1(interface):
 
 # ValueError: A value in x_new is below the interpolation range.
 
+
 def interp(data, T):
-    h = [data['%04d' % t]['interface'] for t in range(1,T)]
+    h = [data['%04d' % t]['interface'] for t in range(1, T)]
     hn = [interp1(ho) for ho in h]
     return hn
+
 
 def interp2(hn):
     h = [hi[1] for hi in hn]
@@ -65,23 +67,25 @@ class hovmoller(object):
     # at the detected waves
     def gen_c_map():
         # some stuff
+        cmap = 0
         return c_map
 
-    def h(x,t):
+    def h(x, t):
         # lookup what the value of h is at some given
         # (x,t). Should be able to work with any input
         # numbers, i.e. interpolates to grid.
+        pass
 
     def interpolate(region):
         for (x, t) in region:
-            c = c_map(x,t)
+            c = c_map(x, t)
             t0 = int(t)
             t1 = t0 + 1
-            x0 = x - c*(t - t0)
-            x1 = x + c*(t1 - t)
-            h0 = h(x0,t0)
-            h1 = h(x1,t1)
-            hxt = h0 + (h1-h0) * (t - t0) / (t1 - t0)
+            x0 = x - c * (t - t0)
+            x1 = x + c * (t1 - t)
+            h0 = h(x0, t0)
+            h1 = h(x1, t1)
+            hxt = h0 + (h1 - h0) * (t - t0) / (t1 - t0)
             # stick this in an array.
 
 # How about onlt plotting the interfaces as lines? As in the
@@ -92,5 +96,3 @@ class hovmoller(object):
 # Want to use a 3d matplotlib.
 #
 # 1) plot a single time slice in 3d.
-
-

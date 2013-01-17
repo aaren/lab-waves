@@ -8,10 +8,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from uncertainties import ufloat
 
-from util import read_simple
-from config import data_dir, paramf
+from config import data_dir
 
 from run import Run
+
 
 class Analysis(object):
 
@@ -74,7 +74,7 @@ class Analysis(object):
         # really it is offset by 0.5
 
         tin = self.Ft
-        tout = [np.mean(tin[i:i+2]) for i,v in list(enumerate(tin))[:-1]]
+        tout = [np.mean(tin[i: i + 2]) for i, v in list(enumerate(tin))[:-1]]
         Fu = np.interp(tin, tout, Fu)
 
         # we know that front velocity is 0 at 0
@@ -105,8 +105,8 @@ class Analysis(object):
         ax1 = fig.add_subplot(111)
         ax1.errorbar(Ft, Fx, yerr=Fxe, fmt='r.', label=r'$x_n$')
 
-        plt.title(r"$\alpha = %s$ $\rho_0 = %s$ $\rho_1 = %s$ $\rho_2 = %s$ $h_1 = %s$"\
-                            % (self.a, self.r0, self.r1, self.r2, self.h1))
+        plt.title(r"$\alpha = %s$ $\rho_0 = %s$ $\rho_1 = %s$ $\rho_2 = %s$ $h_1 = %s$"
+                  % (self.a, self.r0, self.r1, self.r2, self.h1))
         plt.xlabel("Time from lock release (s)")
 
         ax2 = ax1.twinx()
@@ -128,8 +128,8 @@ class Analysis(object):
     def ungarish_theta(self):
         # Ungarish theta plot
         plt.figure()
-        plt.title(r"$\alpha = %s$ $\rho_0 = %s$ $\rho_1 = %s$ $\rho_2 = %s$ $h_1 = %s$"\
-                            % (self.a, self.r0, self.r1, self.r2, self.h1))
+        plt.title(r"$\alpha = %s$ $\rho_0 = %s$ $\rho_1 = %s$ $\rho_2 = %s$ $h_1 = %s$"
+                  % (self.a, self.r0, self.r1, self.r2, self.h1))
         theta = [i.nominal_value for i in self.theta()]
         etheta = [i.std_dev() for i in self.theta()]
         plt.plot(self.Ft, theta, 'ko')
@@ -165,8 +165,8 @@ class Analysis(object):
         R = [i.nominal_value for i in Rf]
         plt.plot(self.Ft, R, 'r-', label='ungarish box')
 
-        plt.title(r"$\alpha = %s$ $\rho_0 = %s$ $\rho_1 = %s$ $\rho_2 = %s$ $h_1 = %s$"\
-                            % (self.a, self.r0, self.r1, self.r2, self.h1))
+        plt.title(r"$\alpha = %s$ $\rho_0 = %s$ $\rho_1 = %s$ $\rho_2 = %s$ $h_1 = %s$"
+                  % (self.a, self.r0, self.r1, self.r2, self.h1))
         plt.xscale('log')
         plt.xlim(1, 40)
         plt.yscale('log')
@@ -195,6 +195,7 @@ class Analysis(object):
         plt.xlabel('time from lock releae (s)')
         plt.ylabel(r'$\Re \theta$')
 
+
 def main(run):
     r = Analysis(run)
     print r.index, r.a, r.r0, r.r1, r.r2
@@ -218,4 +219,3 @@ if __name__ == '__main__':
 # pull_col(0, paramf) make a list of run objects runs = [Run(index)
 # for index in indices] select sub groupings, e.g.  partial_runs =
 # [r for r in runs if r.D == 0.4]
-

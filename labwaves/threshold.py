@@ -10,6 +10,7 @@ from numpy import polyfit
 
 from config import crop
 
+
 def thresh_img(image, thresh_values=None):
     # TODO: this can definitely be replaced with an algorithm from
     # skimage.
@@ -33,17 +34,17 @@ def thresh_img(image, thresh_values=None):
         thresh_green, thresh_red, mixed_red = thresh_values
 
     # remember brackets around the logical expressions!!!!!
-    fluid_type = [[0 if (source[i,j][0] > thresh_red[0]) &\
-                        (source[i,j][1] < thresh_red[1]) &\
-                        (source[i,j][2] < thresh_red[2])
-                    else 3 if (source[i,j][0] > mixed_red[0]) &\
-                                (source[i,j][1] < mixed_red[1]) &\
-                                (source[i,j][2] < mixed_red[2])\
-                    else 1 if (source[i,j][0] > thresh_green[0]) &\
-                              (source[i,j][1] > thresh_green[1]) &\
-                              (source[i,j][2] < thresh_green[2])\
-                           else 'other' \
-                    for j in range(h)] for i in range(w)]
+    fluid_type = [[0 if (source[i, j][0] > thresh_red[0]) &
+                        (source[i, j][1] < thresh_red[1]) &
+                        (source[i, j][2] < thresh_red[2])
+                   else 3 if (source[i, j][0] > mixed_red[0]) &
+                             (source[i, j][1] < mixed_red[1]) &
+                             (source[i, j][2] < mixed_red[2])
+                   else 1 if (source[i, j][0] > thresh_green[0]) &
+                             (source[i, j][1] > thresh_green[1]) &
+                             (source[i, j][2] < thresh_green[2])
+                   else 'other'
+                   for j in range(h)] for i in range(w)]
 
     # surely this can be written as a mapping? just need to find a
     # way of indexing the result.
@@ -67,7 +68,7 @@ def process(image, fluid_type_lists, region, fluid, rulers):
 
     if camera == 'cam1':
         l_lim = 20
-        r_lim = 2350 # this is approximate and discards lock parallax
+        r_lim = 2350  # this is approximate and discards lock parallax
     elif camera == 'cam2':
         l_lim = 20
         r_lim = crop['cam2'][1] - crop['cam2'][0]
@@ -114,7 +115,7 @@ def process(image, fluid_type_lists, region, fluid, rulers):
         return extra_depth
 
     for i in range(l_lim):
-        epoint = extrapolate(depth, l_lim + 1, l_lim +50, i)
+        epoint = extrapolate(depth, l_lim + 1, l_lim + 50, i)
         depth[i] = int(round(epoint))
 
     # this just sets them to an average of the next 25 depths.
@@ -183,10 +184,10 @@ def main(image, region, rulers, thresh_values=None, front_depths=None):
             f_pos = -999999
         return f_pos
 
-    front_coord_core = [(get_front_pos(0, front_depth), front_depth) \
+    front_coord_core = [(get_front_pos(0, front_depth), front_depth)
                         for front_depth in front_depths]
-    front_coord_mix = [(get_front_pos(3, front_depth), front_depth) \
-                        for front_depth in front_depths]
+    front_coord_mix = [(get_front_pos(3, front_depth), front_depth)
+                       for front_depth in front_depths]
 
     # detect the interfaces
     interface = process(image, fluid_type, region, 1, rulers)
@@ -194,12 +195,12 @@ def main(image, region, rulers, thresh_values=None, front_depths=None):
     mix_current = process(image, fluid_type, region, 3, rulers)
 
     # qc the data by ignoring values that are outside the tank
-    for i,d in enumerate(core_current):
+    for i, d in enumerate(core_current):
         if top < d < bottom:
             pass
         else:
             core_current[i] = bottom
-    for i,d in enumerate(mix_current):
+    for i, d in enumerate(mix_current):
         if top < d < bottom:
             pass
         else:
@@ -210,8 +211,8 @@ def main(image, region, rulers, thresh_values=None, front_depths=None):
     interp_core_current = interpolate(image, core_current, rulers)
     interp_mix_current = interpolate(image, mix_current, rulers)
 
-    out = (interp_interface, interp_core_current, interp_mix_current, \
-                    front_coord_core, front_coord_mix)
+    out = (interp_interface, interp_core_current, interp_mix_current,
+           front_coord_core, front_coord_mix)
 
     return out
 
@@ -234,15 +235,15 @@ def sanity_check(interfaces, points, image, icolours, pcolours):
 
     # plot the measured interface depth onto the image
     for inter, colour in zip(interfaces, icolours):
-        draw.line(inter, fill = colour, width = 5)
+        draw.line(inter, fill=colour, width=5)
 
     # plot squares onto the image at the given points
-    rectangle_size = (7,7)
+    rectangle_size = (7, 7)
     for point, colour in zip(points, pcolours):
         for coord in point:
-            xy = [(coord[0] + rectangle_size[0], coord[1] + rectangle_size[1]), \
-                    (coord[0] - rectangle_size[0], coord[1] - rectangle_size[1])]
-            draw.rectangle(xy, fill = colour)
+            xy = [(coord[0] + rectangle_size[0], coord[1] + rectangle_size[1]),
+                  (coord[0] - rectangle_size[0], coord[1] - rectangle_size[1])]
+            draw.rectangle(xy, fill=colour)
 
     run = image.split('/')[-3]
     camera = image.split('/')[-2]
@@ -257,5 +258,5 @@ def sanity_check(interfaces, points, image, icolours, pcolours):
         pass
 
     im.save(sanity_dir + frame)
-    print "wrote ", run, camera, "sanity ", frame,"\r",
+    print "wrote ", run, camera, "sanity ", frame, "\r",
     sys.stdout.flush()

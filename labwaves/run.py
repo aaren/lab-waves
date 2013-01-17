@@ -10,6 +10,7 @@ from util import read_data, write_simple
 from util import get_parameters
 from config import data_dir, data_storage, paramf, plots_dir
 
+
 class Run(object):
 
     def __init__(self, run):
@@ -23,8 +24,8 @@ class Run(object):
         self.r2 = float(self.params['rho_2'])
         self.a = float(self.params['alpha'])
 
-        self.c2l = f.two_layer_linear_longwave(self.h1, self.h2, \
-                                                self.r1, self.r2)
+        self.c2l = f.two_layer_linear_longwave(self.h1, self.h2,
+                                               self.r1, self.r2)
         self.gce = f.gc_empirical(self.D / 2, self.r0, self.r1)
         self.gct = f.gc_theoretical(self.D / 2, self.r0, self.r1)
 
@@ -44,7 +45,7 @@ class Run(object):
         self._data = read_data(self.data_file)[self.index]
 
     def load_basic(self):
-        self.basic = read_data(data_dir + 'basic/basic_%s' % run)
+        self.basic = read_data(data_dir + 'basic/basic_%s' % self.index)
 
     def points(self, arg):
         """From a given set of run data, i.e. data[run] if extracting
@@ -64,8 +65,8 @@ class Run(object):
             try:
                 cdata = rdata[cam]
                 for f in cdata.keys():
-                    arg_list += [point(e[0], e[1], int(f) - 1) \
-                                        for e in cdata[f][arg]]
+                    arg_list += [point(e[0], e[1], int(f) - 1)
+                                 for e in cdata[f][arg]]
             except KeyError:
                 pass
         return arg_list
@@ -128,7 +129,7 @@ class Run(object):
         X, T = zip(*[(p.x, p.t) for p in data])
         plt.plot(X, T, 'bo')
         # get user input points
-        pts = plt.ginput(2,0)
+        pts = plt.ginput(2, 0)
         # calculate the limits
         hi, lo = Run.bounding_lines(pts, 0, 1)
         # select points within limits
@@ -139,14 +140,14 @@ class Run(object):
         plt.draw()
         while True:
             print "Select bad points, middle click if finished"
-            bad = plt.ginput(0,0)
+            bad = plt.ginput(0, 0)
             if bad:
                 # identify the bad points
                 bad_points = []
                 for b in bad:
-                    bad_points += [p for p in data if \
-                                            (b[0] - 0.1 < p.x < b[0] + 0.1) \
-                                        and (b[1] - 0.5 < p.t < b[1] + 0.5)]
+                    bad_points += [p for p in data
+                                   if (b[0] - 0.1 < p.x < b[0] + 0.1)
+                                   and (b[1] - 0.5 < p.t < b[1] + 0.5)]
                 # overplot
                 Xb, Tb = zip(*[(p.x, p.t) for p in bad_points])
                 plt.plot(Xb, Tb, 'go')
@@ -160,13 +161,13 @@ class Run(object):
                 print "Indeterminate badness!"
         while True:
             print "Select missed points, middle click if finished"
-            missed = plt.ginput(0,0)
+            missed = plt.ginput(0, 0)
             if missed:
                 missed_points = []
                 for m in missed:
-                    missed_points += [p for p in data if \
-                                            (m[0] - 0.2 < p.x < m[0] + 0.2) \
-                                        and (m[1] - 0.5 < p.t < m[1] + 0.5)]
+                    missed_points += [p for p in data
+                                      if (m[0] - 0.2 < p.x < m[0] + 0.2)
+                                      and (m[1] - 0.5 < p.t < m[1] + 0.5)]
                 Xm = [p.x for p in missed_points]
                 Tm = [p.t for p in missed_points]
                 plt.plot(Xm, Tm, 'co')
@@ -220,8 +221,8 @@ class Run(object):
             pass
         lines = []
         # make a green and red box
-        y_x, y_y = [0,1,1,0],[35,35,40,40]
-        n_x, n_y = [1,2,2,1],[35,35,40,40]
+        y_x, y_y = [0, 1, 1, 0], [35, 35, 40, 40]
+        n_x, n_y = [1, 2, 2, 1], [35, 35, 40, 40]
         plt.fill(y_x, y_y, 'g')
         plt.fill(n_x, n_y, 'r')
         while True:
@@ -231,13 +232,13 @@ class Run(object):
             X = [p.x for p in line]
             T = [p.t for p in line]
             m, c = np.polyfit(X, T, 1)
-            Xf = np.linspace(0,12)
+            Xf = np.linspace(0, 12)
             Tf = m * Xf + c
             plt.plot(Xf, Tf)
             lines.append(line)
             plt.draw()
             print "Finished?? green; yes; red/anywhere; no, need more waves"
-            a = plt.ginput(1,0)
+            a = plt.ginput(1, 0)
             if (y_x[0] < a[0][0] < y_x[1]) and (y_y[0] < a[0][1] < y_y[2]):
                 break
             elif (n_x[0] < a[0][0] < n_x[1]) and (n_y[0] < a[0][1] < n_y[2]):
@@ -251,7 +252,7 @@ class Run(object):
     def restruct(self):
         # get the waves
         lines = self.get_lines('max')
-        waves = {'w%s' % i: l for i,l in enumerate(lines)}
+        waves = {'w%s' % i: l for i, l in enumerate(lines)}
         # get the front
         front = self.get_front()
         head = self.get_front('head')
@@ -265,11 +266,10 @@ class Run(object):
         Th = [p.t for p in head]
         plt.plot(Xh, Th, 'k+')
         # plot the waves
-        for i,w in enumerate(sorted(waves.keys())):
+        for i, w in enumerate(sorted(waves.keys())):
             Xw = [p.x for p in waves[w]]
             Tw = [p.t for p in waves[w]]
-            plt.plot(Xw, Tw, 'o', \
-                color=plt.get_cmap('hsv')((i+1)/30))
+            plt.plot(Xw, Tw, 'o', color=plt.get_cmap('hsv')((i + 1) / 30))
         print "Shall I add some petril?"
         plt.show()
         # data container

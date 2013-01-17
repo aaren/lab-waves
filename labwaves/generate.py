@@ -1,5 +1,5 @@
 #!/apps/enthought-7.2-1/bin/python
-from multiprocessing import Process, Pool, Queue
+from multiprocessing import Process, Queue
 import multiprocessing.pool
 import glob
 from sys import argv
@@ -35,10 +35,12 @@ def measure(run):
     # exist already.
     # proc_im.get_run_data(run)
 
+
 def proc_im_base(run):
     # Correct barrel distortion and rotation. Will prompt for run
     # measurements if they do not exist.
     proc_im.std_corrections(run)
+
 
 def proc_im_main(run):
     """Raw lab images need some massaging to get them into
@@ -61,6 +63,7 @@ def proc_im_main(run):
     join.presentation(run)
     join.animate(run)
 
+
 def basic_data(run):
     """If the run data has been through proc_im_main, or the
     stages of it, it is ready to have the basic data extracted
@@ -76,16 +79,19 @@ def basic_data(run):
     """
     get_data.get_basic_data(run)
 
+
 def f_basic_data(run):
     """Fast version of basic data (multiprocessing inside the
     thresholding loop).
     """
     get_data.get_basic_data(run, 22)
 
+
 def f_data(run):
     """Fast version of data.
     """
     get_data.main(run, 22)
+
 
 def data(run):
     """The basic interface depths are further processed to
@@ -101,6 +107,7 @@ def data(run):
     """
     get_data.main(run)
 
+
 def wave(run):
     """Before this stage the run data are separated into cam1
     and cam2 streams. This stage combines the data together.
@@ -112,11 +119,13 @@ def wave(run):
     """
     pass
 
+
 def plot(run):
     """With the structures pulled out by wave(run), it is
     easy to make some plots.
     """
     Run(run).plot_all()
+
 
 def all(run, speed='serial'):
     """To get some raw, synced, lab data into nice plots in
@@ -132,6 +141,7 @@ def all(run, speed='serial'):
         data(run)
     plot(run)
 
+
 def multi(proc, runs):
     # not presently used.
     q = Queue()
@@ -145,17 +155,21 @@ def multi(proc, runs):
     for p in ps:
         p.join()
 
+
 ## see http://stackoverflow.com/questions/6974695/python-process-pool-non-daemonic
 class NoDaemonProcess(multiprocessing.Process):
     # make the daemon attribute false
     def _get_daemon(self):
         return False
+
     def _set_daemon(self, value):
         pass
     daemon = property(_get_daemon, _set_daemon)
 
+
 class MyPool(multiprocessing.pool.Pool):
     Process = NoDaemonProcess
+
 
 def pool(proc, runs):
     p = MyPool()
@@ -163,9 +177,11 @@ def pool(proc, runs):
     p.close()
     p.join()
 
+
 def loop(proc, runs):
     for run in runs:
         proc(run, 'parallel')
+
 
 def get_runs(pdir='synced'):
     runpaths = glob.glob(('/').join([path, pdir, 'r*']))
@@ -174,8 +190,10 @@ def get_runs(pdir='synced'):
         # runs.remove(r)
     return runs
 
+
 def test():
     print "hello"
+
 
 if __name__ == '__main__':
     # TODO: use argparse

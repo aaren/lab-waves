@@ -21,8 +21,6 @@ from __future__ import division
 import glob
 import sys
 from multiprocessing import Pool
-import time
-from bisect import bisect_left
 
 import numpy as np
 
@@ -34,6 +32,7 @@ from util import get_parameters
 import threshold
 
 from config import *
+
 
 def parallax_corr(xin, cam, p):
     """ Lab images suffer from parallax due to the static cameras.
@@ -49,10 +48,10 @@ def parallax_corr(xin, cam, p):
     d = 1.45
     # width of tank
     w = 0.20
-    f = (w / (2 * d + w))
+    # f = (w / (2 * d + w))
     # the correction, when projected onto the centreline of the
     # tank, is
-    corr = p * (x - c) * f
+    # corr = p * (x - c) * f
     # whether this is positive or negative depends on the position of
     # the front w.r.t the cam position
     if x < c:
@@ -72,6 +71,7 @@ def parallax_corr(xin, cam, p):
 
     return scale_x_corr
 
+
 def norm(inlist, camera, p=0):
     """ takes a list of tuples and normalises them according to
     pre-defined camera offsets and scalings. p=0 (default), means
@@ -90,6 +90,7 @@ def norm(inlist, camera, p=0):
     inlist_norm = [norm_tuple(tupe) for tupe in inlist]
     return inlist_norm
 
+
 def denorm(inlist, camera):
     """Does the opposite of norm - takes real values and converts
     them to pixels.
@@ -103,6 +104,7 @@ def denorm(inlist, camera):
     inlist_denorm = [denorm_tuple(tupe) for tupe in inlist]
     return inlist_denorm
 
+
 def iframe(image):
     """From an image filename, e.g. img_0001.jpg, get just the
     0001 bit and return it.
@@ -110,13 +112,16 @@ def iframe(image):
     frame = image.split('_')[-1].split('.')[0].split('_')[-1]
     return frame
 
+
 def irun(image):
     run = image.split('/')[-3]
     return run
 
+
 def icam(image):
     cam = image.split('/')[-2]
     return cam
+
 
 def reject_outliers(inter, r, w, degree=2):
     """Running through inter, if any element is outside range r
@@ -183,6 +188,7 @@ def reject_outliers(inter, r, w, degree=2):
 
     return b
 
+
 def smooth(inter, window):
     """Apply Savitzky-Golay smoothing to the given data (1D)
     over a given window width.
@@ -191,6 +197,7 @@ def smooth(inter, window):
     y = sgolay(x, window, 2)
     smoothed_inter = list(y)
     return smoothed_inter
+
 
 def serial(function, images, camera):
     try:
@@ -201,6 +208,7 @@ def serial(function, images, camera):
     result = map(function, images)
     return result
 
+
 def parallel(function, images, camera, processors):
     if processors == 0:
         p = Pool()
@@ -210,6 +218,7 @@ def parallel(function, images, camera, processors):
     p.close()
     p.join()
     return result.get()
+
 
 def get_basic_frame_data(image):
     # get the list of interface depths, with the depth for the current
@@ -238,6 +247,7 @@ def get_basic_frame_data(image):
 
     return frame_data
 
+
 # multiprocessing and serial implementation
 def get_basic_run_data(run, processors=1):
     """grabs all basic data from a run"""
@@ -246,9 +256,9 @@ def get_basic_run_data(run, processors=1):
     cameras = ['cam1', 'cam2']
     basic_run_data = {}
     for camera in cameras:
-        images = sorted(glob.glob('/'.join([path,
-                            'processed', run, camera, '*jpg'])))
-        tot = "%03d" % (len(images))
+        impath = '/'.join([path, 'processed', run, camera, '*jpg'])
+        images = sorted(glob.glob(impath))
+        # tot = "%03d" % (len(images))
         if len(images) == 0:
             print "\nno images in", camera
             break
@@ -259,9 +269,10 @@ def get_basic_run_data(run, processors=1):
         else:
             result = parallel(get_basic_frame_data, images, camera, processors)
 
-        basic_run_data[camera] = {k: v for k,v in result}
+        basic_run_data[camera] = {k: v for k, v in result}
 
     return basic_run_data
+
 
 def get_basic_data(runs=None, processors=1):
     if runs is None:
@@ -278,6 +289,7 @@ def get_basic_data(runs=None, processors=1):
         print "writing", fname
         sys.stdout.flush()
         write_data(basic_run_data, f)
+
 
 def get_frame_data((image, run_data_container)):
     """gets the data for a single image.
@@ -389,8 +401,8 @@ def get_frame_data((image, run_data_container)):
         print irun(image), icam(image), iframe(image), "BAD!"
         min_mix_front_coord = (-9999999, 0)
     try:
-        front_coord = [min(min_core_front_coord, min_mix_front_coord, \
-                                            key=lambda k: abs(k[0]))]
+        front_coord = [min(min_core_front_coord, min_mix_front_coord,
+                           key=lambda k: abs(k[0]))]
     except ValueError:
         print irun(image), icam(image), iframe(image), "BAD!"
         front_coord = [(-9999999, 0)]
@@ -399,9 +411,9 @@ def get_frame_data((image, run_data_container)):
 
     def find_head(f_coords, thresh=50):
         # find the head of the current by looking for a flat bit
-        for i,p in enumerate(f_coords):
+        for i, p in enumerate(f_coords):
             try:
-                p1 = f_coords[i+1]
+                p1 = f_coords[i + 1]
                 if p[0] < 0:
                     pass
                 elif thresh < p1[0] - p[0] < 99999:
@@ -414,31 +426,27 @@ def get_frame_data((image, run_data_container)):
                 pass
         return [(-999999, 0)]
     core_head = find_head(f_core_front_coords)
-    mix_head = find_head(f_mix_front_coords)
+    # mix_head = find_head(f_mix_front_coords)
     head_coord = core_head
 
     # SANITY CHECKING: overlay given interfaces and points onto the
     # images with specified colours. images are saved to the sanity
     # dirs.
-    interfaces = [interface, core_current, \
-            mixed_current, fixed_interface, smoothed_interface]
+    interfaces = [interface, core_current,
+                  mixed_current, fixed_interface, smoothed_interface]
     icolours = ['black', 'blue', 'cyan', 'orange', 'red']
-    points = [_max, _min, \
-            f_core_front_coords, f_mix_front_coords, \
-            core_max, mix_max,
-            head_coord, front_coord]
-    pcolours = ['green', 'purple', \
-            'blue', 'cyan', \
-            'green', 'purple', \
-            'black', 'orange']
+    points = [_max, _min, f_core_front_coords, f_mix_front_coords,
+              core_max, mix_max, head_coord, front_coord]
+    pcolours = ['green', 'purple', 'blue', 'cyan',
+                'green', 'purple', 'black', 'orange']
     threshold.sanity_check(interfaces, points, image, icolours, pcolours)
 
     # make a container for the data and populate it
     frame_data = {}
     # need the baseline when doing amplitude deviations
     if frame == iframe('img_0001.jpg'):
-        baseline = [(0, sum(zip(*smoothed_interface)[1])\
-                                         / len(smoothed_interface))]
+        baseline = [(0, sum(zip(*smoothed_interface)[1])
+                     / len(smoothed_interface))]
         frame_data['baseline'] = norm(baseline, camera)
 
     frame_data['interface'] = norm(interface, camera)
@@ -457,16 +465,17 @@ def get_frame_data((image, run_data_container)):
 
     return (frame, frame_data)
 
+
 def get_run_data(run, processors=1):
     """grabs all data from a run"""
     cameras = ['cam1', 'cam2']
     basic_run_data = read_data(data_dir + 'basic/basic_%s' % run)
     run_data = {}
     for camera in cameras:
-        images = sorted(glob.glob('/'.join([path,
-                            'processed', run, camera, '*jpg'])))
-        tot = "%03d" % (len(images))
-        arg_images = [(i,basic_run_data) for i in images]
+        impath = '/'.join([path, 'processed', run, camera, '*jpg'])
+        images = sorted(glob.glob(impath))
+        # tot = "%03d" % (len(images))
+        arg_images = [(i, basic_run_data) for i in images]
         if len(images) == 0:
             print "\nno images in", camera
             break
@@ -477,8 +486,9 @@ def get_run_data(run, processors=1):
         else:
             result = parallel(get_frame_data, arg_images, camera, processors)
 
-        run_data[camera] = {k: v for k,v in result}
+        run_data[camera] = {k: v for k, v in result}
     return run_data
+
 
 def main(runs=None, processors=1):
     # define the runs to collect data from
