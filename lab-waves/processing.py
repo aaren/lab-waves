@@ -1,4 +1,5 @@
-"""Collection of pure functions that operate on individual image objects
+"""Collection of pure functions that operate on individual image
+objects. All functions independent of external state???
 
 Functions:
 
@@ -18,7 +19,13 @@ import ImageFont
 
 import config
 
+# TODO: these don't exist yet
+import get_run_data
+import get_parameters
 
+
+### PURE FUNCTIONS ###
+# operate on a single image object
 def barrel_correct(im, coeffs, verbose=False, tmp_in='/tmp/bctmpin', tmp_out='/tmp/bctmpout', tmp_fmt='bmp'):
     """Uses Imagemagick convert to apply a barrel correction to
     an image.
@@ -142,6 +149,119 @@ def perspective_coefficients(X, x):
     return c
 
 
+def crop(im, box):
+    """Crop an image such that it is physically orientated.
+
+    Inputs: im - an image object
+            box - tuple, defining the (left, upper, right, lower) pixel
+
+    Output: a cropped image object
+    """
+    cropped = im.crop(box)
+    return cropped
+
+
+def draw_text(im, upper_text, lower_text, upper_bar, lower_bar, font, text_colour, bg_colour):
+    """Make an upper and lower banner of text on an image.
+
+    Inputs: im - PIL image object
+            upper_text - string, the text for the upper banner
+            lower_text - string, the text for the lower banner
+            upper_bar - int, the height of the upper banner (pixels)
+            lower_bar - int, the height of the lower banner (pixels)
+            font - ImageFont.font instance to use
+            text_colour - colour of the text, e.g. 'white'
+            bg_colour - colour of the background, e.g. 'black'
+
+    Outputs: an image object
+    """
+    w, h = im.size
+    # position of the text
+    upper_text_pos = (0, 0)
+    lower_text_pos = (0, h - lower_bar)
+    # box of the background
+    upper_background_box = (0, h, w, upper_bar)
+    lower_background_box = (0, h - lower_bar, w, h)
+
+    # draw has side effects so work on copy
+    dim = im.copy()
+    draw = ImageDraw.Draw(dim)
+    draw.rectangle(upper_background_box, fill=bg_colour)
+    draw.rectangle(lower_background_box, fill=bg_colour)
+    draw.text(upper_text_pos, upper_text, font=font, fill=text_colour)
+    draw.text(lower_text_pos, lower_text, font=font, fill=text_colour)
+
+    return dim
+
+### /PURE FUNCTIONS ###
+
+
+### argument generators ###
+# No side effects, but rely on external context (config, run_data)
+def crop_box(run_data, cam):
+    """Calculate box needed to crop an image to standard
+    orientation.
+
+    Inputs: run_data - a dictionary of measurements
+            cam - string, the camera used for the image, e.g. 'cam1'
+
+    Output: a tuple of four integers defining the box
+            (left, upper, right, lower)
+    """
+    odd = {'cam1': run_data['odd_1'], 'cam2': run_data['odd_2']}
+    if odd[cam] == '999':
+        return
+
+    # define the box to crop the image to relative to the
+    # invariant point in the projection transform (se).
+    l0x = int(run_data['l0x'])
+    l0y = int(run_data['l0y'])
+    j20x = int(run_data['j20x'])
+    j20y = int(run_data['j20y'])
+    ref = {'cam1': (l0x, l0y), 'cam2': (j20x, j20y)}
+    left = ref[cam][0] + config.crop[cam][0]
+    right = ref[cam][0] + config.crop[cam][1]
+    upper = ref[cam][1] - config.ideal_25 + config.crop[cam][2]
+    lower = ref[cam][1] + config.crop[cam][3]
+    return (left, upper, right, lower)
+
+
+def gen_image_text(run, time):
+    # TODO: put in specific IO module
+    parameters = get_parameters(run, config.paramf)
+    param = ("run {run}, "
+             "t={t}s: "
+             "h_1 = {h_1}, "
+             "rho_0 = {r0}, "
+             "rho_1 = {r1}, "
+             "rho_2 = {r2}, "
+             "alpha = {a}, "
+             "D = {D}")
+    params = dict(run=parameters['run_index'],
+                  t=time,
+                  h_1=parameters['h_1/H'],
+                  r0=parameters['rho_0'],
+                  r1=parameters['rho_1'],
+                  r2=parameters['rho_2'],
+                  a=parameters['alpha'],
+                  D=parameters['D/H'])
+    param_text = param.format(**params)
+    return param_text
+
+
+def draw_text_args(im, upper_text, lower_text):
+    # config context
+    font = ImageFont.truetype(config.font, 40)
+    kwargs = {'upper_text': upper_text,
+              'lower_text': config.author_text,
+              'upper_bar': config.top_bar,
+              'lower_bar': config.bottom_bar,
+              'font': font,
+              'text_colour': 'white',
+              'bg_colour': 'black'}
+    return kwargs
+
+
 def run_perspective_coefficients(run):
     """Generate the cam1 and cam2 perspective transform coefficients
     for a given run.
@@ -188,8 +308,29 @@ def run_perspective_coefficients(run):
     else:
         cam2_coeff = tuple(perspective_coefficients(x2, X2))
 
-    out = {'cam1': cam1_coeff, 'cam2': cam2_coeff}
-    return out
+    return {'cam1': cam1_coeff, 'cam2': cam2_coeff}
+
+
+def gen_time(image, run):
+    # XXX: stub
+    # 'time' that a frame represents
+    # TODO: update this with 25hz camera in mind. need some time
+    # generating function
+    run, cam, frame = image.split('/')[-3:]
+    time = int(frame.split('.')[0]) - 1
+    return time
+
+
+### Applicators
+# Only a function of the run, generate all context based on this.
+# These do actual, persistent IO
+# Should go into a class really
+def apply_barrel_correction(run):
+    for camera, image in run:
+        coeffs = config.barrel_coeffs[camera]
+        im = Image.open(image)
+        out = barrel_correct(im, coeffs)
+        out.save('blah')
 
 
 def apply_perspective_transform(run):
@@ -201,129 +342,22 @@ def apply_perspective_transform(run):
         trans.save('blah')
 
 
-## State needed for add_text ##
-run, cam, frame = image.split('/')[-3:]
-# get the orientation bits for a run, prompting for measurement
-# if needs be.
-# TODO: put in specific IO module
-run_data = get_run_data(run)
-
-# 'time' that a frame represents
-# TODO: update this with 25hz camera in mind. need some time
-# generating function
-time = int(frame.split('.')[0]) - 1
-
-
-def gen_image_text(run, time):
-    # TODO: put in specific IO module
-    parameters = get_parameters(run, config.paramf)
-    param = ("run {run}, "
-             "t={t}s: "
-             "h_1 = {h_1}, "
-             "rho_0 = {r0}, "
-             "rho_1 = {r1}, "
-             "rho_2 = {r2}, "
-             "alpha = {a}, "
-             "D = {D}")
-    params = dict(run=parameters['run_index'],
-                  t=time,
-                  h_1=parameters['h_1/H'],
-                  r0=parameters['rho_0'],
-                  r1=parameters['rho_1'],
-                  r2=parameters['rho_2'],
-                  a=parameters['alpha'],
-                  D=parameters['D/H'])
-    param_text = param.format(**params)
-    return param_text
-
-
-def draw_text_with_font(im, upper_text, lower_text):
-    # config context
-    font = ImageFont.truetype(config.font, 40)
-    kwargs = {'upper_text': param_text,
-              'lower_text': config.author_text,
-              'upper_bar': config.top_bar,
-              'lower_bar': config.bottom_bar,
-              'font': font,
-              'text_colour': 'white',
-              'bg_colour': 'black'}
-    dim = draw_text(im, **kwargs)
-    return dim
-
-
-def crop(im, run_data, cam):
-    """Crop an image such that it is physically orientated.
-
-    Inputs: im - an image object
-            run_data - a dictionary of measurements
-            cam - string, the camera used for the image, e.g. 'cam1'
-
-    Output: a cropped image object
-    """
-    # TODO: move calls to config to a container function,
-    # can't have these inside a pure function - need to be
-    # supplied as arguments
-
-    odd = {'cam1': run_data['odd_1'], 'cam2': run_data['odd_2']}
-    if odd[cam] == '999':
-        return
-
-    # define the box to crop the image to relative to the
-    # invariant point in the projection transform (se).
-    l0x = int(run_data['l0x'])
-    l0y = int(run_data['l0y'])
-    j20x = int(run_data['j20x'])
-    j20y = int(run_data['j20y'])
-    ref = {'cam1': (l0x, l0y), 'cam2': (j20x, j20y)}
-    left = ref[cam][0] + config.crop[cam][0]
-    right = ref[cam][0] + config.crop[cam][1]
-    upper = ref[cam][1] - config.ideal_25 + config.crop[cam][2]
-    lower = ref[cam][1] + config.crop[cam][3]
-    #box is a 4-tuple defining the left, upper, right and lower pixel
-    box = (left, upper, right, lower)
-    cropped = im.crop(box)
-    return cropped
-
-
-def draw_text(im, upper_text, lower_text, upper_bar, lower_bar, font, text_colour, bg_colour):
-    """Make an upper and lower banner of text on an image.
-
-    Inputs: im - PIL image object
-            upper_text - string, the text for the upper banner
-            lower_text - string, the text for the lower banner
-            upper_bar - int, the height of the upper banner (pixels)
-            lower_bar - int, the height of the lower banner (pixels)
-            font - ImageFont.font instance to use
-            text_colour - colour of the text, e.g. 'white'
-            bg_colour - colour of the background, e.g. 'black'
-
-    Outputs: an image object
-    """
-    w, h = im.size
-    # position of the text
-    upper_text_pos = (0, 0)
-    lower_text_pos = (0, h - lower_bar)
-    # box of the background
-    upper_background_box = (0, h, w, upper_bar)
-    lower_background_box = (0, h - lower_bar, w, h)
-
-    # draw has side effects so work on copy
-    dim = im.copy()
-    draw = ImageDraw.Draw(dim)
-    draw.rectangle(upper_background_box, fill=bg_colour)
-    draw.rectangle(lower_background_box, fill=bg_colour)
-    draw.text(upper_text_pos, upper_text, font=font, fill=text_colour)
-    draw.text(lower_text_pos, lower_text, font=font, fill=text_colour)
-
-    return dim
-
-
 def apply_crop_text(run):
     run_data = get_run_data(run)
+
     for image, cam in run:
         cim = crop(image, run_data, cam)
+
         time = gen_time(image, run)
         param_text = gen_image_text(run, time)
-        dcim = draw_text_with_font(cim, param_text, time)
-        dcim.save('blah')
 
+        kwargs = {'upper_text': param_text,
+                  'lower_text': config.author_text,
+                  'upper_bar': config.top_bar,
+                  'lower_bar': config.bottom_bar,
+                  'font': ImageFont.truetype(config.font, 40),
+                  'text_colour': 'white',
+                  'bg_colour': 'black'}
+        dcim = draw_text(cim, **kwargs)
+
+        dcim.save('blah')
