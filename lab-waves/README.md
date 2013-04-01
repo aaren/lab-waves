@@ -45,6 +45,32 @@ without changing anything, i.e. they are pure functions.
 These are applied by functions that actually do the IO for an
 individual image and for a whole run.
 
+**TODO: the applicator of the functions would be a class??**
+Basically, yes. I've just added a stub for a RawRun class that would
+contain the applicator functions in processing.py
+
+There is already the Run class for analysis.
+
+generate.py is essentially a class, or would go into one very
+easily, and this does interfacing and raw.
+
+So we already have 3 classes sketched out, just need to formalise
+this.
+
+Pure functions go in a module and are imported to be used in the
+class.
+
+Applicator functions that do image IO are the class methods.
+
+What about the functions that generate arguments for the pure
+functions?? Where should these go? They have no side effects.
+
+They produce context for a given run / image. Class methods? 
+Contain in seperate context class that we then compose to make the
+IO class?
+
+**/TODO**
+
 We parallelise using [multiprocessing][]. This can operate on two
 levels - processing a set of images in parallel and processing
 multiple runs in parallel.
