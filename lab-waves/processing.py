@@ -82,7 +82,7 @@ def barrel_correct(im, coeffs, verbose=False, tmp_in='/tmp/bctmpin', tmp_out='/t
     return out_im
 
 
-def perspective_correct(im, coeffs):
+def perspective_transform(im, coeffs):
     """Apply a perspective transform to an image.
 
     Inputs: im - a PIL image object
@@ -140,6 +140,65 @@ def perspective_coefficients(X, x):
     c = np.solve(A, np.asarray(X).flatten())
 
     return c
+
+
+def run_perspective_coefficients(run):
+    """Generate the cam1 and cam2 perspective transform coefficients
+    for a given run.
+
+    Inputs: run - string, the run index
+
+    Outputs: dictionary of the camera coefficients
+             d.keys() = ['cam1', 'cam2']
+             d['cam1'] = (a, b, c, d, e, f, g, h)
+    """
+    run_data = get_run_data(run)
+
+    lock_0 = int(run_data['l0x']), int(run_data['l0y'])
+    lock_surf = int(run_data['lsx']), int(run_data['lsy'])
+    join1_0 = int(run_data['j10x']), int(run_data['j10y'])
+    join1_surf = int(run_data['j1sx']), int(run_data['j1sy'])
+
+    join2_0 = int(run_data['j20x']), int(run_data['j20y'])
+    join2_surf = int(run_data['j2sx']), int(run_data['j2sy'])
+    ruler_0 = int(run_data['r0x']), int(run_data['r0y'])
+    ruler_surf = int(run_data['rsx']), int(run_data['rsy'])
+    # need some standard vertical lines in both cameras.
+    # cam1: use lock gate and tank join
+    # cam2: tank join and ruler at 2.5m
+    # (checked to be vertical, extrapolate to surface)
+    # so for each camera, 4 locations (8 numbers) need
+    # to be recorded.
+
+    x1 = (lock_0, lock_surf, join1_0, join1_surf)
+    X1 = (lock_0,
+          (lock_0[0], lock_0[1] - config.ideal_25),
+          (lock_0[0] - config.ideal_base_1, lock_0[1]),
+          (lock_0[0] - config.ideal_base_1, lock_0[1] - config.ideal_25))
+
+    x2 = (join2_0, join2_surf, ruler_0, ruler_surf)
+    X2 = (join2_0,
+          (join2_0[0], join2_0[1] - config.ideal_25),
+          (join2_0[0] - config.ideal_base_2, join2_0[1]),
+          (join2_0[0] - config.ideal_base_2, join2_0[1] - config.ideal_25))
+
+    cam1_coeff = tuple(perspective_coefficients(x1, X1))
+    if run_data['j20x'] == '0':
+        cam2_coeff = 0
+    else:
+        cam2_coeff = tuple(perspective_coefficients(x2, X2))
+
+    out = {'cam1': cam1_coeff, 'cam2': cam2_coeff}
+    return out
+
+
+def apply_perspective_transform(run):
+    # TODO: flesh out
+    coeffs = run_perspective_coefficients(run)
+    for camera, image in run:
+        im = Image.open(image)
+        trans = perspective_transform(im, coeffs[camera])
+        trans.save('blah')
 
 
 ## State needed for add_text ##
