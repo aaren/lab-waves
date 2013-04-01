@@ -214,20 +214,59 @@ run_data = get_run_data(run)
 time = int(frame.split('.')[0]) - 1
 # TODO: put this in config
 config.font = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf',
-# TODO: put in specific IO module
-parameters = get_parameters(run, config.paramf)
+# fonts:
+    # this is PLATFORM DEPENDENT and must be configured in the config file
+    # in 15 pt Liberation Regular, "Aaron O'Leary" is 360 px wide.
+    # "University of Leeds" is 520 px wide.
 
 
-def add_text(im, run_data, cam, time, fonts=config.font, parameters=parameters):
-    """Put black backgrounded bars into im and print text
-    over them using given font
+def gen_image_text(run, time):
+    # TODO: put in specific IO module
+    parameters = get_parameters(run, config.paramf)
+    param = ("run {run}, "
+             "t={t}s: "
+             "h_1 = {h_1}, "
+             "rho_0 = {r0}, "
+             "rho_1 = {r1}, "
+             "rho_2 = {r2}, "
+             "alpha = {a}, "
+             "D = {D}")
+    params = dict(run=parameters['run_index'],
+                  t=time,
+                  h_1=parameters['h_1/H'],
+                  r0=parameters['rho_0'],
+                  r1=parameters['rho_1'],
+                  r2=parameters['rho_2'],
+                  a=parameters['alpha'],
+                  D=parameters['D/H'])
+    param_text = param.format(**params)
+    return param_text
 
-    fonts:
-     this is PLATFORM DEPENDENT
-     in 15 pt Liberation Regular, "Aaron O'Leary" is 360 px wide.
-     "University of Leeds" is 520 px wide.
 
-    Then crop the image to specified size and offsets.
+def draw_text_with_font(im, upper_text, lower_text):
+    # config context
+    # TODO: to config
+    config.author_text = "Aaron O'Leary, University of Leeds"
+    font = ImageFont.truetype(config.font, 40)
+    kwargs = {'upper_text': param_text,
+              'lower_text': config.author_text,
+              'upper_bar': config.top_bar,
+              'lower_bar': config.bottom_bar,
+              'font': font,
+              'text_colour': 'white',
+              'bg_colour': 'black'}
+    dim = draw_text(im, **kwargs)
+    return dim
+
+
+def crop(im, run_data, cam):
+    """Crop an image such that it is physically orientated.
+
+    Inputs: im - an image object
+            run_data - a dictionary of measurements
+            cam - string, the camera used for the image, e.g. 'cam1'
+
+    Output: a cropped image object
     """
     # TODO: move calls to config to a container function,
     # can't have these inside a pure function - need to be
@@ -248,47 +287,51 @@ def add_text(im, run_data, cam, time, fonts=config.font, parameters=parameters):
     right = ref[cam][0] + config.crop[cam][1]
     upper = ref[cam][1] - config.ideal_25 + config.crop[cam][2]
     lower = ref[cam][1] + config.crop[cam][3]
-
-    font = ImageFont.truetype(fonts, 40)
-    author_text = "Aaron O'Leary, University of Leeds"
-    param = ("run {run}, "
-             "t={t}s: "
-             "h_1 = {h_1}, "
-             "rho_0 = {r0}, "
-             "rho_1 = {r1}, "
-             "rho_2 = {r2}, "
-             "alpha = {a}, "
-             "D = {D}")
-    params = dict(run=parameters['run_index'],
-                  t=time,
-                  h_1=parameters['h_1/H'],
-                  r0=parameters['rho_0'],
-                  r1=parameters['rho_1'],
-                  r2=parameters['rho_2'],
-                  a=parameters['alpha'],
-                  D=parameters['D/H'])
-    param_text = param.format(**params)
-    upper_text, lower_text = param_text, author_text
-
-    # position of the text
-    upper_text_pos = (left, upper)
-    lower_text_pos = (left, lower - config.bottom_bar)
-    # position of the background
-    upper_background_pos = (left, upper, right, upper + config.top_bar)
-    lower_background_pos = (left, lower - config.bottom_bar, right, lower)
-    # text colour
-    text_colour = 'white'
-    # background colour
-    background_colour = 'black'
-
-    draw = ImageDraw.Draw(im)
-    draw.rectangle(upper_background_pos, fill=background_colour)
-    draw.rectangle(lower_background_pos, fill=background_colour)
-    draw.text(upper_text_pos, upper_text, font=font, fill=text_colour)
-    draw.text(lower_text_pos, lower_text, font=font, fill=text_colour)
-
     #box is a 4-tuple defining the left, upper, right and lower pixel
     box = (left, upper, right, lower)
     cropped = im.crop(box)
-
     return cropped
+
+
+def draw_text(im, upper_text, lower_text, upper_bar, lower_bar, font, text_colour, bg_colour):
+    """Make an upper and lower banner of text on an image.
+
+    Inputs: im - PIL image object
+            upper_text - string, the text for the upper banner
+            lower_text - string, the text for the lower banner
+            upper_bar - int, the height of the upper banner (pixels)
+            lower_bar - int, the height of the lower banner (pixels)
+            font - ImageFont.font instance to use
+            text_colour - colour of the text, e.g. 'white'
+            bg_colour - colour of the background, e.g. 'black'
+
+    Outputs: an image object
+    """
+    w, h = im.size
+    # position of the text
+    upper_text_pos = (0, 0)
+    lower_text_pos = (0, h - lower_bar)
+    # box of the background
+    upper_background_box = (0, h, w, upper_bar)
+    lower_background_box = (0, h - lower_bar, w, h)
+
+    # draw has side effects so work on copy
+    dim = im.copy()
+    draw = ImageDraw.Draw(dim)
+    draw.rectangle(upper_background_box, fill=bg_colour)
+    draw.rectangle(lower_background_box, fill=bg_colour)
+    draw.text(upper_text_pos, upper_text, font=font, fill=text_colour)
+    draw.text(lower_text_pos, lower_text, font=font, fill=text_colour)
+
+    return dim
+
+
+def apply_crop_text(run):
+    run_data = get_run_data(run)
+    for image, cam in run:
+        cim = crop(image, run_data, cam)
+        time = gen_time(image, run)
+        param_text = gen_image_text(run, time)
+        dcim = draw_text_with_font(cim, param_text, time)
+        dcim.save('blah')
+
