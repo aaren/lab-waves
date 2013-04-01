@@ -127,6 +127,11 @@ centre = {'cam1': 0.75, 'cam2': 2.25}
 # units are fractions of the fluid depth
 # 0.3 seems sensible, based on measurements of images.
 height = {'cam1': 0.3, 'cam2': 0.3}
+
+# Barrel distortion coefficients for the cameras
+cam1corr = (0.000658776, -0.0150048, -0.00123339, 1.01557914)
+cam2corr = (0.023969, -0.060001, 0.0, 1.036032)
+barrel_coeffs = {'cam1': cam1corr, 'cam2': cam2corr}
 ### /CAMERA SETUP ###
 
 #####/CONFIG#####
