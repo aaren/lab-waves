@@ -14,6 +14,17 @@ pdir = path + '/processed'
 plots_dir = path + '/plots'
 ### /PATH ###
 
+### **FONTS** ###
+# font used in the processed images
+# this is PLATFORM DEPENDENT
+# in 15 pt Liberation Regular, "Aaron O'Leary" is 360 px wide,
+# "University of Leeds" is 520 px wide.
+font = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf',
+# text that appears in the processed images
+author_text = "Aaron O'Leary, University of Leeds"
+### /FONTS** ###
+
+
 ### **BASIC SETTINGS** ###
 # Note: Modifying these settings requires re-acquiring the basic_data,
 # which is computationally intensive.

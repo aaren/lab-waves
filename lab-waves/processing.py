@@ -212,12 +212,6 @@ run_data = get_run_data(run)
 # TODO: update this with 25hz camera in mind. need some time
 # generating function
 time = int(frame.split('.')[0]) - 1
-# TODO: put this in config
-config.font = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf',
-# fonts:
-    # this is PLATFORM DEPENDENT and must be configured in the config file
-    # in 15 pt Liberation Regular, "Aaron O'Leary" is 360 px wide.
-    # "University of Leeds" is 520 px wide.
 
 
 def gen_image_text(run, time):
@@ -245,8 +239,6 @@ def gen_image_text(run, time):
 
 def draw_text_with_font(im, upper_text, lower_text):
     # config context
-    # TODO: to config
-    config.author_text = "Aaron O'Leary, University of Leeds"
     font = ImageFont.truetype(config.font, 40)
     kwargs = {'upper_text': param_text,
               'lower_text': config.author_text,
