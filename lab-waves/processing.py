@@ -249,19 +249,6 @@ def gen_image_text(run, time):
     return param_text
 
 
-def draw_text_args(im, upper_text, lower_text):
-    # config context
-    font = ImageFont.truetype(config.font, 40)
-    kwargs = {'upper_text': upper_text,
-              'lower_text': config.author_text,
-              'upper_bar': config.top_bar,
-              'lower_bar': config.bottom_bar,
-              'font': font,
-              'text_colour': 'white',
-              'bg_colour': 'black'}
-    return kwargs
-
-
 def run_perspective_coefficients(run):
     """Generate the cam1 and cam2 perspective transform coefficients
     for a given run.
@@ -325,6 +312,7 @@ def gen_time(image, run):
 # Only a function of the run, generate all context based on this.
 # These do actual, persistent IO
 # Should go into a class really
+# multiprocessing starts to come in here too
 def apply_barrel_correction(run):
     for camera, image in run:
         coeffs = config.barrel_coeffs[camera]
