@@ -1,11 +1,24 @@
-"""Collection of pure functions that operate on individual image
-objects. All functions independent of external state???
+"""Collection of pure functions that take a PIL Image object as
+input.  No necessary context, no side effects except the creation of
+a temporary image file in barrel_correction.
 
 Functions:
 
-- barrel_correct: correct barrel distortion
+- barrel_correct: correct barrel distortion in an image with given coefficients
 
+- perspective_transform: perspective transform an image with given
+                         coefficients
+
+- perspective_coefficients: Helper function. Calculate the perspective
+                            projection matrix that would transform a given set
+                            of four points to another given set of four points.
+
+- crop: crop an image to a supplied box
+
+- draw_text: put a banner of specified text at the top and bottom of
+             the image.
 """
+
 from __future__ import division
 
 # necessary IO modules for using external functions
@@ -15,13 +28,6 @@ import subprocess
 import numpy as np
 import Image
 import ImageDraw
-import ImageFont
-
-import config
-
-# TODO: these don't exist yet
-import get_run_data
-import get_parameters
 
 
 ### PURE FUNCTIONS ###
@@ -194,158 +200,3 @@ def draw_text(im, upper_text, lower_text, upper_bar, lower_bar, font, text_colou
     return dim
 
 ### /PURE FUNCTIONS ###
-
-
-### argument generators ###
-# No side effects, but rely on external context (config, run_data)
-def crop_box(run_data, cam):
-    """Calculate box needed to crop an image to standard
-    orientation.
-
-    Inputs: run_data - a dictionary of measurements
-            cam - string, the camera used for the image, e.g. 'cam1'
-
-    Output: a tuple of four integers defining the box
-            (left, upper, right, lower)
-    """
-    odd = {'cam1': run_data['odd_1'], 'cam2': run_data['odd_2']}
-    if odd[cam] == '999':
-        return
-
-    # define the box to crop the image to relative to the
-    # invariant point in the projection transform (se).
-    l0x = int(run_data['l0x'])
-    l0y = int(run_data['l0y'])
-    j20x = int(run_data['j20x'])
-    j20y = int(run_data['j20y'])
-    ref = {'cam1': (l0x, l0y), 'cam2': (j20x, j20y)}
-    left = ref[cam][0] + config.crop[cam][0]
-    right = ref[cam][0] + config.crop[cam][1]
-    upper = ref[cam][1] - config.ideal_25 + config.crop[cam][2]
-    lower = ref[cam][1] + config.crop[cam][3]
-    return (left, upper, right, lower)
-
-
-def gen_image_text(run, time):
-    # TODO: put in specific IO module
-    parameters = get_parameters(run, config.paramf)
-    param = ("run {run}, "
-             "t={t}s: "
-             "h_1 = {h_1}, "
-             "rho_0 = {r0}, "
-             "rho_1 = {r1}, "
-             "rho_2 = {r2}, "
-             "alpha = {a}, "
-             "D = {D}")
-    params = dict(run=parameters['run_index'],
-                  t=time,
-                  h_1=parameters['h_1/H'],
-                  r0=parameters['rho_0'],
-                  r1=parameters['rho_1'],
-                  r2=parameters['rho_2'],
-                  a=parameters['alpha'],
-                  D=parameters['D/H'])
-    param_text = param.format(**params)
-    return param_text
-
-
-def run_perspective_coefficients(run):
-    """Generate the cam1 and cam2 perspective transform coefficients
-    for a given run.
-
-    Inputs: run - string, the run index
-
-    Outputs: dictionary of the camera coefficients
-             d.keys() = ['cam1', 'cam2']
-             d['cam1'] = (a, b, c, d, e, f, g, h)
-    """
-    run_data = get_run_data(run)
-
-    lock_0 = int(run_data['l0x']), int(run_data['l0y'])
-    lock_surf = int(run_data['lsx']), int(run_data['lsy'])
-    join1_0 = int(run_data['j10x']), int(run_data['j10y'])
-    join1_surf = int(run_data['j1sx']), int(run_data['j1sy'])
-
-    join2_0 = int(run_data['j20x']), int(run_data['j20y'])
-    join2_surf = int(run_data['j2sx']), int(run_data['j2sy'])
-    ruler_0 = int(run_data['r0x']), int(run_data['r0y'])
-    ruler_surf = int(run_data['rsx']), int(run_data['rsy'])
-    # need some standard vertical lines in both cameras.
-    # cam1: use lock gate and tank join
-    # cam2: tank join and ruler at 2.5m
-    # (checked to be vertical, extrapolate to surface)
-    # so for each camera, 4 locations (8 numbers) need
-    # to be recorded.
-
-    x1 = (lock_0, lock_surf, join1_0, join1_surf)
-    X1 = (lock_0,
-          (lock_0[0], lock_0[1] - config.ideal_25),
-          (lock_0[0] - config.ideal_base_1, lock_0[1]),
-          (lock_0[0] - config.ideal_base_1, lock_0[1] - config.ideal_25))
-
-    x2 = (join2_0, join2_surf, ruler_0, ruler_surf)
-    X2 = (join2_0,
-          (join2_0[0], join2_0[1] - config.ideal_25),
-          (join2_0[0] - config.ideal_base_2, join2_0[1]),
-          (join2_0[0] - config.ideal_base_2, join2_0[1] - config.ideal_25))
-
-    cam1_coeff = tuple(perspective_coefficients(x1, X1))
-    if run_data['j20x'] == '0':
-        cam2_coeff = 0
-    else:
-        cam2_coeff = tuple(perspective_coefficients(x2, X2))
-
-    return {'cam1': cam1_coeff, 'cam2': cam2_coeff}
-
-
-def gen_time(image, run):
-    # XXX: stub
-    # 'time' that a frame represents
-    # TODO: update this with 25hz camera in mind. need some time
-    # generating function
-    run, cam, frame = image.split('/')[-3:]
-    time = int(frame.split('.')[0]) - 1
-    return time
-
-
-### Applicators
-# Only a function of the run, generate all context based on this.
-# These do actual, persistent IO
-# Should go into a class really
-# multiprocessing starts to come in here too
-def apply_barrel_correction(run):
-    for camera, image in run:
-        coeffs = config.barrel_coeffs[camera]
-        im = Image.open(image)
-        out = barrel_correct(im, coeffs)
-        out.save('blah')
-
-
-def apply_perspective_transform(run):
-    # TODO: flesh out
-    coeffs = run_perspective_coefficients(run)
-    for camera, image in run:
-        im = Image.open(image)
-        trans = perspective_transform(im, coeffs[camera])
-        trans.save('blah')
-
-
-def apply_crop_text(run):
-    run_data = get_run_data(run)
-
-    for image, cam in run:
-        cim = crop(image, run_data, cam)
-
-        time = gen_time(image, run)
-        param_text = gen_image_text(run, time)
-
-        kwargs = {'upper_text': param_text,
-                  'lower_text': config.author_text,
-                  'upper_bar': config.top_bar,
-                  'lower_bar': config.bottom_bar,
-                  'font': ImageFont.truetype(config.font, 40),
-                  'text_colour': 'white',
-                  'bg_colour': 'black'}
-        dcim = draw_text(cim, **kwargs)
-
-        dcim.save('blah')
