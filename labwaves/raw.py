@@ -5,6 +5,7 @@ import os
 
 import Image
 import ImageFont
+import numpy as np
 import matplotlib.pyplot as plt
 
 import config
@@ -12,26 +13,93 @@ import config
 import processing
 
 import aolcore
-from aolcore import get_parameters
+
+
+def read_parameters(run, paramf):
+    """Read in data from the parameters file, which has
+    the headers and data types as in the list data.
+    'S10' is string, 'f4' is float.
+
+    Reading in gives a numpy recarray. Convert to a dictionary
+    and return this.
+    """
+    data = [('run_index',  'S10'),
+            ('h1',         'f8'),
+            ('rho_0',      'f8'),
+            ('rho_1',      'f8'),
+            ('rho_2',      'f8'),
+            ('alpha',      'f8'),
+            ('D',          'f8')]
+    names, types = zip(*data)
+    p = np.genfromtxt(paramf, dtype=types, names=names)
+    index = np.where(p['run_index'] == run)
+    params = p[index]
+    if len(params) == 0:
+        # run is not in parameters file
+        print("{run} is not in {paramf}".format(run=run, paramf=paramf))
+        raise KeyError
+    else:
+        # convert to dictionary
+        names = params.dtype.names
+        p_dict = dict(zip(names, params[0]))
+        return p_dict
+
+
+def read_run_data(run, paramf):
+    """Read in data from proc file, which has headers and data
+    types as in the list data. 'S10' is string, 'i4' is integer.
+
+    Read in as numpy recarray. Convert this to a dictionary for output.
+    """
+    data = [('run_index',  'S10'),
+            ('l0x',        'i4'),
+            ('l0y',        'i4'),
+            ('lsx',        'i4'),
+            ('lsy',        'i4'),
+            ('j10x',       'i4'),
+            ('j10y',       'i4'),
+            ('j1sx',       'i4'),
+            ('j1sy',       'i4'),
+            ('leakage',    'i4'),
+            ('odd_1',      'S10'),
+            ('j20x',       'i4'),
+            ('j20y',       'i4'),
+            ('j2sx',       'i4'),
+            ('j2sy',       'i4'),
+            ('r0x',        'i4'),
+            ('r0y',        'i4'),
+            ('rsx',        'i4'),
+            ('rsy',        'i4'),
+            ('odd_2',      'S10')]
+    names, dtypes = zip(*data)
+    rd = np.genfromtxt(paramf, skip_header=1,
+                       dtype=dtypes,
+                       delimiter=',',
+                       names=names)
+    index = np.where(rd['run_index'] == run)
+    rdp = rd[index]
+    # convert to dictionary
+    rdp_dict = dict(zip(rdp.dtype.names, rdp[0]))
+    return rdp_dict
 
 
 class RawRun(object):
     def __init__(self, run, parameters_f=None, run_data_f=None):
         """
 
-        Inputs: run - string, a run index, e.g. 'r11_5_24a'
+        Inputs: run - string, a run index, e.g. 'r11_05_24a'
                 parameters_f - optional, a file containing run parameters
                 run_data_f - optional, a file containing run_data
         """
         self.index = run
         if not parameters_f:
-            self.parameters = get_parameters(run, config.paramf)
+            self.parameters = read_parameters(run, config.paramf)
         else:
-            self.parameters = get_parameters(run, parameters_f)
+            self.parameters = read_parameters(run, parameters_f)
         if not run_data_f:
-            self.run_data = self.get_run_data(run)
+            self.run_data = self.get_run_data()
         else:
-            self.run_data = self.get_run_data(run, run_data_f)
+            self.run_data = self.get_run_data(procf=run_data_f)
 
     def get_run_data(self, procf=config.procf):
         proc_runs = aolcore.pull_col(0, procf, ',')
@@ -51,7 +119,7 @@ class RawRun(object):
                 print "y or n!"
                 self.get_run_data(self.index)
 
-        run_data = get_parameters(self.index, procf, ',')
+        run_data = read_run_data(self.index, procf)
 
         return run_data
 
@@ -297,10 +365,10 @@ class RawRun(object):
 
         # define the box to crop the image to relative to the
         # invariant point in the projection transform (se).
-        l0x = int(run_data['l0x'])
-        l0y = int(run_data['l0y'])
-        j20x = int(run_data['j20x'])
-        j20y = int(run_data['j20y'])
+        l0x = run_data['l0x']
+        l0y = run_data['l0y']
+        j20x = run_data['j20x']
+        j20y = run_data['j20y']
         ref = {'cam1': (l0x, l0y), 'cam2': (j20x, j20y)}
         left = ref[cam][0] + config.crop[cam][0]
         right = ref[cam][0] + config.crop[cam][1]
