@@ -1,5 +1,5 @@
 from nose.tools import *
-import NAME
+import labwaves
 
 def setup():
     print "SETUP!"
