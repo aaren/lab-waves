@@ -1,7 +1,7 @@
 """Tests for processing module"""
 from nose.tools import *
 
-import processing
+from labwaves import processing
 
 # Testing methods that do image processing is difficult
 # because of the necessity of creating images for state
