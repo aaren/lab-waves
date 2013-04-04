@@ -27,6 +27,7 @@ from config import top_bar, bottom_bar
 # This is what bc1(run) does; measure(run) will prompt for measurements
 # from the images bc1 creates.
 
+# TODO: transfer these to the raw class
 def measure(run):
     proc = []
     proc.append(run)
@@ -110,6 +111,7 @@ def bc1(run):
         image1 = '%s/%s/img_0001.jpg' % (indir, camera)
         barrel_corr(image1, outdir)
 
+#/TODO
 def barrel_corr(image, outimage, Null=None):
     run = image.split('/')[-3]
     cam = image.split('/')[-2]

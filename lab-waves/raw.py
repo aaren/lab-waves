@@ -17,8 +17,8 @@ import get_parameters
 class RawRun(object):
     def __init__(self, run):
         self.index = run
-        self.parameters = get_parameters(run, config.paramf)
-        self.run_data = get_run_data(run)
+        # self.parameters = get_parameters(run, config.paramf)
+        # self.run_data = get_run_data(run)
 
     @property
     def runfiles(self):

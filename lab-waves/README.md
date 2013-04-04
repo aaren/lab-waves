@@ -77,6 +77,7 @@ multiple runs in parallel.
 
 [multiprocessing]: http://docs.python.org/2/library/multiprocessing.html
 
+explain multiple progress bars, link to github demo
 
 #### Processing ####
 
