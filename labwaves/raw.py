@@ -1,24 +1,135 @@
 from __future__ import division
 
 import glob
+import os
 
 import Image
 import ImageFont
+import matplotlib.pyplot as plt
 
 import config
 
 import processing
 
-# TODO: these don't exist yet
-import get_run_data
-import get_parameters
+import aolcore
+from aolcore import get_parameters
 
 
 class RawRun(object):
-    def __init__(self, run):
+    def __init__(self, run, parameters_f=None, run_data_f=None):
+        """
+
+        Inputs: run - string, a run index, e.g. 'r11_5_24a'
+                parameters_f - optional, a file containing run parameters
+                run_data_f - optional, a file containing run_data
+        """
         self.index = run
-        # self.parameters = get_parameters(run, config.paramf)
-        # self.run_data = get_run_data(run)
+        if not parameters_f:
+            self.parameters = get_parameters(run, config.paramf)
+        else:
+            self.parameters = get_parameters(run, parameters_f)
+        if not run_data_f:
+            self.run_data = self.get_run_data(run)
+        else:
+            self.run_data = self.get_run_data(run, run_data_f)
+
+    def get_run_data(self, procf=config.procf):
+        proc_runs = aolcore.pull_col(0, procf, ',')
+        try:
+            proc_runs.index(self.index)
+            # print "%s is in proc_data" % run
+        except ValueError:
+            print "%s is not in the procf (%s)" % (self.index, procf)
+            print "get the proc_data for this run now? (y/n)"
+            A = raw_input('> ')
+            if A == 'y':
+                self.measure(self.index)
+                self.get_run_data(self.index)
+            elif A == 'n':
+                return 0
+            else:
+                print "y or n!"
+                self.get_run_data(self.index)
+
+        run_data = get_parameters(self.index, procf, ',')
+
+        return run_data
+
+    def measure(self, procf=config.procf):
+        #TODO: doc
+        # TODO: make sense in class
+        proc = []
+        proc.append(self.index)
+        for camera in ['cam1', 'cam2']:
+            plt.figure(figsize=(16, 12))
+            # TODO: fix this path
+            simg1 = '{path}/barrel_corr/{run}/{cam}/img_0001.jpg'
+            img1 = simg1.format(path=config.path, run=self.index, cam=camera)
+            try:
+                im = Image.open(img1)
+            except IOError:
+                print "Bad image for %s %s" % (self.index, camera)
+                break
+            plt.imshow(im)
+            plt.xlim(2500, 3000)
+            plt.ylim(750, 1500)
+            plt.draw()
+            print "Select lock base and surface"
+            pt1 = plt.ginput(3, 0)
+            if camera == 'cam1':
+                plt.xlim(0, 500)
+            elif camera == 'cam2':
+                plt.xlim(750, 1250)
+            plt.draw()
+            print "Select join base and surface"
+            pt2 = plt.ginput(3, 0)
+
+            pts = pt1[0:2] + pt2[0:2]
+            for x, y in pts:
+                proc.append(int(x))
+                proc.append(im.size[1] - int(y))
+
+            plt.xlim(0, 3000)
+            plt.draw()
+            if camera == 'cam1':
+                print "What is the extent of lock leakage?"
+                leak = plt.ginput(2, 0)[0][0]
+                proc.append(int(pt1[0][0] - leak))
+            print "Weird (y/n)"
+            proc.append(raw_input('> '))
+            plt.close()
+
+        proc = [str(e) for e in proc]
+        entry = ','.join(proc) + '\n'
+        f = open(procf, 'a')
+        f.write(entry)
+        f.close()
+
+    def bc1(self):
+        """Just barrel correct the first image of a run
+        and save it to the folder 'bc1' under path.
+        """
+        # TODO: fix synced
+        indir = '%s/synced/%s' % (config.path, self.index)
+        outdir = 'bc1'
+        for camera in ['cam1', 'cam2']:
+            dirs = '/'.join([config.path, outdir, self.index, camera])
+            if not os.path.exists(dirs):
+                os.makedirs(dirs)
+                print "made " + dirs
+            else:
+                # print "using " + dirs
+                pass
+            image1 = '%s/%s/img_0001.jpg' % (indir, camera)
+            im1 = Image.open(image1)
+            coeffs = config.barrel_coeffs[camera]
+            bim1 = processing.barrel_correct(im1, coeffs)
+            outdir = '{path}/{out}/{run}/{cam}/'
+            outf = outdir.format(path=config.path,
+                                 out=outdir,
+                                 run=self.index,
+                                 cam=camera) + 'img_0001.jpg'
+            bim1.save(outf)
 
     @property
     def runfiles(self):
@@ -55,6 +166,15 @@ class RawRun(object):
         run = impath.split('/')[-3]
         return run
 
+    def gen_time(self, image):
+        # XXX: stub
+        # 'time' that a frame represents
+        # TODO: update this with 25hz camera in mind. need some time
+        # generating function
+        run, cam, frame = image.split('/')[-3:]
+        time = int(frame.split('.')[0]) - 1
+        return time
+
     @property
     def imagepaths(self):
         """Return a list of the full path to all of the images
@@ -82,9 +202,57 @@ class RawRun(object):
             out = processing.barrel_correct(im, coeffs)
             out.save('blah')
 
+    def perspective_coefficients(self):
+        """Generate the cam1 and cam2 perspective transform coefficients
+        for a given run.
+
+        Inputs: run - string, the run index
+
+        Outputs: dictionary of the camera coefficients
+                d.keys() = ['cam1', 'cam2']
+                d['cam1'] = (a, b, c, d, e, f, g, h)
+        """
+        run_data = self.run_data
+
+        lock_0 = int(run_data['l0x']), int(run_data['l0y'])
+        lock_surf = int(run_data['lsx']), int(run_data['lsy'])
+        join1_0 = int(run_data['j10x']), int(run_data['j10y'])
+        join1_surf = int(run_data['j1sx']), int(run_data['j1sy'])
+
+        join2_0 = int(run_data['j20x']), int(run_data['j20y'])
+        join2_surf = int(run_data['j2sx']), int(run_data['j2sy'])
+        ruler_0 = int(run_data['r0x']), int(run_data['r0y'])
+        ruler_surf = int(run_data['rsx']), int(run_data['rsy'])
+        # need some standard vertical lines in both cameras.
+        # cam1: use lock gate and tank join
+        # cam2: tank join and ruler at 2.5m
+        # (checked to be vertical, extrapolate to surface)
+        # so for each camera, 4 locations (8 numbers) need
+        # to be recorded.
+
+        x1 = (lock_0, lock_surf, join1_0, join1_surf)
+        X1 = (lock_0,
+              (lock_0[0], lock_0[1] - config.ideal_25),
+              (lock_0[0] - config.ideal_base_1, lock_0[1]),
+              (lock_0[0] - config.ideal_base_1, lock_0[1] - config.ideal_25))
+
+        x2 = (join2_0, join2_surf, ruler_0, ruler_surf)
+        X2 = (join2_0,
+              (join2_0[0], join2_0[1] - config.ideal_25),
+              (join2_0[0] - config.ideal_base_2, join2_0[1]),
+              (join2_0[0] - config.ideal_base_2, join2_0[1] - config.ideal_25))
+
+        cam1_coeff = tuple(self.perspective_coefficients(x1, X1))
+        if run_data['j20x'] == '0':
+            cam2_coeff = 0
+        else:
+            cam2_coeff = tuple(self.perspective_coefficients(x2, X2))
+
+        return {'cam1': cam1_coeff, 'cam2': cam2_coeff}
+
     def perspective_transform(self):
         # TODO: flesh out
-        coeffs = self.run_perspective_coefficients()
+        coeffs = self.perspective_coefficients()
         for camera, image in self.runfiles:
             im = Image.open(image)
             trans = processing.perspective_transform(im, coeffs[camera])
@@ -161,62 +329,6 @@ class RawRun(object):
         param_text = param.format(**params)
         return param_text
 
-    def run_perspective_coefficients(self):
-        """Generate the cam1 and cam2 perspective transform coefficients
-        for a given run.
-
-        Inputs: run - string, the run index
-
-        Outputs: dictionary of the camera coefficients
-                d.keys() = ['cam1', 'cam2']
-                d['cam1'] = (a, b, c, d, e, f, g, h)
-        """
-        run_data = self.run_data
-
-        lock_0 = int(run_data['l0x']), int(run_data['l0y'])
-        lock_surf = int(run_data['lsx']), int(run_data['lsy'])
-        join1_0 = int(run_data['j10x']), int(run_data['j10y'])
-        join1_surf = int(run_data['j1sx']), int(run_data['j1sy'])
-
-        join2_0 = int(run_data['j20x']), int(run_data['j20y'])
-        join2_surf = int(run_data['j2sx']), int(run_data['j2sy'])
-        ruler_0 = int(run_data['r0x']), int(run_data['r0y'])
-        ruler_surf = int(run_data['rsx']), int(run_data['rsy'])
-        # need some standard vertical lines in both cameras.
-        # cam1: use lock gate and tank join
-        # cam2: tank join and ruler at 2.5m
-        # (checked to be vertical, extrapolate to surface)
-        # so for each camera, 4 locations (8 numbers) need
-        # to be recorded.
-
-        x1 = (lock_0, lock_surf, join1_0, join1_surf)
-        X1 = (lock_0,
-              (lock_0[0], lock_0[1] - config.ideal_25),
-              (lock_0[0] - config.ideal_base_1, lock_0[1]),
-              (lock_0[0] - config.ideal_base_1, lock_0[1] - config.ideal_25))
-
-        x2 = (join2_0, join2_surf, ruler_0, ruler_surf)
-        X2 = (join2_0,
-              (join2_0[0], join2_0[1] - config.ideal_25),
-              (join2_0[0] - config.ideal_base_2, join2_0[1]),
-              (join2_0[0] - config.ideal_base_2, join2_0[1] - config.ideal_25))
-
-        cam1_coeff = tuple(self.perspective_coefficients(x1, X1))
-        if run_data['j20x'] == '0':
-            cam2_coeff = 0
-        else:
-            cam2_coeff = tuple(self.perspective_coefficients(x2, X2))
-
-        return {'cam1': cam1_coeff, 'cam2': cam2_coeff}
-
-    def gen_time(self, image):
-        # XXX: stub
-        # 'time' that a frame represents
-        # TODO: update this with 25hz camera in mind. need some time
-        # generating function
-        run, cam, frame = image.split('/')[-3:]
-        time = int(frame.split('.')[0]) - 1
-        return time
 
 
 # this class is at the run level.
