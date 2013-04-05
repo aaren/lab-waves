@@ -19,32 +19,32 @@ class TestRun(object):
         """
         self.index = 'r11_07_06c'
         self.parameters = {'run_index': 'r11_07_06c',
-                        'h1':  0.25,
-                        'rho_0': 1.150,
-                        'rho_1': 1.100,
-                        'rho_2': 1.000,
-                        'alpha': 0.5,
-                        'D':   0.4}
+                           'h_1':       0.25,
+                           'rho_0':     1.150,
+                           'rho_1':     1.100,
+                           'rho_2':     1.000,
+                           'alpha':     0.5,
+                           'D':         0.4}
         self.run_data = {'run_index':  'r11_07_06c',
-                        'l0x':        2796,
-                        'l0y':        1151,
-                        'lsx':        2793,
-                        'lsy':        716,
-                        'j10x':       210,
-                        'j10y':       1165,
-                        'j1sx':       208,
-                        'j1sy':       727,
-                        'leakage':    -76,
-                        'odd_1':      'n',
-                        'j20x':       2728,
-                        'j20y':       1086,
-                        'j2sx':       2730,
-                        'j2sy':       670,
-                        'r0x':        1097,
-                        'r0y':        1095,
-                        'rsx':        1093,
-                        'rsy':        683,
-                        'odd_2':      'n'}
+                         'l0x':        2796,
+                         'l0y':        1151,
+                         'lsx':        2793,
+                         'lsy':        716,
+                         'j10x':       210,
+                         'j10y':       1165,
+                         'j1sx':       208,
+                         'j1sy':       727,
+                         'leakage':    -76,
+                         'odd_1':      'n',
+                         'j20x':       2728,
+                         'j20y':       1086,
+                         'j2sx':       2730,
+                         'j2sy':       670,
+                         'r0x':        1097,
+                         'r0y':        1095,
+                         'rsx':        1093,
+                         'rsy':        683,
+                         'odd_2':      'n'}
 
 # initialise test object
 t = TestRun()
@@ -62,8 +62,25 @@ def test_read_run_data():
     assert_equal(run_data, t.run_data)
 
 
+r = RawRun(t.index, parameters_f=param_f, run_data_f=proc_f)
+
+
 def test_init():
-    r = RawRun(t.index, parameters_f=param_f, run_data_f=proc_f)
     assert_equal(r.index, t.index)
     for k in r.parameters:
         assert_equal(r.parameters[k], t.parameters[k])
+
+
+def test_gen_image_text():
+    time = 1
+    text = r.gen_image_text(time)
+    t_text = ("run {run_index}, "
+              "t = {time}s: "
+              "h_1 = {h_1}, "
+              "rho_0 = {rho_0}, "
+              "rho_1 = {rho_1}, "
+              "rho_2 = {rho_2}, "
+              "alpha = {alpha}, "
+              "D = {D}").format(time=1, **r.parameters)
+    assert_equal(type(text), str)
+    assert_equal(text, t_text)

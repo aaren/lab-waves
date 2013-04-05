@@ -24,7 +24,7 @@ def read_parameters(run, paramf):
     and return this.
     """
     data = [('run_index',  'S10'),
-            ('h1',         'f8'),
+            ('h_1',        'f8'),
             ('rho_0',      'f8'),
             ('rho_1',      'f8'),
             ('rho_2',      'f8'),
@@ -377,24 +377,24 @@ class RawRun(object):
         return (left, upper, right, lower)
 
     def gen_image_text(self, time):
+        """Create text string that lists the parameters used
+        for the run an image came from.
+
+        Inputs: time - a number giving the time the image
+                       was taken at (seconds)
+
+        Returns: a string.
+        """
         parameters = self.parameters
-        param = ("run {run}, "
-                 "t={t}s: "
+        param = ("run {run_index}, "
+                 "t = {time}s: "
                  "h_1 = {h_1}, "
-                 "rho_0 = {r0}, "
-                 "rho_1 = {r1}, "
-                 "rho_2 = {r2}, "
-                 "alpha = {a}, "
+                 "rho_0 = {rho_0}, "
+                 "rho_1 = {rho_1}, "
+                 "rho_2 = {rho_2}, "
+                 "alpha = {alpha}, "
                  "D = {D}")
-        params = dict(run=parameters['run_index'],
-                      t=time,
-                      h_1=parameters['h_1/H'],
-                      r0=parameters['rho_0'],
-                      r1=parameters['rho_1'],
-                      r2=parameters['rho_2'],
-                      a=parameters['alpha'],
-                      D=parameters['D/H'])
-        param_text = param.format(**params)
+        param_text = param.format(time=time, **parameters)
         return param_text
 
 
