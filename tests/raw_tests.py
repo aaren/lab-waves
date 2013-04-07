@@ -5,6 +5,8 @@ from labwaves.raw import RawRun
 from labwaves.raw import read_parameters
 from labwaves.raw import read_run_data
 
+import processing
+
 # location of test data files
 proc_f = 'tests/data/proc_data'
 param_f = 'tests/data/parameters'
@@ -45,6 +47,8 @@ class TestRun(object):
                          'rsx':        1093,
                          'rsy':        683,
                          'odd_2':      'n'}
+        self.raw_image = 'tests/data/r11_07_06c/raw/img_0001.jpg'
+        self.bc_image = 'tests/data/r11_07_06c/bc/img_0001.jpg'
 
 # initialise test object
 t = TestRun()
