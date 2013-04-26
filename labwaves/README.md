@@ -110,3 +110,50 @@ This is done by thresholding the image using
 [scikits-image][skimage].
 
 [skimage]: TODO: skimage link
+
+
+### Refactoring ###
+
+New files are being made to replace the functionality of old ones.
+The general pattern is to take a module and make it into a class,
+making some core pure functions in the process and putting them
+into a new module.
+
+proc\_im (old) --> raw.RawRun (class), processing (pure functions)
+
+get\_data, threshold --> processed.ProcessedRun, interface
+
+generate --> command.CommandRun +
+
+This is an intermediate step on the way to creating a single WaveRun
+class that consists of the above, and a series of modules that
+contain pure functions that do stuff.
+
++ The top level generate module needs a bit of thought. It exists
+  for a number of reasons:
+
+    1) Allow multiprocessing
+
+    2) Provide command line interface
+
+    3) Organise all the module level stuff so we don't have to
+       think about it.
+
+Multiprocessing is imperative. Must allow this to happen.
+
+The command line interface can be easily separated out and cleaned
+up by using argparse.
+
+Point 3 exists precisely because the implementation of the other
+modules is so messy. It is essentially putting a class like
+structure in place so that it is easier to see how to do different
+things. Once the modules are cleaned up and absorbed into a single
+class, the need for the generate 'class' is lost.
+
+
+#### Analysis ####
+
+Separate raw processing and analysis. The above should extract the
+interfaces from a run and perhaps identify distinct wave objects -
+this gives us the raw data. Analysis of this data should occur
+separately I think.
