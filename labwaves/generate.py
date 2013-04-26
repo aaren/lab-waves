@@ -15,6 +15,12 @@ from run import Run
 
 from config import path
 
+# TODO: this file implements what is basically a class
+# this 'class' will be made obsolete by refactoring the
+# rest of the program.
+
+# TODO: at what level do we implement multiprocessing - here, module?
+
 def measure(run):
     """Before the processing in proc_im_main(run) can take
     place, some basic measurements have to be made for each run.
@@ -172,6 +178,7 @@ def test():
     print "hello"
 
 if __name__ == '__main__':
+    # TODO: use argparse
     try:
         if argv[2] == 'all':
             runs = get_runs()

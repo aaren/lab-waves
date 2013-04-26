@@ -11,6 +11,9 @@ from numpy import polyfit
 from config import crop
 
 def thresh_img(image, thresh_values=None):
+    # TODO: this can definitely be replaced with an algorithm from
+    # skimage.
+
     # Threshold the image, determining the fluid type of each
     # individual pixel. Return the list of lists that specifies the
     # fluid type of individual pixels throughout the image.
