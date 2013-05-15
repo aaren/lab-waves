@@ -102,6 +102,7 @@ class RawRun(object):
             self.run_data = self.get_run_data(procf=run_data_f)
 
     def get_run_data(self, procf=config.procf):
+        # TODO: doc
         proc_runs = aolcore.pull_col(0, procf, ',')
         try:
             proc_runs.index(self.index)
@@ -319,7 +320,7 @@ class RawRun(object):
         return {'cam1': cam1_coeff, 'cam2': cam2_coeff}
 
     def perspective_transform(self):
-        # TODO: flesh out
+        # TODO: allow chaining with barrel correct, save in sensible location
         coeffs = self.perspective_coefficients()
         for camera, image in self.runfiles:
             im = Image.open(image)
@@ -327,6 +328,7 @@ class RawRun(object):
             trans.save('blah')
 
     def crop_text(self):
+        # TODO: allow chaining, save location
         run_data = self.run_data
 
         for image, cam in self.runfiles:

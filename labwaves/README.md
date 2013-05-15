@@ -23,7 +23,9 @@ TODO: how to use the program
 
 Command line
 
-API
+#### API
+
+Have a look at the example scripts in `demo`.
 
 ### Data organisation ###
 
