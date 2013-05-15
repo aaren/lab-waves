@@ -32,7 +32,8 @@ import ImageDraw
 
 ### PURE FUNCTIONS ###
 # operate on a single image object
-def barrel_correct(im, coeffs, verbose=False, tmp_in='/tmp/bctmpin', tmp_out='/tmp/bctmpout', tmp_fmt='bmp'):
+def barrel_correct(im, coeffs, verbose=False,
+        tmp_in='/tmp/bctmpin', tmp_out='/tmp/bctmpout', tmp_fmt='bmp'):
     """Uses Imagemagick convert to apply a barrel correction to
     an image.
 
@@ -92,6 +93,7 @@ def barrel_correct(im, coeffs, verbose=False, tmp_in='/tmp/bctmpin', tmp_out='/t
     os.remove(tin)
     os.remove(tout)
 
+    # TODO: force the output of barrel_correct to be of type jpg
     return out_im
 
 
