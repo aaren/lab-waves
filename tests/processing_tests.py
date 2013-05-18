@@ -27,29 +27,31 @@ def test_barrel_correct():
     However using a jpg temp and a jpg ref leads to small
     differences.
 
-    Do we actually need to test this function???
-
-    A simple way would be to run it once and verify the output, then
-    use this as baseline for future tests. This doesn't act as an
-    independent test of the function but it does act as a sanity
-    check.
-
-    TODO: force the output of barrel_correct to be of type jpg
-
     Difference appears to be in PIL saving the tmp file. The array
     of this is different from the raw image array when compared.
-    Something to do with jpeg compression?? The raw file wasn't
-    created by PIL.
-
-    Ughh. Appears to be due to the quantization table for saving a
-    jpeg. Not something that can be set with PIL.
+    Appears to be due to the quantization table for saving a jpeg.
+    Not something that can be set with PIL. Hence we have to write
+    out the file for it to be comparable.
     """
-    raw_image = 'tests/data/raw/r11_07_06c/cam1/img_0001.jpg'
-    bc_image = 'tests/data/bc1/r11_07_06c/cam1/img_0001.jpg'
-    raw_im = Image.open(raw_image)
-    coeffs = config.barrel_coeffs['cam1']
-    ref_bc_im = Image.open(bc_image)
-    test_bc_im = processing.barrel_correct(raw_im, coeffs)
-    ref_bc_im_array = np.asarray(ref_bc_im)
-    test_bc_im_array = np.asarray(test_bc_im)
-    npt.assert_array_equal(ref_bc_im_array, test_bc_im_array)
+    raw_image_1 = 'tests/data/raw/r11_07_06c/cam1/img_0001.jpg'
+    raw_image_2 = 'tests/data/raw/r11_07_06c/cam2/img_0001.jpg'
+    raw_images = [raw_image_1, raw_image_2]
+
+    bc_image_1 = 'tests/data/bc1/r11_07_06c/cam1/img_0001.jpg'
+    bc_image_2 = 'tests/data/bc1/r11_07_06c/cam2/img_0001.jpg'
+    bc_images = [bc_image_1, bc_image_2]
+
+    for raw_image, bc_image in zip(raw_images, bc_images):
+        raw_im = Image.open(raw_image)
+        ref_bc_im = Image.open(bc_image)
+
+        coeffs = config.barrel_coeffs['cam1']
+        test_bc_im = processing.barrel_correct(raw_im, coeffs)
+        # have to write it to disk for images to be comparable
+        test_bc_im.save('/tmp/test_bc_im.jpg')
+        test_bc_im_on_disk = Image.open('/tmp/test_bc_im.jpg')
+
+        ref_bc_im_array = np.asarray(ref_bc_im)
+        test_bc_im_on_disk_array = np.asarray(test_bc_im_on_disk)
+
+        npt.assert_array_equal(ref_bc_im_array, test_bc_im_on_disk_array)
