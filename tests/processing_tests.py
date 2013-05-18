@@ -80,3 +80,21 @@ def test_perspective_coefficients():
     c = processing.perspective_coefficients(x, x)
     i = np.array([1, 0, 0, 0, 1, 0, 0, 0])
     npt.assert_array_equal(i, c)
+
+
+def test_perspective_transform():
+    """Using the identity matrix to transform an image
+    should make no change, except that it will be resampled.
+
+    We use bilinear resampling in this function.
+    """
+    im = Image.open('tests/data/raw/r11_07_06c/cam1/img_0001.jpg')
+
+    identity = (1, 0, 0, 0, 1, 0, 0, 0)
+    tim = processing.perspective_transform(im, identity)
+    tima = np.asarray(tim)
+
+    # spoof a zero degree rotate to get the resampling
+    rima = np.asarray(im.rotate(angle=0, resample=Image.BILINEAR))
+
+    npt.assert_array_equal(rima, tima)
