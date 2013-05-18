@@ -14,8 +14,23 @@ from labwaves import config
 
 def test_barrel_correct_version():
     """Check that convert is new enough to have barrel
-    distortion correction."""
-    pass
+    distortion correction.
+
+    Barrel distortion was introduced in v6.4.2-4
+    see http://www.imagemagick.org/Usage/distorts/#barrel.
+    """
+    # Note that LooseVersion and StrictVersion have been deprecated
+    # under PEP 386 and will at some point be replaced by
+    # NormalizedVersion
+    import subprocess
+    from distutils.version import LooseVersion
+
+    minimum_version = '6.4.2-4'
+
+    version_cmd = ['convert', '--version']
+    version_info = subprocess.check_output(version_cmd)
+    version_number = version_info[2]
+    assert(LooseVersion(version_number) > LooseVersion(minimum_version))
 
 
 def test_barrel_correct():
