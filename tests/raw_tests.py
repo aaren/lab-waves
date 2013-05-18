@@ -1,11 +1,11 @@
 """Tests for RawRun class"""
 from nose.tools import *
 
-from labwaves.labwaves.raw import RawRun
-from labwaves.labwaves.raw import read_parameters
-from labwaves.labwaves.raw import read_run_data
+from labwaves.raw import RawRun
+from labwaves.raw import read_parameters
+from labwaves.raw import read_run_data
 
-import labwaves.labwaves.processing
+import labwaves.processing
 
 # location of test data files
 proc_f = 'tests/data/proc_data'
