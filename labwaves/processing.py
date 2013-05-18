@@ -115,7 +115,7 @@ def perspective_transform(im, coeffs):
             'method':   Image.PERSPECTIVE,
             'data':     coeffs,
             'resample': Image.BILINEAR}
-    trans = im.transform(*args)
+    trans = im.transform(**args)
     return trans
 
 
