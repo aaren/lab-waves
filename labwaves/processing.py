@@ -152,7 +152,7 @@ def perspective_coefficients(X, x):
                    [x4, y4, 1,  0,  0, 0, -X4 * x4, -X4 * y4],
                    [0,   0, 0, x4, y4, 1, -Y4 * x4, -Y4 * y4]])
 
-    c = np.solve(A, np.asarray(X).flatten())
+    c = np.linalg.solve(A, np.asarray(X).flatten())
 
     return c
 
