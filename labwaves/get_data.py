@@ -29,8 +29,8 @@ import numpy as np
 from sgolay import savitzky_golay as sgolay
 import peakdetect
 
-from aolcore import write_data, read_data
-from aolcore import get_parameters
+from util import write_data, read_data
+from util import get_parameters
 import threshold
 
 from config import *

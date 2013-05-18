@@ -12,7 +12,7 @@ import config
 
 import processing
 
-import aolcore
+import util
 
 
 def read_parameters(run, paramf):

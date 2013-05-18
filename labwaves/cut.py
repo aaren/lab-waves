@@ -1,7 +1,7 @@
 import os
 import glob
-from aolcore import get_parameters
-from aolcore import pull_col
+from util import get_parameters
+from util import pull_col
 from config import path
 
 cutf = '/home/eeaol/code/lab-waves/scripts/simple_amplitudes'

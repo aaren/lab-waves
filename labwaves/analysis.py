@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from uncertainties import ufloat
 
-from aolcore import read_simple
+from util import read_simple
 from config import data_dir, paramf
 
 from run import Run

@@ -6,8 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import functions as f
-from aolcore import read_data, write_simple
-from aolcore import get_parameters
+from util import read_data, write_simple
+from util import get_parameters
 from config import data_dir, data_storage, paramf, plots_dir
 
 class Run(object):
