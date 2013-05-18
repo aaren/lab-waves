@@ -96,14 +96,21 @@ class RawRun(object):
             self.parameters = read_parameters(run, config.paramf)
         else:
             self.parameters = read_parameters(run, parameters_f)
+        self.run_data_f = run_data_f
         if not run_data_f:
-            self.run_data = self.get_run_data()
+            self.run_data = self.get_run_data(config.procf)
         else:
             self.run_data = self.get_run_data(procf=run_data_f)
 
-    def get_run_data(self, procf=config.procf):
-        # TODO: doc
-        proc_runs = aolcore.pull_col(0, procf, ',')
+    def get_run_data(self, procf=None):
+        """Get the data for the run from the given file (procf).
+
+        If the data doesn't exist in the file, prompt to measure
+        the data and call if user says yes.
+        """
+        if not procf:
+            procf = self.run_data_f
+        proc_runs = util.pull_col(0, procf, ',')
         try:
             proc_runs.index(self.index)
             # print "%s is in proc_data" % run
@@ -112,13 +119,13 @@ class RawRun(object):
             print "get the proc_data for this run now? (y/n)"
             A = raw_input('> ')
             if A == 'y':
-                self.measure(self.index)
-                self.get_run_data(self.index)
+                self.measure(procf)
+                self.get_run_data(procf)
             elif A == 'n':
                 return 0
             else:
                 print "y or n!"
-                self.get_run_data(self.index)
+                self.get_run_data(procf)
 
         run_data = read_run_data(self.index, procf)
 

@@ -5,8 +5,6 @@ from labwaves.raw import RawRun
 from labwaves.raw import read_parameters
 from labwaves.raw import read_run_data
 
-import labwaves.processing
-
 # location of test data files
 proc_f = 'tests/data/proc_data'
 param_f = 'tests/data/parameters'
@@ -73,6 +71,11 @@ def test_init():
     assert_equal(r.index, t.index)
     for k in r.parameters:
         assert_equal(r.parameters[k], t.parameters[k])
+
+
+def test_get_run_data_when_exists():
+    assert_equal(r.get_run_data(), t.run_data)
+    assert_equal(r.run_data, t.run_data)
 
 
 def test_gen_image_text():
