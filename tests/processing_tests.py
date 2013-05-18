@@ -70,3 +70,13 @@ def test_barrel_correct():
         test_bc_im_on_disk_array = np.asarray(test_bc_im_on_disk)
 
         npt.assert_array_equal(ref_bc_im_array, test_bc_im_on_disk_array)
+
+
+def test_perspective_coefficients():
+    """Mapping a set of points onto itself should give the identity
+    matrix (in two dimensions).
+    """
+    x = ((0, 0), (1, 0), (1, 1), (0, 1))
+    c = processing.perspective_coefficients(x, x)
+    i = np.array([1, 0, 0, 0, 1, 0, 0, 0])
+    npt.assert_array_equal(i, c)
