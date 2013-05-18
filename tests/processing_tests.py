@@ -98,3 +98,41 @@ def test_perspective_transform():
     rima = np.asarray(im.rotate(angle=0, resample=Image.BILINEAR))
 
     npt.assert_array_equal(rima, tima)
+
+
+def test_crop():
+    """Bit redundant really. """
+    im = Image.open('tests/data/raw/r11_07_06c/cam1/img_0001.jpg')
+    box = (0, 0, im.size[0], im.size[1])
+    cima = im.crop(box)
+
+    cropped = processing.crop(im, box)
+    cropped_a = np.asarray(cropped)
+
+    npt.assert_array_equal(cima, cropped_a)
+
+
+def test_draw_text():
+    """Test with no text, set bars, no font.
+
+    Integration test will more thoroughly test this.
+    """
+    im = Image.open('tests/data/raw/r11_07_06c/cam1/img_0001.jpg')
+    kwargs = {'upper_text':  '',
+              'lower_text':  '',
+              'upper_bar':   100,
+              'lower_bar':   100,
+              'font':        None,
+              'text_colour': None,
+              'bg_colour':   'black'}
+    dim = processing.draw_text(im, **kwargs)
+
+    ima = np.asarray(im)
+    dima = np.asarray(dim)
+
+    # check centre of image unchanged
+    npt.assert_array_equal(ima[101:-100], dima[101:-100])
+
+    # check bars are black
+    assert((dima[0: 100] == 0).all())
+    assert((dima[-99:] == 0).all())
