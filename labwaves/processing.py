@@ -188,7 +188,7 @@ def draw_text(im, upper_text, lower_text, upper_bar, lower_bar, font, text_colou
     upper_text_pos = (0, 0)
     lower_text_pos = (0, h - lower_bar)
     # box of the background
-    upper_background_box = (0, h, w, upper_bar)
+    upper_background_box = (0, 0, w, upper_bar)
     lower_background_box = (0, h - lower_bar, w, h)
 
     # draw has side effects so work on copy
