@@ -1,5 +1,7 @@
 # Some useful functions that I use a lot.
 import sys
+import os
+import errno
 from collections import namedtuple
 import cPickle as pickle
 import json
@@ -102,3 +104,15 @@ def get_parameters(run, paramf, delim=None):
 def cprint(string):
     print string,"\r",
     sys.stdout.flush()
+def makedirs_p(path):
+    """Emulate mkdir -p. Doesn't throw error if directory
+    already exists.
+    """
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+

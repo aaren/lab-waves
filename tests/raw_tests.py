@@ -1,6 +1,8 @@
 """Tests for RawRun class"""
 from nose.tools import *
 
+import os
+
 from labwaves.raw import RawRun
 from labwaves.raw import read_parameters
 from labwaves.raw import read_run_data
@@ -91,3 +93,23 @@ def test_gen_image_text():
               "D = {D}").format(time=1, **r.parameters)
     assert_equal(type(text), str)
     assert_equal(text, t_text)
+
+
+def test_config_path():
+    cpath = os.path.abspath(r.config.path)
+    assert(os.path.samefile(cpath, 'tests/data/'))
+
+
+def test_imagepaths():
+    """Expect a list of paths of all images in run."""
+    p1 = r.imagepaths[0]
+    path = 'tests/data/synced/r11_07_06c/cam1/img_0001.jpg'
+    assert(os.path.samefile(p1, path))
+    assert_equal(len(r.imagepaths), 2)
+
+
+def test_images():
+    path = 'tests/data/synced/r11_07_06c/cam1/img_0001.jpg'
+    assert(os.path.samefile(r.images[0]['path'], path))
+    assert_equal(r.images[0]['camera'], 'cam1')
+    assert_equal(len(r.images), 2)

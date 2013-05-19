@@ -2,7 +2,8 @@
 
 ### **PATH** ###
 # what is the root directory for all of this?
-path = '/home/eeaol/lab/data/flume1/working'
+# path = '/home/eeaol/lab/data/flume1/working'
+path = '/home/eeaol/code/labwaves/tests/data'
 # where is the parameters file?
 paramf = path + '/parameters'
 # proc_data?

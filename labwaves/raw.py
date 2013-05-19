@@ -92,6 +92,7 @@ class RawRun(object):
                 run_data_f - optional, a file containing run_data
         """
         self.index = run
+        self.config = config
         if not parameters_f:
             self.parameters = read_parameters(run, config.paramf)
         else:
@@ -219,6 +220,7 @@ class RawRun(object):
         cams = [self.icam(impath) for impath in impaths]
         return zip(cams, impaths)
 
+    @staticmethod
     def iframe(impath):
         """From an image filename, e.g. img_0001.jpg, get just the
         0001 bit and return it.
@@ -228,6 +230,7 @@ class RawRun(object):
         frame = impath.split('_')[-1].split('.')[0].split('_')[-1]
         return frame
 
+    @staticmethod
     def icam(impath):
         """Given a path to an image, extract the corresponding camera.
         Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
@@ -235,6 +238,7 @@ class RawRun(object):
         cam = impath.split('/')[-2]
         return cam
 
+    @staticmethod
     def irun(impath):
         """Given a path to an image, extract the corresponding run.
         Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
@@ -259,12 +263,21 @@ class RawRun(object):
         # TODO: put synced in config or something
         # TODO: composition of path names??
         # TODO: put these re in config?
-        rundir = config.path + 'synced' + self.index
+        rundir = os.path.join(config.path, 'synced', self.index)
         im_re = 'img*jpg'
         cam_re = 'cam*'
         im_cam_re = cam_re + '/' + im_re
-        imagelist = glob.glob(rundir + im_cam_re)
-        return imagelist
+        imagelist = glob.glob(os.path.join(rundir, im_cam_re))
+        return sorted(imagelist)
+
+    @property
+    def images(self):
+        """Returns a list of image objects.
+
+        Each image object is a dictionary with keys 'path', 'camera'.
+        """
+        paths = self.imagepaths
+        return [dict(path=p, camera=self.icam(p)) for p in paths]
 
     ### Applicators
     # Only a function of the run, generate all context based on this.
