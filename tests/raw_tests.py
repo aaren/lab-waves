@@ -11,6 +11,13 @@ from labwaves.raw import read_run_data
 proc_f = 'tests/data/proc_data'
 param_f = 'tests/data/parameters'
 
+# clear any previous output
+for root, dirs, files in os.walk('tests/data/output', topdown=False):
+    for name in files:
+        os.remove(os.path.join(root, name))
+    for name in dirs:
+        os.rmdir(os.path.join(root, name))
+
 
 class TestRun(object):
     """An idealised test object"""
@@ -113,3 +120,12 @@ def test_images():
     assert(os.path.samefile(r.images[0]['path'], path))
     assert_equal(r.images[0]['camera'], 'cam1')
     assert_equal(len(r.images), 2)
+
+
+def test_barrel_correct():
+    path1 = 'tests/data/output/r11_07_06c/barrel_correct/cam1/img_0001.jpg'
+    path2 = 'tests/data/output/r11_07_06c/barrel_correct/cam2/img_0001.jpg'
+    r.barrel_correct()
+    # just check that there is output for now
+    assert(os.path.exists(path1))
+    assert(os.path.exists(path2))

@@ -285,11 +285,25 @@ class RawRun(object):
     # Should go into a class really
     # multiprocessing starts to come in here too
     def barrel_correct(self):
-        for camera, image in self.runfiles:
+        # how about working everything out from an image?
+        # almost like we have a distinct LabImage object
+        for image in self.images:
+            path = image['path']
+            camera = image['camera']
             coeffs = config.barrel_coeffs[camera]
-            im = Image.open(image)
+            im = Image.open(path)
             out = processing.barrel_correct(im, coeffs)
-            out.save('blah')
+
+            dirname = os.path.join(self.config.path,
+                                   'output',
+                                   self.index,
+                                   'barrel_correct',
+                                   camera)
+            util.makedirs_p(dirname)
+            im_name = path.split('/')[-1]
+            out_path = os.path.join(dirname, im_name)
+
+            out.save(out_path)
 
     def perspective_coefficients(self):
         """Generate the cam1 and cam2 perspective transform coefficients
