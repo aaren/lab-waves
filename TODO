@@ -1,0 +1,7 @@
+make a class, RawImage, that encapsulates a lab image and lets us do things
+like
+
+    im = RawImage()
+    im.barrel_correct()
+    im.perspective_correct()
+    im.write_out()
