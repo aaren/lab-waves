@@ -1,1 +1,3 @@
 *.pyc
+tests/data/processed
+tests/data/tmp

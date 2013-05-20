@@ -23,13 +23,14 @@ def read_parameters(run, paramf):
     Reading in gives a numpy recarray. Convert to a dictionary
     and return this.
     """
-    data = [('run_index',  'S10'),
-            ('h_1',        'f8'),
-            ('rho_0',      'f8'),
-            ('rho_1',      'f8'),
-            ('rho_2',      'f8'),
-            ('alpha',      'f8'),
-            ('D',          'f8')]
+    data = [('run_index',       'S10'),
+            ('h_1',             'f8'),
+            ('rho_0',           'f8'),
+            ('rho_1',           'f8'),
+            ('rho_2',           'f8'),
+            ('alpha',           'f8'),
+            ('D',               'f8'),
+            ('sample',          'f8')]
     names, types = zip(*data)
     p = np.genfromtxt(paramf, dtype=types, names=names)
     index = np.where(p['run_index'] == run)
@@ -83,38 +84,191 @@ def read_run_data(run, paramf):
     return rdp_dict
 
 
+def iframe(impath):
+    """From an image filename, e.g. img_0001.jpg, get just the
+    0001 bit and return it.
+
+    Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
+    """
+    frame = impath.split('_')[-1].split('.')[0].split('_')[-1]
+    return frame
+
+
+def icam(impath):
+    """Given a path to an image, extract the corresponding camera.
+    Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
+    """
+    cam = impath.split('/')[-2]
+    return cam
+
+
+def irun(impath):
+    """Given a path to an image, extract the corresponding run.
+    Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
+    """
+    run = impath.split('/')[-3]
+    return run
+
+
+class RawImage(object):
+    """Represents an individual image from a lab run.
+
+    We want to do a series of things to a raw lab image:
+
+        - barrel correct (self.barrel_correct)
+        - perspective correct (self.perspective_correct)
+        - crop and add borders (self.crop_text)
+
+    Each of these only makes sense to do if the previous steps have
+    been carried out already. Therefore when one of the above
+    methods is called, the preceding methods are called as well.
+
+    self.process is a wrapper function that returns a completely
+    processed image object
+
+    After all these steps have been performed we want to write
+    the image to persistent storage.
+
+    self.write_out - writes the image to disk, the location determined
+                     by the RawRun instance path and the config file.
+    """
+    def __init__(self, path, run):
+        """A RawImage is a member of a RawRun - images don't exist
+        outside of a run. To initialise a RawImage, a RawRun instance
+        must be passed as input.
+
+        Inputs: path - path to an image file
+                run - a RawRun instance
+
+        Each image originates from a specific camera and has a
+        frame number, both of which are encoded in the file path.
+
+        The camera determines the coefficients used in the correction
+        routines.
+
+        The frame number to determine the time that an image
+        corresponds to.
+        """
+        self.path = path
+        self.fname = os.path.basename(path)
+        self.dirname = os.path.dirname(path)
+
+        self.frame = iframe(path)
+        self.cam = icam(path)
+        self.run_index = run.index
+
+        self.processed_path = os.path.join(run.path,
+                                           config.outdir,
+                                           run.index,
+                                           self.cam,
+                                           self.fname)
+
+        self.im = Image.open(path)
+
+        self.barrel_coeffs = config.barrel_coeffs[self.cam]
+        self.perspective_coefficients = run.perspective_coefficients[self.cam]
+        self.crop_box = run.crop_box(self.cam)
+        self.parameters = run.parameters
+        self.param_text = config.param_text.format(time=self.time,
+                                                   **self.parameters)
+
+    @property
+    def time(self):
+        """Determine the time that an image corresponds to."""
+        index = int(self.frame) - 1
+        sample_interval = self.parameters['sample']
+        time_stamp = index * sample_interval
+        return time_stamp
+
+    def barrel_correct(self):
+        """Barrel correct an image. Returns barrel corrected image
+        as Image object.
+        """
+        bc_im = processing.barrel_correct(self.im, self.barrel_coeffs)
+        return bc_im
+
+    def perspective_transform(self):
+        """Perspective correct an image."""
+        bc_im = self.barrel_correct()
+        coeffs = self.perspective_coefficients
+        trans = processing.perspective_transform(bc_im, coeffs)
+        return trans
+
+    def crop_text(self):
+        """Crop, add borders and add text."""
+        trans_im = self.perspective_transform()
+        crop_box = self.crop_box
+        crop_im = processing.crop(trans_im, crop_box)
+
+        kwargs = {'upper_text': self.param_text,
+                  'lower_text': config.author_text,
+                  'upper_bar': config.top_bar,
+                  'lower_bar': config.bottom_bar,
+                  'font': ImageFont.truetype(config.font, 40),
+                  'text_colour': 'white',
+                  'bg_colour': 'black'}
+
+        dcim = processing.draw_text(crop_im, **kwargs)
+        return dcim
+
+    def process(self):
+        return self.crop_text()
+
+    def write_out(self):
+        """Write the processed image to disk."""
+        processed_im = self.process()
+        util.makedirs_p(os.path.dirname(self.processed_path))
+        processed_im.save(self.processed_path)
+
+
 class RawRun(object):
-    def __init__(self, run, parameters_f=None, run_data_f=None):
+    """Represents a lab run in its raw state.
+
+    A lab run consists of a set of raw images and some run metadata.
+
+    The metadata is contained in a parameters file and a run_data file.
+
+    This class uses the run metadata to create arguments for the functions
+    in processing and uses the RawImage class to process a whole run.
+    """
+    def __init__(self, run, parameters_f=None, run_data_f=None, path=None):
         """
 
         Inputs: run - string, a run index, e.g. 'r11_05_24a'
                 parameters_f - optional, a file containing run parameters
                 run_data_f - optional, a file containing run_data
+                path - optional, root directory for this run
         """
         self.index = run
         self.config = config
+        if not path:
+            self.path = config.path
+        else:
+            self.path = path
+        self.input_dir = os.path.join(self.path, config.indir, self.index)
         if not parameters_f:
             self.parameters = read_parameters(run, config.paramf)
         else:
             self.parameters = read_parameters(run, parameters_f)
-        self.run_data_f = run_data_f
-        if not run_data_f:
-            self.run_data = self.get_run_data(config.procf)
-        else:
-            self.run_data = self.get_run_data(procf=run_data_f)
 
-    def get_run_data(self, procf=None):
+        if not run_data_f:
+            run_data_f = config.procf
+        self.run_data_f = run_data_f
+
+        self.bc1_outdir = 'tmp/bc1'
+        self.cameras = ['cam1', 'cam2']
+
+    @property
+    def run_data(self):
         """Get the data for the run from the given file (procf).
 
         If the data doesn't exist in the file, prompt to measure
         the data and call if user says yes.
         """
-        if not procf:
-            procf = self.run_data_f
+        procf = self.run_data_f
         proc_runs = util.pull_col(0, procf, ',')
         try:
             proc_runs.index(self.index)
-            # print "%s is in proc_data" % run
         except ValueError:
             print "%s is not in the procf (%s)" % (self.index, procf)
             print "get the proc_data for this run now? (y/n)"
@@ -141,7 +295,7 @@ class RawRun(object):
             plt.figure(figsize=(16, 12))
             # TODO: fix this path
             simg1 = '{path}/barrel_corr/{run}/{cam}/img_0001.jpg'
-            img1 = simg1.format(path=config.path, run=self.index, cam=camera)
+            img1 = simg1.format(path=self.path, run=self.index, cam=camera)
             try:
                 im = Image.open(img1)
             except IOError:
@@ -183,87 +337,42 @@ class RawRun(object):
         f.close()
 
     def bc1(self):
-        """Just barrel correct the first image of a run
-        and save it to the folder 'bc1' under path.
+        """Just barrel correct the first image from each camera from
+        a run and save it to the folder self.bc1_outdir under
+        self.path.
         """
-        # TODO: fix synced
-        indir = '%s/synced/%s' % (config.path, self.index)
-        outdir = 'bc1'
-        for camera in ['cam1', 'cam2']:
-            dirs = '/'.join([config.path, outdir, self.index, camera])
-            if not os.path.exists(dirs):
-                os.makedirs(dirs)
-                print "made " + dirs
-            else:
-                # print "using " + dirs
-                pass
-            image1 = '%s/%s/img_0001.jpg' % (indir, camera)
-            im1 = Image.open(image1)
-            coeffs = config.barrel_coeffs[camera]
-            bim1 = processing.barrel_correct(im1, coeffs)
-            outdir = '{path}/{out}/{run}/{cam}/'
-            outf = outdir.format(path=config.path,
-                                 out=outdir,
-                                 run=self.index,
-                                 cam=camera) + 'img_0001.jpg'
+        for camera in self.cameras:
+            ref_image_path = self.ref_image_path(camera)
+            im1 = RawImage(ref_image_path, self)
+            bim1 = im1.barrel_correct()
+
+            bc1_outdir = self.bc1_outdir
+            dirname = os.path.join(self.path, bc1_outdir, self.index, camera)
+            basename = 'img_0001.jpg'
+            outf = os.path.join(dirname, basename)
+
+            util.makedirs_p(dirname)
             bim1.save(outf)
 
-    @property
-    def runfiles(self):
-        """Build a list of the files from a run, along with the camera
-        that they come from.
+    def ref_image_path(self, cam):
+        """Return the path to the first image from given camera.
 
-        Returns a list of tuples
-        e.g. [('cam1', 'path/to/image1'), ('cam1', 'path/to/image2'), ...]
+        Inputs: cam - a string, e.g. 'cam1'
         """
-        impaths = self.imagepaths()
-        cams = [self.icam(impath) for impath in impaths]
-        return zip(cams, impaths)
-
-    @staticmethod
-    def iframe(impath):
-        """From an image filename, e.g. img_0001.jpg, get just the
-        0001 bit and return it.
-
-        Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
-        """
-        frame = impath.split('_')[-1].split('.')[0].split('_')[-1]
-        return frame
-
-    @staticmethod
-    def icam(impath):
-        """Given a path to an image, extract the corresponding camera.
-        Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
-        """
-        cam = impath.split('/')[-2]
-        return cam
-
-    @staticmethod
-    def irun(impath):
-        """Given a path to an image, extract the corresponding run.
-        Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
-        """
-        run = impath.split('/')[-3]
-        return run
-
-    def gen_time(self, image):
-        # XXX: stub
-        # 'time' that a frame represents
-        # TODO: update this with 25hz camera in mind. need some time
-        # generating function
-        run, cam, frame = image.split('/')[-3:]
-        time = int(frame.split('.')[0]) - 1
-        return time
+        rundir = self.input_dir
+        im_re = 'img_0001.jpg'
+        cam_re = cam
+        im_cam_re = cam_re + '/' + im_re
+        image_path = glob.glob(os.path.join(rundir, im_cam_re))[0]
+        return image_path
 
     @property
     def imagepaths(self):
         """Return a list of the full path to all of the images
         in the run.
         """
-        # TODO: put synced in config or something
-        # TODO: composition of path names??
+        rundir = self.input_dir
         # TODO: put these re in config?
-        rundir = os.path.join(config.path, 'synced', self.index)
         im_re = 'img*jpg'
         cam_re = 'cam*'
         im_cam_re = cam_re + '/' + im_re
@@ -272,39 +381,13 @@ class RawRun(object):
 
     @property
     def images(self):
-        """Returns a list of image objects.
-
-        Each image object is a dictionary with keys 'path', 'camera'.
+        """Returns a list of RawImage objects, corresponding to each
+        image in the run.
         """
         paths = self.imagepaths
-        return [dict(path=p, camera=self.icam(p)) for p in paths]
+        return [RawImage(p, run=self) for p in paths]
 
-    ### Applicators
-    # Only a function of the run, generate all context based on this.
-    # These do actual, persistent IO
-    # Should go into a class really
-    # multiprocessing starts to come in here too
-    def barrel_correct(self):
-        # how about working everything out from an image?
-        # almost like we have a distinct LabImage object
-        for image in self.images:
-            path = image['path']
-            camera = image['camera']
-            coeffs = config.barrel_coeffs[camera]
-            im = Image.open(path)
-            out = processing.barrel_correct(im, coeffs)
-
-            dirname = os.path.join(self.config.path,
-                                   'output',
-                                   self.index,
-                                   'barrel_correct',
-                                   camera)
-            util.makedirs_p(dirname)
-            im_name = path.split('/')[-1]
-            out_path = os.path.join(dirname, im_name)
-
-            out.save(out_path)
-
+    @property
     def perspective_coefficients(self):
         """Generate the cam1 and cam2 perspective transform coefficients
         for a given run.
@@ -317,15 +400,15 @@ class RawRun(object):
         """
         run_data = self.run_data
 
-        lock_0 = int(run_data['l0x']), int(run_data['l0y'])
-        lock_surf = int(run_data['lsx']), int(run_data['lsy'])
-        join1_0 = int(run_data['j10x']), int(run_data['j10y'])
-        join1_surf = int(run_data['j1sx']), int(run_data['j1sy'])
+        lock_0 = (run_data['l0x']), (run_data['l0y'])
+        lock_surf = (run_data['lsx']), (run_data['lsy'])
+        join1_0 = (run_data['j10x']), (run_data['j10y'])
+        join1_surf = (run_data['j1sx']), (run_data['j1sy'])
 
-        join2_0 = int(run_data['j20x']), int(run_data['j20y'])
-        join2_surf = int(run_data['j2sx']), int(run_data['j2sy'])
-        ruler_0 = int(run_data['r0x']), int(run_data['r0y'])
-        ruler_surf = int(run_data['rsx']), int(run_data['rsy'])
+        join2_0 = (run_data['j20x']), (run_data['j20y'])
+        join2_surf = (run_data['j2sx']), (run_data['j2sy'])
+        ruler_0 = (run_data['r0x']), (run_data['r0y'])
+        ruler_surf = (run_data['rsx']), (run_data['rsy'])
         # need some standard vertical lines in both cameras.
         # cam1: use lock gate and tank join
         # cam2: tank join and ruler at 2.5m
@@ -345,45 +428,14 @@ class RawRun(object):
               (join2_0[0] - config.ideal_base_2, join2_0[1]),
               (join2_0[0] - config.ideal_base_2, join2_0[1] - config.ideal_25))
 
-        cam1_coeff = tuple(self.perspective_coefficients(x1, X1))
-        if run_data['j20x'] == '0':
+        cam1_coeff = tuple(processing.perspective_coefficients(x1, X1))
+        if run_data['j20x'] == 0:
             cam2_coeff = 0
         else:
-            cam2_coeff = tuple(self.perspective_coefficients(x2, X2))
+            cam2_coeff = tuple(processing.perspective_coefficients(x2, X2))
 
         return {'cam1': cam1_coeff, 'cam2': cam2_coeff}
 
-    def perspective_transform(self):
-        # TODO: allow chaining with barrel correct, save in sensible location
-        coeffs = self.perspective_coefficients()
-        for camera, image in self.runfiles:
-            im = Image.open(image)
-            trans = processing.perspective_transform(im, coeffs[camera])
-            trans.save('blah')
-
-    def crop_text(self):
-        # TODO: allow chaining, save location
-        run_data = self.run_data
-
-        for image, cam in self.runfiles:
-            cim = processing.crop(image, run_data, cam)
-
-            time = self.gen_time(image)
-            param_text = self.gen_image_text(time)
-
-            kwargs = {'upper_text': param_text,
-                      'lower_text': config.author_text,
-                      'upper_bar': config.top_bar,
-                      'lower_bar': config.bottom_bar,
-                      'font': ImageFont.truetype(config.font, 40),
-                      'text_colour': 'white',
-                      'bg_colour': 'black'}
-            dcim = processing.draw_text(cim, **kwargs)
-
-            dcim.save('blah')
-
-    ### argument generators ###
-    # No side effects, but rely on external context (config, run_data)
     def crop_box(self, cam):
         """Calculate box needed to crop an image to standard
         orientation.
@@ -412,43 +464,10 @@ class RawRun(object):
         lower = ref[cam][1] + config.crop[cam][3]
         return (left, upper, right, lower)
 
-    def gen_image_text(self, time):
-        """Create text string that lists the parameters used
-        for the run an image came from.
+    def process(self):
+        """Process the images, transforming them from their raw state.
 
-        Inputs: time - a number giving the time the image
-                       was taken at (seconds)
-
-        Returns: a string.
+        Can easily multiprocess this bit.
         """
-        parameters = self.parameters
-        param = ("run {run_index}, "
-                 "t = {time}s: "
-                 "h_1 = {h_1}, "
-                 "rho_0 = {rho_0}, "
-                 "rho_1 = {rho_1}, "
-                 "rho_2 = {rho_2}, "
-                 "alpha = {alpha}, "
-                 "D = {D}")
-        param_text = param.format(time=time, **parameters)
-        return param_text
-
-
-
-# this class is at the run level.
-# the other level that we could conceive of using is the image level
-# say by extending the PIL Image class by composition.
-# then we would do things like
-#
-# LabImage = compose(Image)
-
-# im = LabImage.open(file)
-# im.barrel_correct()
-# im.crop_text()
-
-# this isn't consistent with the design of my pure functions so far,
-# which operate on a Image object.
-
-# It doesn't really make sense to process images in isolation - the
-# context for doing so is determined by the run that they belong to
-# anyway. Therefore, stick with this run level class.
+        for image in self.images:
+            image.write_out()

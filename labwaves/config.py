@@ -2,12 +2,15 @@
 
 ### **PATH** ###
 # what is the root directory for all of this?
-# path = '/home/eeaol/lab/data/flume1/working'
-path = '/home/eeaol/code/labwaves/tests/data'
+path = '/home/eeaol/lab/data/flume1/working'
 # where is the parameters file?
 paramf = path + '/parameters'
 # proc_data?
 procf = path + '/proc_data'
+# input directory
+indir = 'synced'
+# output directory
+outdir = 'processed'
 # where is the data going to be stored?? (filename)
 data_dir = path + '/data/'
 data_storage = data_dir + 'data/data_store_'
@@ -20,9 +23,17 @@ plots_dir = path + '/plots'
 # this is PLATFORM DEPENDENT
 # in 15 pt Liberation Regular, "Aaron O'Leary" is 360 px wide,
 # "University of Leeds" is 520 px wide.
-font = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf',
+font = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf'
 # text that appears in the processed images
 author_text = "Aaron O'Leary, University of Leeds"
+param_text = ("run {run_index}, "
+              "t = {time}s, "
+              "h_1 = {h_1}, "
+              "rho_0 = {rho_0}, "
+              "rho_1 = {rho_1}, "
+              "rho_2 = {rho_2}, "
+              "alpha = {alpha}, "
+              "D = {D}")
 ### /FONTS** ###
 
 
