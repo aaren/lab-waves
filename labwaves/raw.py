@@ -286,27 +286,94 @@ class RawRun(object):
 
         return run_data
 
-    def measure(self, procf=config.procf):
-        #TODO: doc
-        # TODO: make sense in class
+    def measure(self, procf=None):
+        """Interactive tool for selecting perspective correction
+        reference points in a run.
+
+        Input: procf - path to a file to append the results to.
+                       Default None will just return the result
+                       list.
+
+        Returns: a list of points used for perspective correction
+                 and some strings.
+
+        Uses matplotlib ginput to display an image and allow user
+        input.
+
+        The image used is the barrel corrected first image from each
+        camera.
+
+        There are two styles of image: old and new.
+
+        Old style images - from lab runs 2011 and earlier. No fixed
+                           markers in the image so have to rely on
+                           features of the tank. Specifically, the
+                           lock gate and the right edge of the tank
+                           join for cam1; the left edge of the tank
+                           join and a ruler for cam2. These are the
+                           markers in the horizontal - each yields
+                           two points; one at the bottom of the tank
+                           and one at the surface of the water.
+
+        New style images - have markers made of brown tape at measured
+                           points on the front of the tank.
+
+                           There are actually two kinds of new style
+                           image as one of the markers was incorrectly
+                           positioned for a few runs.
+
+        TODO: code currently works for old style images
+        TODO: make it work for both varieties of new style
+        TODO: test it
+        """
         proc = []
         proc.append(self.index)
-        for camera in ['cam1', 'cam2']:
+        for camera in self.cameras:
             plt.figure(figsize=(16, 12))
-            # TODO: fix this path
-            simg1 = '{path}/barrel_corr/{run}/{cam}/img_0001.jpg'
-            img1 = simg1.format(path=self.path, run=self.index, cam=camera)
+            # load up the barrel corrected first image
+            bc1_path = self.bc1_image_path(camera)
             try:
-                im = Image.open(img1)
+                bc_im = Image.open(bc1_path)
             except IOError:
-                print "Bad image for %s %s" % (self.index, camera)
+                print "Bad image for {run}, {cam}".format(run=self.index,
+                                                          cam=camera)
+                # TODO: return None instead?
                 break
-            plt.imshow(im)
+
+            plt.imshow(bc_im)
+
+        # proc is a list and has entries corresponding to these
+        # headers in the proc file
+        # keys = ['run_index',
+                # 'l0x',
+                # 'l0y',
+                # 'lsx',
+                # 'lsy',
+                # 'j10x',
+                # 'j10y',
+                # 'j1sx',
+                # 'j1sy',
+                # 'leakage',
+                # 'odd_1',
+                # 'j20x',
+                # 'j20y',
+                # 'j2sx',
+                # 'j2sy',
+                # 'r0x',
+                # 'r0y',
+                # 'rsx',
+                # 'rsy',
+                # 'odd_2']
+
+            # set limits to zoom in on rough target area (lock)
+            # XXX: where is this for cam2??
             plt.xlim(2500, 3000)
             plt.ylim(750, 1500)
             plt.draw()
             print "Select lock base and surface"
             pt1 = plt.ginput(3, 0)
+
+            # set limits to zoom in on rough target area (join)
             if camera == 'cam1':
                 plt.xlim(0, 500)
             elif camera == 'cam2':
@@ -318,7 +385,7 @@ class RawRun(object):
             pts = pt1[0:2] + pt2[0:2]
             for x, y in pts:
                 proc.append(int(x))
-                proc.append(im.size[1] - int(y))
+                proc.append(bc_im.size[1] - int(y))
 
             plt.xlim(0, 3000)
             plt.draw()
@@ -326,15 +393,19 @@ class RawRun(object):
                 print "What is the extent of lock leakage?"
                 leak = plt.ginput(2, 0)[0][0]
                 proc.append(int(pt1[0][0] - leak))
+
             print "Weird (y/n)"
             proc.append(raw_input('> '))
             plt.close()
 
-        proc = [str(e) for e in proc]
-        entry = ','.join(proc) + '\n'
-        f = open(procf, 'a')
-        f.write(entry)
-        f.close()
+        entry = ','.join([str(e) for e in proc]) + '\n'
+        if not procf:
+            return proc
+        else:
+            f = open(procf, 'a')
+            f.write(entry)
+            f.close()
+            return proc
 
     def bc1(self):
         """Just barrel correct the first image from each camera from
@@ -346,11 +417,9 @@ class RawRun(object):
             im1 = RawImage(ref_image_path, self)
             bim1 = im1.barrel_correct()
 
-            bc1_outdir = self.bc1_outdir
-            dirname = os.path.join(self.path, bc1_outdir, self.index, camera)
-            basename = 'img_0001.jpg'
-            outf = os.path.join(dirname, basename)
-
+            # define output file and make directories for it
+            outf = self.bc1_image_path(camera)
+            dirname = os.path.dirname(outf)
             util.makedirs_p(dirname)
             bim1.save(outf)
 
@@ -365,6 +434,19 @@ class RawRun(object):
         im_cam_re = cam_re + '/' + im_re
         image_path = glob.glob(os.path.join(rundir, im_cam_re))[0]
         return image_path
+
+    def bc1_image_path(self, camera):
+        """Return the path to the first barrel corrected image
+        from given camera.
+
+        Inputs: cam - a string, e.g. 'cam1'
+        """
+        bc1_path = os.path.join(self.path,
+                                self.bc1_outdir,
+                                self.index,
+                                camera,
+                                'img_0001.jpg')
+        return bc1_path
 
     @property
     def imagepaths(self):
@@ -397,6 +479,8 @@ class RawRun(object):
         Outputs: dictionary of the camera coefficients
                 d.keys() = ['cam1', 'cam2']
                 d['cam1'] = (a, b, c, d, e, f, g, h)
+
+        TODO: update this to deal with new style images
         """
         run_data = self.run_data
 
@@ -445,6 +529,8 @@ class RawRun(object):
 
         Output: a tuple of four integers defining the box
                 (left, upper, right, lower)
+
+        TODO: update for new style images
         """
         run_data = self.run_data
         odd = {'cam1': run_data['odd_1'], 'cam2': run_data['odd_2']}
