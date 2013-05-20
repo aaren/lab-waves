@@ -15,6 +15,31 @@ import processing
 import util
 
 
+def lazyprop(fn):
+    """Decorator to allow lazy evaluation of class properties
+
+    http://stackoverflow.com/questions/3012421/python-lazy-property-decorator
+
+    usage:
+
+        class Test(object):
+
+            @lazyprop
+            def a(self):
+                print 'generating "a"'
+                return range(5)
+
+    """
+    attr_name = '_lazy_' + fn.__name__
+
+    @property
+    def _lazyprop(self):
+        if not hasattr(self, attr_name):
+            setattr(self, attr_name, fn(self))
+        return getattr(self, attr_name)
+    return _lazyprop
+
+
 def read_parameters(run, paramf):
     """Read in data from the parameters file, which has
     the headers and data types as in the list data.
@@ -30,7 +55,8 @@ def read_parameters(run, paramf):
             ('rho_2',           'f8'),
             ('alpha',           'f8'),
             ('D',               'f8'),
-            ('sample',          'f8')]
+            ('sample',          'f8'),
+            ('perspective',     'S10')]
     names, types = zip(*data)
     p = np.genfromtxt(paramf, dtype=types, names=names)
     index = np.where(p['run_index'] == run)
@@ -165,9 +191,8 @@ class RawImage(object):
 
         self.im = Image.open(path)
 
-        self.barrel_coeffs = config.barrel_coeffs[self.cam]
-        self.perspective_coefficients = run.perspective_coefficients[self.cam]
-        self.crop_box = run.crop_box(self.cam)
+        self.run = run
+
         self.parameters = run.parameters
         self.param_text = config.param_text.format(time=self.time,
                                                    **self.parameters)
@@ -184,27 +209,28 @@ class RawImage(object):
         """Barrel correct an image. Returns barrel corrected image
         as Image object.
         """
+        self.barrel_coeffs = config.barrel_coeffs[self.run.style][self.cam]
         bc_im = processing.barrel_correct(self.im, self.barrel_coeffs)
         return bc_im
 
     def perspective_transform(self):
         """Perspective correct an image."""
         bc_im = self.barrel_correct()
-        coeffs = self.perspective_coefficients
-        trans = processing.perspective_transform(bc_im, coeffs)
+        self.perspective_coeffs = self.run.perspective_coefficients[self.cam]
+        trans = processing.perspective_transform(bc_im, self.perspective_coeffs)
         return trans
 
     def crop_text(self):
         """Crop, add borders and add text."""
         trans_im = self.perspective_transform()
-        crop_box = self.crop_box
-        crop_im = processing.crop(trans_im, crop_box)
+        self.crop_box = self.run.crop_box(self.cam)
+        crop_im = processing.crop(trans_im, self.crop_box)
 
         kwargs = {'upper_text': self.param_text,
                   'lower_text': config.author_text,
                   'upper_bar': config.top_bar,
                   'lower_bar': config.bottom_bar,
-                  'font': ImageFont.truetype(config.font, 40),
+                  'font': ImageFont.truetype(config.font, config.fontsize),
                   'text_colour': 'white',
                   'bg_colour': 'black'}
 
@@ -214,8 +240,14 @@ class RawImage(object):
     def process(self):
         return self.crop_text()
 
+    @lazyprop
+    def processed(self):
+        """Attribute for storing processed image in memory."""
+        return self.process()
+
     def write_out(self):
-        """Write the processed image to disk."""
+        """Write the processed image to disk. Doesn't store anything
+        in memory."""
         processed_im = self.process()
         util.makedirs_p(os.path.dirname(self.processed_path))
         processed_im.save(self.processed_path)
@@ -275,66 +307,168 @@ class RawRun(object):
             A = raw_input('> ')
             if A == 'y':
                 self.measure(procf)
-                self.get_run_data(procf)
             elif A == 'n':
                 return 0
             else:
                 print "y or n!"
-                self.get_run_data(procf)
+                run_data = self.run_data
 
         run_data = read_run_data(self.index, procf)
 
         return run_data
 
-    def measure(self, procf=config.procf):
-        #TODO: doc
-        # TODO: make sense in class
+    def measure(self, procf=None):
+        """Interactive tool for selecting perspective correction
+        reference points in a run.
+
+        Input: procf - path to a file to append the results to.
+                       Default None will just return the result
+                       list.
+
+        Returns: a list of points used for perspective correction
+                 and some strings.
+
+        The returned list has entries corresponding to these
+        headers in the proc file
+        keys = ['run_index',
+                'l0x',
+                'l0y',
+                'lsx',
+                'lsy',
+                'j10x',
+                'j10y',
+                'j1sx',
+                'j1sy',
+                'leakage',
+                'odd_1',
+                'j20x',
+                'j20y',
+                'j2sx',
+                'j2sy',
+                'r0x',
+                'r0y',
+                'rsx',
+                'rsy',
+                'odd_2']
+
+        Internally, this uses matplotlib ginput to display an image
+        and allow user input.
+
+        The image used is the barrel corrected first image from each
+        camera.
+
+        There are two styles of image: old and new.
+
+        Old style images - from lab runs 2011 and earlier. No fixed
+                           markers in the image so have to rely on
+                           features of the tank. Specifically, the
+                           lock gate and the right edge of the tank
+                           join for cam1; the left edge of the tank
+                           join and a ruler for cam2. These are the
+                           markers in the horizontal - each yields
+                           two points; one at the bottom of the tank
+                           and one at the surface of the water.
+
+        New style images - have markers made of brown tape at measured
+                           points on the front of the tank.
+
+                           There are actually two kinds of new style
+                           image as one of the markers was incorrectly
+                           positioned for a few runs.
+
+        TODO: test this somehow
+        """
         proc = []
         proc.append(self.index)
-        for camera in ['cam1', 'cam2']:
+        for camera in self.cameras:
             plt.figure(figsize=(16, 12))
-            # TODO: fix this path
-            simg1 = '{path}/barrel_corr/{run}/{cam}/img_0001.jpg'
-            img1 = simg1.format(path=self.path, run=self.index, cam=camera)
+            # load up the barrel corrected first image
+            bc1_path = self.bc1_image_path(camera)
+            # if there isn't anything there, barrel correct the
+            # first image
+            if not os.path.exists(bc1_path):
+                self.bc1()
             try:
-                im = Image.open(img1)
+                bc_im = Image.open(bc1_path)
             except IOError:
-                print "Bad image for %s %s" % (self.index, camera)
+                print "Bad image for {run}, {cam}".format(run=self.index,
+                                                          cam=camera)
+                # TODO: return None instead?
                 break
-            plt.imshow(im)
-            plt.xlim(2500, 3000)
-            plt.ylim(750, 1500)
+
+            plt.imshow(bc_im)
+
+            # set limits to zoom in on rough target area (lock)
+            w, h = bc_im.size
+
+            plt.xlim((w * 5) / 6, w)
+            plt.ylim((h * 3) / 8, (h * 6) / 8)
+            if camera is 'cam1':
+                print("Select lock base and surface \n"
+                      "Click again to finish or right click to cancel point.")
+
+            elif camera is 'cam2' and self.style is 'old':
+                print("Select inner join base and surface \n"
+                      "Click again to finish or right click to cancel point.")
+
+            elif camera is 'cam2' and self.style is 'new_1' or 'new_2':
+                print("Select right projection markers \n"
+                      "Click again to finish or right click to cancel point.")
+
             plt.draw()
-            print "Select lock base and surface"
             pt1 = plt.ginput(3, 0)
-            if camera == 'cam1':
-                plt.xlim(0, 500)
-            elif camera == 'cam2':
-                plt.xlim(750, 1250)
+
+            # set limits to zoom in on rough target area
+            # this is the join for cam1 and the ruler for cam2
+            if camera is 'cam1' and self.style is 'old':
+                plt.xlim(0, w / 6)
+                print("Select inner join base and surface \n"
+                      "Click again to finish or right click to cancel point.")
+
+            elif camera is 'cam1' and self.style is 'new_1' or 'new_2':
+                plt.xlim(0, w / 6)
+                print("Select left projection markers \n"
+                      "Click again to finish or right click to cancel point.")
+
+            elif camera is 'cam2' and self.style is 'old':
+                plt.xlim(w / 4, w / 2)
+                print("Select inner ruler base and projection to surface \n"
+                      "Click again to finish or right click to cancel point.")
+
+            elif camera is 'cam2' and self.style is 'new_1' or 'new_2':
+                plt.xlim(0, w / 6)
+                print("Select left projection markers \n"
+                      "Click again to finish or right click to cancel point.")
+
             plt.draw()
-            print "Select join base and surface"
             pt2 = plt.ginput(3, 0)
 
             pts = pt1[0:2] + pt2[0:2]
             for x, y in pts:
                 proc.append(int(x))
-                proc.append(im.size[1] - int(y))
+                proc.append(h - int(y))
 
-            plt.xlim(0, 3000)
+            plt.xlim(0, w)
             plt.draw()
-            if camera == 'cam1':
-                print "What is the extent of lock leakage?"
+            if camera is 'cam1':
+                print("What is the extent of lock leakage? \n"
+                      "Click inside lock if none."
+                      "Click again to finish or right click to cancel point.")
                 leak = plt.ginput(2, 0)[0][0]
                 proc.append(int(pt1[0][0] - leak))
-            print "Weird (y/n)"
+
+            print("Weird? (y/n)")
             proc.append(raw_input('> '))
             plt.close()
 
-        proc = [str(e) for e in proc]
-        entry = ','.join(proc) + '\n'
-        f = open(procf, 'a')
-        f.write(entry)
-        f.close()
+        entry = ','.join([str(e) for e in proc]) + '\n'
+        if not procf:
+            return proc
+        else:
+            f = open(procf, 'a')
+            f.write(entry)
+            f.close()
+            return proc
 
     def bc1(self):
         """Just barrel correct the first image from each camera from
@@ -346,11 +480,9 @@ class RawRun(object):
             im1 = RawImage(ref_image_path, self)
             bim1 = im1.barrel_correct()
 
-            bc1_outdir = self.bc1_outdir
-            dirname = os.path.join(self.path, bc1_outdir, self.index, camera)
-            basename = 'img_0001.jpg'
-            outf = os.path.join(dirname, basename)
-
+            # define output file and make directories for it
+            outf = self.bc1_image_path(camera)
+            dirname = os.path.dirname(outf)
             util.makedirs_p(dirname)
             bim1.save(outf)
 
@@ -365,6 +497,19 @@ class RawRun(object):
         im_cam_re = cam_re + '/' + im_re
         image_path = glob.glob(os.path.join(rundir, im_cam_re))[0]
         return image_path
+
+    def bc1_image_path(self, camera):
+        """Return the path to the first barrel corrected image
+        from given camera.
+
+        Inputs: cam - a string, e.g. 'cam1'
+        """
+        bc1_path = os.path.join(self.path,
+                                self.bc1_outdir,
+                                self.index,
+                                camera,
+                                'img_0001.jpg')
+        return bc1_path
 
     @property
     def imagepaths(self):
@@ -388,6 +533,36 @@ class RawRun(object):
         return [RawImage(p, run=self) for p in paths]
 
     @property
+    def style(self):
+        """Returns a string, the perspective style used for the run."""
+        return self.parameters['perspective']
+
+    def perspective_reference(self, reference_point, style, camera):
+        """Return a tuple of pixel coordinates:
+
+            (lower_right, upper_right, lower_left, upper_left)
+
+        Each coordinate is a tuple of integers (x, y).
+
+        Inputs:
+            reference_point - (x, y) pixel units. The coordinates of the lower
+                              left corner in pixels.
+            style - string, e.g. 'old' will give a grid that fits old style images
+            camera - string, e.g. 'cam1', the camera to get the grid for.
+        """
+        points = config.perspective_ref_points[style][camera]
+        ref_x, ref_y = reference_point
+        # coordinates of se corner of perspective quad
+        x0, y0 = points[0]
+        # number of pixels per metre
+        metre = config.ideal_m
+        pixel_points = [(ref_x - int(metre * (x - x0)),
+                         ref_y - int(metre * (y - y0)))
+                        for x, y in points]
+
+        return pixel_points
+
+    @property
     def perspective_coefficients(self):
         """Generate the cam1 and cam2 perspective transform coefficients
         for a given run.
@@ -400,15 +575,16 @@ class RawRun(object):
         """
         run_data = self.run_data
 
-        lock_0 = (run_data['l0x']), (run_data['l0y'])
-        lock_surf = (run_data['lsx']), (run_data['lsy'])
-        join1_0 = (run_data['j10x']), (run_data['j10y'])
-        join1_surf = (run_data['j1sx']), (run_data['j1sy'])
+        # TODO: add these entries to the proc file for new test ims
+        lower_right_1 = (run_data['l0x']), (run_data['l0y'])
+        upper_right_1 = (run_data['lsx']), (run_data['lsy'])
+        lower_left_1 = (run_data['j10x']), (run_data['j10y'])
+        upper_left_1 = (run_data['j1sx']), (run_data['j1sy'])
 
-        join2_0 = (run_data['j20x']), (run_data['j20y'])
-        join2_surf = (run_data['j2sx']), (run_data['j2sy'])
-        ruler_0 = (run_data['r0x']), (run_data['r0y'])
-        ruler_surf = (run_data['rsx']), (run_data['rsy'])
+        lower_right_2 = (run_data['j20x']), (run_data['j20y'])
+        upper_right_2 = (run_data['j2sx']), (run_data['j2sy'])
+        lower_left_2 = (run_data['r0x']), (run_data['r0y'])
+        upper_left_2 = (run_data['rsx']), (run_data['rsy'])
         # need some standard vertical lines in both cameras.
         # cam1: use lock gate and tank join
         # cam2: tank join and ruler at 2.5m
@@ -416,20 +592,18 @@ class RawRun(object):
         # so for each camera, 4 locations (8 numbers) need
         # to be recorded.
 
-        x1 = (lock_0, lock_surf, join1_0, join1_surf)
-        X1 = (lock_0,
-              (lock_0[0], lock_0[1] - config.ideal_25),
-              (lock_0[0] - config.ideal_base_1, lock_0[1]),
-              (lock_0[0] - config.ideal_base_1, lock_0[1] - config.ideal_25))
+        style = self.style
 
-        x2 = (join2_0, join2_surf, ruler_0, ruler_surf)
-        X2 = (join2_0,
-              (join2_0[0], join2_0[1] - config.ideal_25),
-              (join2_0[0] - config.ideal_base_2, join2_0[1]),
-              (join2_0[0] - config.ideal_base_2, join2_0[1] - config.ideal_25))
+        # units here are pixels, i.e in the coordinate system of
+        # an image.
+        x1 = (lower_right_1, upper_right_1, lower_left_1, upper_left_1)
+        X1 = self.perspective_reference(lower_right_1, style, 'cam1')
+
+        x2 = (lower_right_2, upper_right_2, lower_left_2, upper_left_2)
+        X2 = self.perspective_reference(lower_right_2, style, 'cam2')
 
         cam1_coeff = tuple(processing.perspective_coefficients(x1, X1))
-        if run_data['j20x'] == 0:
+        if lower_right_2[0] == 0:
             cam2_coeff = 0
         else:
             cam2_coeff = tuple(processing.perspective_coefficients(x2, X2))
@@ -445,23 +619,40 @@ class RawRun(object):
 
         Output: a tuple of four integers defining the box
                 (left, upper, right, lower)
+
+        TODO: update for new style images
         """
         run_data = self.run_data
         odd = {'cam1': run_data['odd_1'], 'cam2': run_data['odd_2']}
         if odd[cam] == '999':
             return
 
+        # x coord of invariant point in the perspective transform (se corner)
+        crop_ref_x = config.perspective_ref_points[self.style][cam][0][0]
+        crop_ref_y = config.perspective_ref_points[self.style][cam][0][1]
+
+        m = config.ideal_m
+
+        crop = {'left':  int(-(config.crop[cam]['left'] - crop_ref_x) * m),
+                'right': int(-(config.crop[cam]['right'] - crop_ref_x) * m),
+                'upper': int(-(config.crop[cam]['upper'] - crop_ref_y) * m),
+                'lower': int(-(config.crop[cam]['lower'] - crop_ref_y) * m)}
+
         # define the box to crop the image to relative to the
         # invariant point in the projection transform (se).
-        l0x = run_data['l0x']
-        l0y = run_data['l0y']
-        j20x = run_data['j20x']
-        j20y = run_data['j20y']
-        ref = {'cam1': (l0x, l0y), 'cam2': (j20x, j20y)}
-        left = ref[cam][0] + config.crop[cam][0]
-        right = ref[cam][0] + config.crop[cam][1]
-        upper = ref[cam][1] - config.ideal_25 + config.crop[cam][2]
-        lower = ref[cam][1] + config.crop[cam][3]
+        if cam == 'cam1':
+            ref_x = run_data['l0x']
+            ref_y = run_data['l0y']
+        elif cam == 'cam2':
+            ref_x = run_data['j20x']
+            ref_y = run_data['j20y']
+        else:
+            raise Exception('Invalid camera selected')
+
+        left = ref_x + crop['left']
+        right = ref_x + crop['right']
+        upper = ref_y + crop['upper'] - config.top_bar
+        lower = ref_y + crop['lower'] + config.bottom_bar
         return (left, upper, right, lower)
 
     def process(self):

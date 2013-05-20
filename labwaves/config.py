@@ -8,7 +8,7 @@ paramf = path + '/parameters'
 # proc_data?
 procf = path + '/proc_data'
 # input directory
-indir = 'synced'
+indir = 'raw'
 # output directory
 outdir = 'processed'
 # where is the data going to be stored?? (filename)
@@ -17,24 +17,6 @@ data_storage = data_dir + 'data/data_store_'
 pdir = path + '/processed'
 plots_dir = path + '/plots'
 ### /PATH ###
-
-### **FONTS** ###
-# font used in the processed images
-# this is PLATFORM DEPENDENT
-# in 15 pt Liberation Regular, "Aaron O'Leary" is 360 px wide,
-# "University of Leeds" is 520 px wide.
-font = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf'
-# text that appears in the processed images
-author_text = "Aaron O'Leary, University of Leeds"
-param_text = ("run {run_index}, "
-              "t = {time}s, "
-              "h_1 = {h_1}, "
-              "rho_0 = {rho_0}, "
-              "rho_1 = {rho_1}, "
-              "rho_2 = {rho_2}, "
-              "alpha = {alpha}, "
-              "D = {D}")
-### /FONTS** ###
 
 
 ### **BASIC SETTINGS** ###
@@ -54,8 +36,8 @@ thresh_values = (thresh_green, core_red, mixed_red)
 # more like <75, or greater depending on the mixing. Two values for thresh_red
 # gives an idea of the thickness of the mixed layer on the current.
 
-# Scale for the images
-ideal_25 = 400
+# Scale for the images (number of pixels per 0.25m)
+ideal_25 = 200
 ideal_m = ideal_25 * 4
 ideal_base_1 = int(1.47 * ideal_m)
 ideal_base_2 = int(0.99 * ideal_m)
@@ -66,7 +48,7 @@ bottom_bar = 60
 
 # Specify a vertical region of the image in which to search for the interface.
 # Units are pixels, starting from top of image.
-region = (top_bar + 10, top_bar + 400)
+region = (top_bar + 10, top_bar + ideal_25)
 
 # Depths at which to scan for the current front. 0.4 is partial, 1
 # is full depth (fractions of H, i.e. non dimensional).
@@ -74,8 +56,8 @@ region = (top_bar + 10, top_bar + 400)
 h = 0.6
 s = [i / 100. for i in range(0, int(h * 100 + 1))]
 d = {'0.4': s, '1': s}
-front_depths = \
-        {k: [int(top_bar + (1 - i) * ideal_25) for i in d[k]] for k in d}
+front_depths = {k: [int(top_bar + (1 - i) * ideal_25) for i in d[k]]
+                for k in d}
 
 ### /BASIC SETTINGS ###
 
@@ -88,20 +70,51 @@ front_depths = \
 # lock position for left, right; scale_depth for upper; tank bottom for
 # lower. ensure that these are consistent with the source images!
 # e.g. by comparison with proc_data.
+# the borders (top / bottom bar) are added *outside* these values
+crop = {'cam1': {'left':   1.70,
+                 'right': -0.20,
+                 'upper':  0.25,
+                 'lower': -0.00},
+        'cam2': {'left':   3.50,
+                 'right':  1.39,
+                 'upper':  0.25,
+                 'lower': -0.00}
+        }
 
-cl = {'cam1': 1.46, 'cam2': 3.06}
-cr = {'cam1': -0.05, 'cam2': 1.39}
+## Perspective grid
+# explicit measurements for the (x, y) position of the lower right,
+# upper right, lower left, upper left perspective reference points,
+# relative to the lower lock gate.
+perspective_ref_points = {'old':   {'cam1': ((0.00, 0.00),
+                                             (0.00, 0.25),
+                                             (1.47, 0.00),
+                                             (1.47, 0.25)),
 
-# Some reference points for cropping. Should be the same as the x
-# coord of the se corner of the reference box chosen in
-# measurements, i.e. the invariant point in the perspective
-# transformation.
-crop_ref = {'cam1': 0.00, 'cam2': 1.51}
+                                    'cam2': ((1.51, 0.00),
+                                             (1.51, 0.25),
+                                             (2.50, 0.00),
+                                             (2.50, 0.25))},
 
-crop= {cam: (int(-(cl[cam] - crop_ref[cam]) * ideal_m), \
-             int(-(cr[cam] - crop_ref[cam]) * ideal_m), \
-            -50, \
-             110) for cam in ('cam1', 'cam2')}
+                          'new_1': {'cam1': ((-0.006, 0.00),
+                                             (0.00, 0.25),
+                                             (1.62, 0.00),
+                                             (1.60, 0.25)),
+
+                                    'cam2': ((1.80, 0.00),
+                                             (1.80, 0.25),
+                                             (3.40, 0.00),
+                                             (3.40, 0.25))},
+
+                          'new_2': {'cam1': ((-0.006, 0.00),
+                                             (0.00, 0.25),
+                                             (1.60, 0.00),
+                                             (1.60, 0.25)),
+
+                                    'cam2': ((1.80, 0.00),
+                                             (1.80, 0.25),
+                                             (3.40, 0.00),
+                                             (3.40, 0.25))}
+                          }
 
 # Specify the positions of rulers and other vertical features that
 # obscure the fluid. Measured in metres from the lock.
@@ -112,9 +125,9 @@ real_rulers['cam2'] = [(1.46, 1.54), (1.99, 2.02), (2.49, 2.52), (2.99, 3.02)]
 
 rulers = {}
 for cam in ['cam1', 'cam2']:
-    rulers[cam] = [( int((cl[cam] - y) * ideal_m) , \
-                     int((cl[cam] - x) * ideal_m) )
-                        for x, y in real_rulers[cam]]
+    rulers[cam] = [(int((crop[cam]['left'] - y) * ideal_m),
+                    int((crop[cam]['left'] - x) * ideal_m))
+                   for x, y in real_rulers[cam]]
 
 # Specify the offsets that each of the cameras have, for
 # normalisation of pixel measurements
@@ -122,8 +135,8 @@ for cam in ['cam1', 'cam2']:
 ## and the *left* edge of cam1.
 ## the cam2 offset is the distance between wherever zero is in cam1
 ## and the *left* edge of *cam2*
-camera_offsets = {cam: (cl[cam] * ideal_m, ideal_25 + top_bar)\
-                                    for cam in ('cam1', 'cam2')}
+camera_offsets = {cam: (crop[cam]['left'] * ideal_m, ideal_25 + top_bar)
+                  for cam in ('cam1', 'cam2')}
 
 # specify the scale, i.e how many pixels to some real measurement in the
 # images. in y we want this to be the total fluid depth. in x make it the
@@ -141,9 +154,39 @@ centre = {'cam1': 0.75, 'cam2': 2.25}
 height = {'cam1': 0.3, 'cam2': 0.3}
 
 # Barrel distortion coefficients for the cameras
-cam1corr = (0.000658776, -0.0150048, -0.00123339, 1.01557914)
-cam2corr = (0.023969, -0.060001, 0.0, 1.036032)
-barrel_coeffs = {'cam1': cam1corr, 'cam2': cam2corr}
+# Sourced from lensfun-0.2.5/data/db/slr-nikon.xml
+# two lenses used, Nikkor 18-55mm f/3.5-5.6G AF-S DX VR and
+# Nikkor 18-70mm f/3.5-4.5G ED-IF AF-S DX
+# coeffs = (a, b, c, d)
+# d calculated as  a + b + c + d = 1
+nikkor_1855 = (0.000658776, -0.0150048, -0.00123339, 1.01557914)
+nikkor_1870 = (0.023969, -0.060001, 0.0, 1.036032)
+barrel_coeffs = {'old':   {'cam1': nikkor_1855,
+                           'cam2': nikkor_1870},
+                 'new_1': {'cam1': nikkor_1855,
+                           'cam2': nikkor_1855},
+                 'new_2': {'cam1': nikkor_1855,
+                           'cam2': nikkor_1855}
+                 }
 ### /CAMERA SETUP ###
+
+### **FONTS** ###
+# font used in the processed images
+# this is PLATFORM DEPENDENT
+# in 15 pt Liberation Regular, "Aaron O'Leary" is 360 px wide,
+# "University of Leeds" is 520 px wide.
+font = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf'
+fontsize = ideal_25 / 10
+# text that appears in the processed images
+author_text = "Aaron O'Leary, University of Leeds"
+param_text = ("run {run_index}, "
+              "t = {time}s, "
+              "h_1 = {h_1}, "
+              "rho_0 = {rho_0}, "
+              "rho_1 = {rho_1}, "
+              "rho_2 = {rho_2}, "
+              "alpha = {alpha}, "
+              "D = {D}")
+### /FONTS** ###
 
 #####/CONFIG#####

@@ -69,7 +69,7 @@ def test_barrel_correct():
         raw_im = Image.open(raw_image)
         ref_bc_im = Image.open(bc_image)
 
-        coeffs = config.barrel_coeffs['cam1']
+        coeffs = config.barrel_coeffs['old']['cam1']
         test_bc_im = processing.barrel_correct(raw_im, coeffs)
         # have to write it to disk for images to be comparable
         test_bc_im.save('/tmp/test_bc_im.jpg')
