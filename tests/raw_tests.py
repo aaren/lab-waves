@@ -13,6 +13,8 @@ from labwaves.raw import RawImage
 from labwaves.raw import read_parameters
 from labwaves.raw import read_run_data
 
+from labwaves import config
+
 # location of test data files
 proc_f = 'tests/data/proc_data'
 param_f = 'tests/data/parameters'
@@ -53,7 +55,8 @@ class TestRun(object):
                            'rho_2':           1.000,
                            'alpha':           0.5,
                            'D':               0.4,
-                           'sample':          1.0}
+                           'sample':          1.0,
+                           'perspective':     'old'}
         self.run_data = {'run_index':  'r11_07_06c',
                          'l0x':        2796,
                          'l0y':        1151,
@@ -85,7 +88,7 @@ t = TestRun()
 def test_read_parameters():
     params = read_parameters(t.index, param_f)
     assert_equal(type(params), dict)
-    assert_equal(params, t.parameters)
+    assert_dict_equal(params, t.parameters)
 
 
 def test_read_run_data():
@@ -114,13 +117,13 @@ def test_RawRun_get_run_data_when_exists():
 def test_RawRun_imagepaths():
     """Expect a list of paths of all images in run."""
     p1 = r.imagepaths[0]
-    path = 'tests/data/synced/r11_07_06c/cam1/img_0001.jpg'
+    path = 'tests/data/raw/r11_07_06c/cam1/img_0001.jpg'
     assert(os.path.samefile(p1, path))
-    assert_equal(len(r.imagepaths), 2)
+    assert_equal(len(r.imagepaths), 6)
 
 
 def test_RawRun_images():
-    path = 'tests/data/synced/r11_07_06c/cam1/img_0001.jpg'
+    path = 'tests/data/raw/r11_07_06c/cam1/img_0001.jpg'
     assert(os.path.samefile(r.images[0].path, path))
     assert_equal(r.images[0].cam, 'cam1')
 
@@ -134,16 +137,98 @@ def test_RawRun_bc1():
     assert(os.path.exists(path2))
 
 
+def test_RawRun_perspective_reference_old_style():
+    """The old style for cam1, with a reference of (0, 0)."""
+    ref = (0, 0)
+    m = config.ideal_m
+    grid = r.perspective_reference(ref, 'old', 'cam1')
+    lower_right, upper_right, lower_left, upper_left = grid
+    assert_equal((0, 0), lower_right)
+    assert_equal((ref[0] - int(1.47 * m), ref[1] - int(0.25 * m)), upper_left)
+
+
+# runs with different perspective styles
+test_runs = {'old':   r,
+             'new_1': RawRun('r13_01_08a',
+                             parameters_f=param_f,
+                             run_data_f=proc_f,
+                             path=test_path),
+             'new_2': RawRun('r13_01_11e',
+                             parameters_f=param_f,
+                             run_data_f=proc_f,
+                             path=test_path)}
+
+
+def test_RawRun_perspective_reference():
+    """make a new_2 style run and check sanity of perspective
+    reference.
+    """
+    ref = (0, 0)
+    m = config.ideal_m
+
+    def grid(run, style, cam):
+        return run.perspective_reference(ref, style, cam)
+
+    upper_left_ref = {'old':   (ref[0] - int(1.47 * m),
+                                ref[1] - int(0.25 * m)),
+                      'new_1': (ref[0] - int(1.606 * m),
+                                ref[1] - int(0.25 * m)),
+                      'new_2': (ref[0] - int(1.606 * m),
+                                ref[1] - int(0.25 * m))}
+
+    for style in test_runs:
+        run = test_runs[style]
+        lower_right, upper_right, lower_left, upper_left = grid(run, style,
+                                                                'cam1')
+        assert_equal(upper_left_ref[style], upper_left)
+
+
+def test_RawRun_styles():
+    for style in test_runs:
+        assert_equal(test_runs[style].style, style)
+
+
+def test_RawRun_perspective_coefficients():
+    coeff = r.perspective_coefficients
+    # reference coefficients for r11_07_06c
+    ref_coeff = {'cam1': (2.2314511087582045,
+                          0.0096590503446602471,
+                          -3414.5423515871221,
+                          -0.0052021223956432985,
+                          2.2044684499188145,
+                          -1355.4500168457409,
+                          5.8984779324655127e-06,
+                          -1.9885426533893206e-06),
+                 'cam2': (2.0197781850715937,
+                          0.039832235669042655,
+                          -2860.2502250609414,
+                          -0.024309498031448946,
+                          2.0654835373252758,
+                          -1104.7470351277707,
+                          -1.1955993103782927e-05,
+                          1.8206519773594392e-05)}
+
+    assert_dict_equal(coeff, ref_coeff)
+
+
+def test_perspective_transform():
+    """Do a perspective transform with all types of run and check
+    the output. """
+    # TODO: write this
+    assert(True)
+
+
 def test_RawRun_process():
     """Integration tests the whole run."""
-    r.process()
+    for style in test_runs:
+        test_runs[style].process()
     # now compare all images with ref
     ref = glob.glob('tests/data/processed_ref/*/*/*')
     outputs = glob.glob('tests/data/processed/*/*/*')
     for ref, out in zip(ref, outputs):
         assert_image_equal(ref, out)
 
-
+### RawImage class tests
 i = RawImage(t.raw_image, r)
 
 

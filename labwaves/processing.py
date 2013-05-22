@@ -139,6 +139,11 @@ def perspective_coefficients(X, x):
     for PIL transform.
 
     Solves the equation Ac = X.
+
+    See [1] and [2] for more.
+
+    [1]: http://xenia.media.mit.edu/~cwren/interpolator/
+    [2]: http://www.robots.ox.ac.uk/~vgg/presentations/bmvc97/criminispaper/
     """
     (x1, y1), (x2, y2), (x3, y3), (x4, y4) = x
     (X1, Y1), (X2, Y2), (X3, Y3), (X4, Y4) = X

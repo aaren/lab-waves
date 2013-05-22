@@ -1,5 +1,3 @@
-- Fix RawRun.measure
-
 - multiprocessing
 
 - use new objects in generate (maybe multiprocess here?)
