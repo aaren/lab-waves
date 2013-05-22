@@ -47,6 +47,15 @@ def test_barrel_correct():
     Appears to be due to the quantization table for saving a jpeg.
     Not something that can be set with PIL. Hence we have to write
     out the file for it to be comparable.
+
+    Another problem is that different versions of convert seem to
+    write BMP headers differently. For example, on Debian Wheezy
+    with convert --version = 6.7.7-10 we get the error
+
+    > IOError: Unsupported BMP header type (124)
+
+    On CentOS 5, with convert --version = 6.6...something we don't
+    get this error.
     """
     raw_image_1 = 'tests/data/raw/r11_07_06c/cam1/img_0001.jpg'
     raw_image_2 = 'tests/data/raw/r11_07_06c/cam2/img_0001.jpg'
