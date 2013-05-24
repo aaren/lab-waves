@@ -187,7 +187,7 @@ def barrel_corr(image, outimage, Null=None, res=8):
     sys.stdout.flush()
     return imc
 
-def f((x,y), (w, h), (a,b,c,d)):
+def f((x,y,z), (w, h), (a,b,c,d)):
     """Map destination pixels to source pixels for barrel
     distortion coefficients a, b, c, d and an image of
     dimensions (w, h).
@@ -222,7 +222,7 @@ def f((x,y), (w, h), (a,b,c,d)):
     print '\r', x, y,
     # centre condition
     if x == w / 2 and y == h / 2:
-        return x, y
+        return x, y, z
 
     r_dest = ((w / 2 - x) ** 2 + (h / 2 - y) ** 2) ** .5
 
@@ -234,7 +234,7 @@ def f((x,y), (w, h), (a,b,c,d)):
     x_src = r * x + (w / 2) * (1 - r)
     y_src = r * y + (w / 2) * (1 - r)
 
-    return int(x_src), int(y_src)
+    return int(x_src), int(y_src), z
 
 def barrel_corrections(run, run_data=None):
     # Barrel correct
