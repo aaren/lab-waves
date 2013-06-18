@@ -330,26 +330,27 @@ class RawRun(object):
 
         The returned list has entries corresponding to these
         headers in the proc file
-        keys = ['run_index',
-                'l0x',
-                'l0y',
-                'lsx',
-                'lsy',
-                'j10x',
-                'j10y',
-                'j1sx',
-                'j1sy',
-                'leakage',
-                'odd_1',
-                'j20x',
-                'j20y',
-                'j2sx',
-                'j2sy',
-                'r0x',
-                'r0y',
-                'rsx',
-                'rsy',
-                'odd_2']
+
+            keys = ['run_index',
+                    'l0x',
+                    'l0y',
+                    'lsx',
+                    'lsy',
+                    'j10x',
+                    'j10y',
+                    'j1sx',
+                    'j1sy',
+                    'leakage',
+                    'odd_1',
+                    'j20x',
+                    'j20y',
+                    'j2sx',
+                    'j2sy',
+                    'r0x',
+                    'r0y',
+                    'rsx',
+                    'rsy',
+                    'odd_2']
 
         Internally, this uses matplotlib ginput to display an image
         and allow user input.
@@ -572,10 +573,10 @@ class RawRun(object):
         Outputs: dictionary of the camera coefficients
                 d.keys() = ['cam1', 'cam2']
                 d['cam1'] = (a, b, c, d, e, f, g, h)
+
         """
         run_data = self.run_data
 
-        # TODO: add these entries to the proc file for new test ims
         lower_right_1 = (run_data['l0x']), (run_data['l0y'])
         upper_right_1 = (run_data['lsx']), (run_data['lsy'])
         lower_left_1 = (run_data['j10x']), (run_data['j10y'])
@@ -619,8 +620,6 @@ class RawRun(object):
 
         Output: a tuple of four integers defining the box
                 (left, upper, right, lower)
-
-        TODO: update for new style images
         """
         run_data = self.run_data
         odd = {'cam1': run_data['odd_1'], 'cam2': run_data['odd_2']}
