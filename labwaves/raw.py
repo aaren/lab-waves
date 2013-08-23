@@ -58,7 +58,12 @@ def read_parameters(run, paramf):
             ('sample',          'f8'),
             ('perspective',     'S10')]
     names, types = zip(*data)
-    p = np.genfromtxt(paramf, dtype=types, names=names)
+    try:
+        p = np.genfromtxt(paramf, dtype=types, names=names)
+    except ValueError:
+        print("parameters file is malformed. Should have headings: np.dtype")
+        print({k: v for k, v in data})
+
     index = np.where(p['run_index'] == run)
     params = p[index]
     if len(params) == 0:
@@ -99,10 +104,15 @@ def read_run_data(run, paramf):
             ('rsy',        'i4'),
             ('odd_2',      'S10')]
     names, dtypes = zip(*data)
-    rd = np.genfromtxt(paramf, skip_header=1,
-                       dtype=dtypes,
-                       delimiter=',',
-                       names=names)
+    try:
+        rd = np.genfromtxt(paramf, skip_header=1,
+                        dtype=dtypes,
+                        delimiter=',',
+                        names=names)
+    except ValueError:
+        print("run data file is malformed. Should have headings: np.dtype")
+        print({k: v for k, v in data})
+
     index = np.where(rd['run_index'] == run)
     rdp = rd[index]
     # convert to dictionary
