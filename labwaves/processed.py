@@ -12,6 +12,39 @@ import config
 # TODO: make this
 import interface
 
+class ProcessedImage(object):
+    def __init__(self, path, run):
+        """A ProcessedImage is a member of a ProcessedRun - images
+        don't exist outside of a run. To initialise a
+        ProcessedImage, a ProcessedRun instance must be passed as
+        input.
+
+        Inputs: path - path to an image file
+                run - a ProcessedRun instance
+
+        Each image originates from a specific camera and has a
+        frame number, both of which are encoded in the file path.
+
+        The camera determines the coefficients used in the correction
+        routines.
+
+        The frame number to determine the time that an image
+        corresponds to.
+        """
+        self.path = path
+        self.run = run
+
+        self.fname = os.path.basename(path)
+        self.dirname = os.path.dirname(path)
+
+        self.frame = iframe(path)
+        self.cam = icam(path)
+
+        self.outpath = os.path.join(run.output_dir, self.cam, self.fname)
+
+        self.im = Image.open(path)
+
+
 class ProcessedRun(object):
     """Same init as RawRun. At some point these two will be merged
     into a single Run class.
@@ -44,7 +77,7 @@ class ProcessedRun(object):
         """Return a list of image objects, corresponding to each image
         in the run.
         """
-        return [Image.open(p) for p in self.imagepaths]
+        return [ProcessedImage(p, run=self) for p in self.imagepaths]
 
     def interface(self):
         """Grab all interface data from a run"""
