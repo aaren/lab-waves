@@ -665,5 +665,7 @@ class RawRun(object):
 
         Can easily multiprocess this bit.
         """
+        # TODO: multiprocess
+        # TODO: progress bar
         for image in self.images:
             image.write_out()
