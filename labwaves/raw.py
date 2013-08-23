@@ -186,22 +186,17 @@ class RawImage(object):
         corresponds to.
         """
         self.path = path
+        self.run = run
+
         self.fname = os.path.basename(path)
         self.dirname = os.path.dirname(path)
 
         self.frame = iframe(path)
         self.cam = icam(path)
-        self.run_index = run.index
 
-        self.processed_path = os.path.join(run.path,
-                                           config.outdir,
-                                           run.index,
-                                           self.cam,
-                                           self.fname)
+        self.outpath = os.path.join(run.output_dir, self.cam, self.fname)
 
         self.im = Image.open(path)
-
-        self.run = run
 
         self.parameters = run.parameters
         self.param_text = config.param_text.format(time=self.time,
@@ -259,8 +254,8 @@ class RawImage(object):
         """Write the processed image to disk. Doesn't store anything
         in memory."""
         processed_im = self.process()
-        util.makedirs_p(os.path.dirname(self.processed_path))
-        processed_im.save(self.processed_path)
+        util.makedirs_p(os.path.dirname(self.outpath))
+        processed_im.save(self.outpath)
 
 
 class RawRun(object):
@@ -288,6 +283,7 @@ class RawRun(object):
         else:
             self.path = path
         self.input_dir = os.path.join(self.path, config.indir, self.index)
+        self.output_dir = os.path.join(self.path, config.outdir, self.index)
         if not parameters_f:
             self.parameters = read_parameters(run, config.paramf)
         else:
