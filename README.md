@@ -72,6 +72,17 @@ r.write_out(r.stitched_images)
 have a `write_out()` method. This allows us to make new images that
 derive from the Processed Images easily.
 
+We can write out a sequence of stitched images that have been
+manipulated further:
+
+```python
+r.write_out(r.visible_regions(r.stitched_images))
+```
+
+In this case, `r.visible_regions`, which is a staticmethod that
+takes a sequence of stitched images as argument, adds some features
+to the images.
+
 
 ### Data organisation ###
 

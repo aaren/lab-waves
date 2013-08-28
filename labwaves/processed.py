@@ -106,6 +106,36 @@ class ProcessedRun(object):
         cam2_images = (im for im in self.images if im.cam == 'cam2')
         return imap(StitchedImage, cam1_images, cam2_images)
 
+    @staticmethod
+    def visible_regions(stitched_images):
+        """Yield a sequence of stitched images that have
+        rectangles overlaid on the sections of the tank
+        in which PIV experiments could be performed.
+
+        In red are standard locations. In yellow are the equivalent
+        locations were the lock to shift downstream by 0.75m.
+
+        stitched_images is a sequence of StitchedImage objects
+
+        Returns a generator.
+        """
+        # visible regions
+        vis = (((1.18, 0.25), (0.71, 0.0)),
+               ((2.11, 0.25), (1.70, 0.0)),
+               ((3.08, 0.25), (2.70, 0.0)))
+
+        # shifted visible regions
+        vis_ = (((0.43, 0.25), (-0.04, 0.0)),
+                ((1.36, 0.25), (0.95, 0.0)),
+                ((2.33, 0.25), (1.95, 0.0)))
+
+        boxes = [[real_to_pixel(*x, cam='cam2') for x in X] for X in vis]
+        boxes_ = [[real_to_pixel(*x, cam='cam2') for x in X] for X in vis_]
+        for si in stitched_images:
+            si.draw_rectangles(boxes_, fill='yellow')
+            si.draw_rectangles(boxes, fill='red')
+            yield si
+
     def interface(self):
         """Grab all interface data from a run"""
         # TODO: multiprocessing
@@ -202,6 +232,13 @@ class StitchedImage(object):
         draw.line((right, upper, right, lower), width=linewidth, fill=fill)
         draw.line((right, lower, left, lower), width=linewidth, fill=fill)
         draw.line((left, lower, left, upper), width=linewidth, fill=fill)
+        return self
+
+    def draw_rectangles(self, boxes, fill='red', linewidth=5):
+        """Draw multiple rectangles."""
+        for box in boxes:
+            self.draw_rectangle(box, fill, linewidth)
+        return self
 
     def write_out(self, path=None):
         """Save the stitched image to disk."""
