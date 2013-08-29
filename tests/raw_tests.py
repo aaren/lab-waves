@@ -8,10 +8,10 @@ import Image
 import numpy as np
 import numpy.testing as npt
 
-from labwaves.raw import RawRun
-from labwaves.raw import RawImage
-from labwaves.raw import read_parameters
-from labwaves.raw import read_run_data
+from labwaves.runbase import RawRun
+from labwaves.runbase import RawImage
+from labwaves.runbase import read_parameters
+from labwaves.runbase import read_run_data
 
 from labwaves import config
 
@@ -254,4 +254,4 @@ def test_RawImage_write_out():
     """Integration tests the whole RawImage class."""
     i.write_out()
     # now compare the output with reference
-    assert_image_equal(i.processed_path, t.processed_path)
+    assert_image_equal(i.outpath, t.processed_path)
