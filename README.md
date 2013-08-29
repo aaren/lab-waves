@@ -21,11 +21,57 @@ this:
 
 TODO: how to use the program
 
-Command line
+#### Command line
 
 #### API
 
-Have a look at the example scripts in `demo`.
+Standardising the images from a give run is easy:
+
+```python
+from labwaves import RawRun
+
+run = 'r11_07_06c'
+r = RawRun(run)
+r.process()
+```
+
+To do the steps explicitly:
+
+```python
+# barrel correct first image
+r.bc1()
+# obtain run data from first image, unless data already exists
+r.get_run_data()
+# barrel correct all images in run
+r.barrel_correct()
+# perspective correct all images in run
+r.perspective_transform()
+# crop and add border info
+r.crop_text()
+```
+
+We can do different things to a standardised run. For example
+**stitching images together**:
+
+```python
+from labwaves import ProcessedRun
+
+r = ProcessedRun('r11_07_06c')
+
+# an iterator of stitched images from the run
+si = r.stitched_images
+```
+
+We can write out images to disk:
+
+```python
+r.write_out(r.stitched_images)
+```
+
+`r.stitched_images` could be any sequence of images objects that
+have a `write_out()` method. This allows us to make new images that
+derive from the Processed Images easily.
+
 
 ### Data organisation ###
 
