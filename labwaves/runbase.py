@@ -507,7 +507,10 @@ class RawRun(object):
         im_re = 'img_0001.jpg'
         cam_re = cam
         im_cam_re = cam_re + '/' + im_re
-        image_path = glob.glob(os.path.join(rundir, im_cam_re))[0]
+        try:
+            image_path = glob.glob(os.path.join(rundir, im_cam_re))[0]
+        except IndexError:
+            exit('No images found')
         return image_path
 
     def bc1_image_path(self, camera):
