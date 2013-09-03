@@ -19,7 +19,6 @@ import processing
 import interface
 
 
-
 def lazyprop(fn):
     """Decorator to allow lazy evaluation of class properties
 
@@ -111,9 +110,9 @@ def read_run_data(run, paramf):
     names, dtypes = zip(*data)
     try:
         rd = np.genfromtxt(paramf, skip_header=1,
-                        dtype=dtypes,
-                        delimiter=',',
-                        names=names)
+                           dtype=dtypes,
+                           delimiter=',',
+                           names=names)
     except ValueError:
         print("run data file is malformed. Should have headings: np.dtype")
         print({k: v for k, v in data})
@@ -227,8 +226,7 @@ class RawImage(object):
         """Perspective correct an image."""
         bc_im = self.barrel_correct()
         self.perspective_coeffs = self.run.perspective_coefficients[self.cam]
-        trans = processing.perspective_transform(bc_im, self.perspective_coeffs)
-        return trans
+        return processing.perspective_transform(bc_im, self.perspective_coeffs)
 
     def crop_text(self):
         """Crop, add borders and add text."""
@@ -562,7 +560,8 @@ class RawRun(object):
         Inputs:
             reference_point - (x, y) pixel units. The coordinates of the lower
                               left corner in pixels.
-            style - string, e.g. 'old' will give a grid that fits old style images
+            style - string, e.g. 'old' will give a grid that fits old style
+                            images
             camera - string, e.g. 'cam1', the camera to get the grid for.
         """
         points = config.perspective_ref_points[style][camera]
