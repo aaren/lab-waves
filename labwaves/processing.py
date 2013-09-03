@@ -22,8 +22,8 @@ Functions:
 from __future__ import division
 
 # necessary IO modules for using external functions
-import os
 import subprocess
+import tempfile
 
 import numpy as np
 import Image
@@ -32,8 +32,7 @@ import ImageDraw
 
 ### PURE FUNCTIONS ###
 # operate on a single image object
-def barrel_correct(im, coeffs, verbose=False,
-        tmp_in='/tmp/bctmpin', tmp_out='/tmp/bctmpout', tmp_fmt='bmp'):
+def barrel_correct(im, coeffs, verbose=False, tmp_fmt='bmp'):
     """Uses Imagemagick convert to apply a barrel correction to
     an image.
 
@@ -70,9 +69,9 @@ def barrel_correct(im, coeffs, verbose=False,
     if im.mode == 'RGBA':
         im = im.convert('RGB')
     # create temp files
-    tin = tmp_in + '.' + tmp_fmt
-    tout = tmp_out + '.' + tmp_fmt
-    im.save(tin, tmp_fmt)
+    tin = tempfile.NamedTemporaryFile(suffix=tmp_fmt)
+    tout = tempfile.NamedTemporaryFile(suffix=tmp_fmt)
+    im.save(tin.name, tmp_fmt)
 
     # format coefficients for convert
     scoeffs = ' '.join([str(c) for c in coeffs])
@@ -81,17 +80,17 @@ def barrel_correct(im, coeffs, verbose=False,
            "-verbose",
            "-distort", "Barrel",
            scoeffs,
-           tin,
-           tout]
+           tin.name,
+           tout.name]
     if verbose:
         subprocess.call(cmd)
     elif not verbose:
         subprocess.call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out_im = Image.open(tout)
+    out_im = Image.open(tout.name)
 
     # cleanup
-    os.remove(tin)
-    os.remove(tout)
+    tin.close()
+    tout.close()
 
     # TODO: force the output of barrel_correct to be of type jpg
     return out_im
