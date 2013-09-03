@@ -410,51 +410,47 @@ class RawRun(object):
 
             plt.imshow(bc_im)
 
+            help_text = ("Select {} \nClick again to finish or "
+                         "right click to cancel point.").format
+
             # set limits to zoom in on rough target area (lock)
             w, h = bc_im.size
-
             plt.xlim((w * 5) / 6, w)
-            plt.ylim((h * 3) / 8, (h * 6) / 8)
-            if camera is 'cam1':
-                print("Select lock base and surface \n"
-                      "Click again to finish or right click to cancel point.")
+            # ylim is inverted to make image right way up
+            plt.ylim((h * 6) / 8, (h * 2) / 8)
 
-            elif camera is 'cam2' and self.style is 'old':
-                print("Select inner join base and surface \n"
-                      "Click again to finish or right click to cancel point.")
+            if camera == 'cam1':
+                print(help_text("lock base and surface"))
 
-            elif camera is 'cam2' and self.style is 'new_1' or 'new_2':
-                print("Select right projection markers \n"
-                      "Click again to finish or right click to cancel point.")
+            elif camera == 'cam2' and self.style == 'old':
+                print(help_text("inner join base and surface"))
+
+            elif camera == 'cam2' and 'new' in self.style:
+                print(help_text("right projection markers"))
 
             plt.draw()
+            # ask for three points - the third indicates to move on
             pt1 = plt.ginput(3, 0)
 
             # set limits to zoom in on rough target area
             # this is the join for cam1 and the ruler for cam2
-            if camera is 'cam1' and self.style is 'old':
+            if camera == 'cam1' and self.style == 'old':
                 plt.xlim(0, w / 6)
-                print("Select inner join base and surface \n"
-                      "Click again to finish or right click to cancel point.")
+                print(help_text("inner join base and surface"))
 
-            elif camera is 'cam1' and self.style is 'new_1' or 'new_2':
-                plt.xlim(0, w / 6)
-                print("Select left projection markers \n"
-                      "Click again to finish or right click to cancel point.")
-
-            elif camera is 'cam2' and self.style is 'old':
+            elif camera == 'cam2' and self.style == 'old':
                 plt.xlim(w / 4, w / 2)
-                print("Select inner ruler base and projection to surface \n"
-                      "Click again to finish or right click to cancel point.")
+                print(help_text("inner ruler base and projection to surface"))
 
-            elif camera is 'cam2' and self.style is 'new_1' or 'new_2':
+            elif 'new' in self.style:
                 plt.xlim(0, w / 6)
-                print("Select left projection markers \n"
-                      "Click again to finish or right click to cancel point.")
+                print(help_text("left projection markers"))
 
             plt.draw()
+            # ask for three points - the third indicates to move on
             pt2 = plt.ginput(3, 0)
 
+            # discard the third point
             pts = pt1[0:2] + pt2[0:2]
             for x, y in pts:
                 proc.append(int(x))
@@ -462,7 +458,7 @@ class RawRun(object):
 
             plt.xlim(0, w)
             plt.draw()
-            if camera is 'cam1':
+            if camera == 'cam1':
                 print("What is the extent of lock leakage? \n"
                       "Click inside lock if none."
                       "Click again to finish or right click to cancel point.")
