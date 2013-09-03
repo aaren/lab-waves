@@ -77,7 +77,7 @@ class TestRun(object):
                          'rsx':        1093,
                          'rsy':        683,
                          'odd_2':      'n'}
-        self.raw_image = 'tests/data/raw/r11_07_06c/cam1/img_0001.jpg'
+        self.raw_image = 'tests/data/synced/r11_07_06c/cam1/img_0001.jpg'
         self.bc_image = 'tests/data/bc/r11_07_06c/cam1/img_0001.jpg'
         self.processed_path = 'tests/data/processed_ref/r11_07_06c/cam1/img_0001.jpg'
 
@@ -117,13 +117,13 @@ def test_RawRun_get_run_data_when_exists():
 def test_RawRun_imagepaths():
     """Expect a list of paths of all images in run."""
     p1 = r.imagepaths[0]
-    path = 'tests/data/raw/r11_07_06c/cam1/img_0001.jpg'
+    path = 'tests/data/synced/r11_07_06c/cam1/img_0001.jpg'
     assert(os.path.samefile(p1, path))
     assert_equal(len(r.imagepaths), 6)
 
 
 def test_RawRun_images():
-    path = 'tests/data/raw/r11_07_06c/cam1/img_0001.jpg'
+    path = 'tests/data/synced/r11_07_06c/cam1/img_0001.jpg'
     assert(os.path.samefile(r.images[0].path, path))
     assert_equal(r.images[0].cam, 'cam1')
 

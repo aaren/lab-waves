@@ -57,8 +57,8 @@ def test_barrel_correct():
     On CentOS 5, with convert --version = 6.6...something we don't
     get this error.
     """
-    raw_image_1 = 'tests/data/raw/r11_07_06c/cam1/img_0001.jpg'
-    raw_image_2 = 'tests/data/raw/r11_07_06c/cam2/img_0001.jpg'
+    raw_image_1 = 'tests/data/synced/r11_07_06c/cam1/img_0001.jpg'
+    raw_image_2 = 'tests/data/synced/r11_07_06c/cam2/img_0001.jpg'
     raw_images = [raw_image_1, raw_image_2]
 
     bc_image_1 = 'tests/data/bc1/r11_07_06c/cam1/img_0001.jpg'
@@ -97,7 +97,7 @@ def test_perspective_transform():
 
     We use bilinear resampling in this function.
     """
-    im = Image.open('tests/data/raw/r11_07_06c/cam1/img_0001.jpg')
+    im = Image.open('tests/data/synced/r11_07_06c/cam1/img_0001.jpg')
 
     identity = (1, 0, 0, 0, 1, 0, 0, 0)
     tim = processing.perspective_transform(im, identity)
@@ -111,7 +111,7 @@ def test_perspective_transform():
 
 def test_crop():
     """Bit redundant really. """
-    im = Image.open('tests/data/raw/r11_07_06c/cam1/img_0001.jpg')
+    im = Image.open('tests/data/synced/r11_07_06c/cam1/img_0001.jpg')
     box = (0, 0, im.size[0], im.size[1])
     cima = im.crop(box)
 
@@ -126,7 +126,7 @@ def test_draw_text():
 
     Integration test will more thoroughly test this.
     """
-    im = Image.open('tests/data/raw/r11_07_06c/cam1/img_0001.jpg')
+    im = Image.open('tests/data/synced/r11_07_06c/cam1/img_0001.jpg')
     kwargs = {'upper_text':  '',
               'lower_text':  '',
               'upper_bar':   100,

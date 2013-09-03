@@ -8,7 +8,7 @@ paramf = path + '/parameters'
 # proc_data?
 procf = path + '/proc_data'
 # input directory
-indir = 'raw'
+indir = 'synced'
 # output directory
 outdir = 'processed'
 # where is the data going to be stored?? (filename)
