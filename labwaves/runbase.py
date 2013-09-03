@@ -298,7 +298,7 @@ class RawRun(object):
         self.run_data_f = run_data_f
 
         self.bc1_outdir = 'tmp/bc1'
-        camera_paths = glob.glob(os.path.join(self.input_dir, 'cam*'))
+        camera_paths = glob.glob(os.path.join(self.input_dir, 'cam[0-9]'))
         self.cameras = [os.path.basename(c) for c in camera_paths]
 
     @property
