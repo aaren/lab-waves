@@ -2,6 +2,7 @@ from __future__ import division
 
 import glob
 import os
+import itertools
 from itertools import imap
 
 import Image
@@ -327,6 +328,91 @@ class RawRun(object):
 
         return run_data
 
+    def measure_camera(self, camera):
+        plt.figure(figsize=(16, 12))
+        # load up the barrel corrected first image
+        bc1_path = self.bc1_image_path(camera)
+        # if there isn't anything there, barrel correct the
+        # first image
+        # TODO: catch case that there is a missing camera
+        if not os.path.exists(bc1_path):
+            self.bc1()
+        try:
+            bc_im = Image.open(bc1_path)
+        except IOError:
+            print "Bad image for {run}, {cam}".format(run=self.index,
+                                                      cam=camera)
+            if camera == 'cam1':
+                return [0, 0, 0, 0, 0, 0, 0, 0, 0, 999]
+            elif camera == 'cam2':
+                return [0, 0, 0, 0, 0, 0, 0, 0, 999]
+            else:
+                return None
+
+        plt.imshow(bc_im)
+
+        help_text = ("Select {} \nClick again to finish or "
+                     "right click to cancel point.").format
+
+        # set limits to zoom in on rough target area (lock)
+        w, h = bc_im.size
+        plt.xlim((w * 5) / 6, w)
+        # ylim is inverted to make image right way up
+        plt.ylim((h * 6) / 8, (h * 2) / 8)
+
+        if camera == 'cam1':
+            print(help_text("lock base and surface"))
+
+        elif camera == 'cam2' and self.style == 'old':
+            print(help_text("inner join base and surface"))
+
+        elif camera == 'cam2' and 'new' in self.style:
+            print(help_text("right projection markers"))
+
+        plt.draw()
+        # ask for three points - the third indicates to move on
+        pt1 = plt.ginput(3, 0)
+
+        # set limits to zoom in on rough target area
+        # this is the join for cam1 and the ruler for cam2
+        if camera == 'cam1' and self.style == 'old':
+            plt.xlim(0, w / 6)
+            print(help_text("inner join base and surface"))
+
+        elif camera == 'cam2' and self.style == 'old':
+            plt.xlim(w / 4, w / 2)
+            print(help_text("inner ruler base and projection to surface"))
+
+        elif 'new' in self.style:
+            plt.xlim(0, w / 6)
+            print(help_text("left projection markers"))
+
+        plt.draw()
+        # ask for three points - the third indicates to move on
+        pt2 = plt.ginput(3, 0)
+
+        # discard the third point
+        pts = pt1[0:2] + pt2[0:2]
+        points = list(itertools.chain.from_iterable([(int(x), h - int(y))
+                                                     for x, y in pts]))
+
+        plt.xlim(0, w)
+        plt.draw()
+        if camera == 'cam1':
+            print("What is the extent of lock leakage? \n"
+                  "Click inside lock if none."
+                  "Click again to finish or right click to cancel point.")
+            leak = plt.ginput(2, 0)[0][0]
+            leakage = int(pt1[0][0] - leak)
+            points += [leakage]
+
+        print("Weird? (y/n)")
+        weird = raw_input('> ')
+        points += [weird]
+        plt.close()
+
+        return points
+
     def measure(self, procf=None):
         """Interactive tool for selecting perspective correction
         reference points in a run.
@@ -392,82 +478,7 @@ class RawRun(object):
         proc = []
         proc.append(self.index)
         for camera in self.cameras:
-            plt.figure(figsize=(16, 12))
-            # load up the barrel corrected first image
-            bc1_path = self.bc1_image_path(camera)
-            # if there isn't anything there, barrel correct the
-            # first image
-            # TODO: catch case that there is a missing camera
-            if not os.path.exists(bc1_path):
-                self.bc1()
-            try:
-                bc_im = Image.open(bc1_path)
-            except IOError:
-                print "Bad image for {run}, {cam}".format(run=self.index,
-                                                          cam=camera)
-                # TODO: return None instead?
-                break
-
-            plt.imshow(bc_im)
-
-            help_text = ("Select {} \nClick again to finish or "
-                         "right click to cancel point.").format
-
-            # set limits to zoom in on rough target area (lock)
-            w, h = bc_im.size
-            plt.xlim((w * 5) / 6, w)
-            # ylim is inverted to make image right way up
-            plt.ylim((h * 6) / 8, (h * 2) / 8)
-
-            if camera == 'cam1':
-                print(help_text("lock base and surface"))
-
-            elif camera == 'cam2' and self.style == 'old':
-                print(help_text("inner join base and surface"))
-
-            elif camera == 'cam2' and 'new' in self.style:
-                print(help_text("right projection markers"))
-
-            plt.draw()
-            # ask for three points - the third indicates to move on
-            pt1 = plt.ginput(3, 0)
-
-            # set limits to zoom in on rough target area
-            # this is the join for cam1 and the ruler for cam2
-            if camera == 'cam1' and self.style == 'old':
-                plt.xlim(0, w / 6)
-                print(help_text("inner join base and surface"))
-
-            elif camera == 'cam2' and self.style == 'old':
-                plt.xlim(w / 4, w / 2)
-                print(help_text("inner ruler base and projection to surface"))
-
-            elif 'new' in self.style:
-                plt.xlim(0, w / 6)
-                print(help_text("left projection markers"))
-
-            plt.draw()
-            # ask for three points - the third indicates to move on
-            pt2 = plt.ginput(3, 0)
-
-            # discard the third point
-            pts = pt1[0:2] + pt2[0:2]
-            for x, y in pts:
-                proc.append(int(x))
-                proc.append(h - int(y))
-
-            plt.xlim(0, w)
-            plt.draw()
-            if camera == 'cam1':
-                print("What is the extent of lock leakage? \n"
-                      "Click inside lock if none."
-                      "Click again to finish or right click to cancel point.")
-                leak = plt.ginput(2, 0)[0][0]
-                proc.append(int(pt1[0][0] - leak))
-
-            print("Weird? (y/n)")
-            proc.append(raw_input('> '))
-            plt.close()
+            proc += self.measure_camera(camera)
 
         entry = ','.join([str(e) for e in proc]) + '\n'
         if not procf:
