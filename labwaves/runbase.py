@@ -486,7 +486,10 @@ class RawRun(object):
         self.path.
         """
         for camera in self.cameras:
-            ref_image_path = self.ref_image_path(camera)
+            try:
+                ref_image_path = self.ref_image_path(camera)
+            except IndexError:
+                break
             im1 = RawImage(ref_image_path, self)
             bim1 = im1.barrel_correct()
 
@@ -505,10 +508,7 @@ class RawRun(object):
         im_re = 'img_0001.jpg'
         cam_re = cam
         im_cam_re = cam_re + '/' + im_re
-        try:
-            image_path = glob.glob(os.path.join(rundir, im_cam_re))[0]
-        except IndexError:
-            exit('No images found')
+        image_path = glob.glob(os.path.join(rundir, im_cam_re))[0]
         return image_path
 
     def bc1_image_path(self, camera):
