@@ -297,7 +297,8 @@ class RawRun(object):
         self.run_data_f = run_data_f
 
         self.bc1_outdir = 'tmp/bc1'
-        self.cameras = ['cam1', 'cam2']
+        camera_paths = glob.glob(os.path.join(self.input_dir, 'cam*'))
+        self.cameras = [os.path.basename(c) for c in camera_paths]
 
     @property
     def run_data(self):
@@ -396,6 +397,7 @@ class RawRun(object):
             bc1_path = self.bc1_image_path(camera)
             # if there isn't anything there, barrel correct the
             # first image
+            # TODO: catch case that there is a missing camera
             if not os.path.exists(bc1_path):
                 self.bc1()
             try:
