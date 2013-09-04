@@ -23,7 +23,7 @@ from __future__ import division
 
 # necessary IO modules for using external functions
 import subprocess
-import tempfile
+from cStringIO import StringIO
 
 import numpy as np
 import Image
@@ -32,7 +32,7 @@ import ImageDraw
 
 ### PURE FUNCTIONS ###
 # operate on a single image object
-def barrel_correct(im, coeffs, verbose=False, tmp_fmt='bmp'):
+def barrel_correct(im, coeffs):
     """Uses Imagemagick convert to apply a barrel correction to
     an image.
 
@@ -40,10 +40,6 @@ def barrel_correct(im, coeffs, verbose=False, tmp_fmt='bmp'):
             coeffs - a list of four coefficients [a, b, c, d] which
                      can be str, float or int, will be converted to
                      str anyway.
-            verbose - print output to screen?
-            tmp_in - input temp file
-            tmp_out - output temp file
-            tmp_fmt - temp file format, default is raw bitmap
 
     Outputs: A corrected PIL Image object.
 
@@ -59,38 +55,37 @@ def barrel_correct(im, coeffs, verbose=False, tmp_fmt='bmp'):
     to do the work, which means doing IO in a supposedly pure
     function.
 
-    The solution is to create a temporary file and re-read it
-    to an image object. This won't be as fast as it could be,
-    but consistency of these low level functions is more important
+    The solution is to do the IO using strings in memory.
+
+    Consistency of these low level functions is more important
     than performance as we can solve the latter by using a bigger
     computer.
     """
     # check image is RGB
     if im.mode == 'RGBA':
         im = im.convert('RGB')
-    # create temp files
-    tin = tempfile.NamedTemporaryFile(suffix=tmp_fmt)
-    tout = tempfile.NamedTemporaryFile(suffix=tmp_fmt)
-    im.save(tin.name, tmp_fmt)
+
+    # save image to string buffer
+    buff = StringIO()
+    # using im.format as the buffer format is fastest, but
+    # there are issues with jpeg quantisation tables...
+    # look at the test for this.
+    tmp_format = 'BMP'
+    im.save(buff, format=tmp_format)
+    imstd = buff.getvalue()
 
     # format coefficients for convert
     scoeffs = ' '.join([str(c) for c in coeffs])
 
     cmd = ["convert",
-           "-verbose",
            "-distort", "Barrel",
            scoeffs,
-           tin.name,
-           tout.name]
-    if verbose:
-        subprocess.call(cmd)
-    elif not verbose:
-        subprocess.call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out_im = Image.open(tout.name)
+           '-',
+           '-']
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    stdoutdata, stderrdata = proc.communicate(input=imstd)
 
-    # cleanup
-    tin.close()
-    tout.close()
+    out_im = Image.open(StringIO(stdoutdata))
 
     # TODO: force the output of barrel_correct to be of type jpg
     return out_im
