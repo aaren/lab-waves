@@ -11,6 +11,8 @@ import ImageFont
 import numpy as np
 import matplotlib.pyplot as plt
 
+from gc_turbulence.gc_turbulence.util import parallel_process, parallel_stub
+
 import config
 import util
 
@@ -681,10 +683,14 @@ class RawRun(object):
 
         Can easily multiprocess this bit.
         """
-        # TODO: multiprocess
-        # TODO: progress bar
-        for image in self.images:
-            image.write_out()
+        kwargs = [{'image': i} for i in self.images]
+        parallel_process(process_raw, kwargs, processors=10)
+
+
+@parallel_stub
+def process_raw(image):
+    """External function to allow multiprocessing raw images."""
+    image.write_out()
 
 
 def real_to_pixel(x, y, cam='cam2'):
