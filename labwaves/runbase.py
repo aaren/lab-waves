@@ -393,7 +393,7 @@ class RawRun(object):
 
         # discard the third point
         pts = pt1[0:2] + pt2[0:2]
-        points = list(itertools.chain.from_iterable([(int(x), h - int(y))
+        points = list(itertools.chain.from_iterable([(int(x), int(y))
                                                      for x, y in pts]))
 
         plt.xlim(0, w)
