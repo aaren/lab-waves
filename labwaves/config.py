@@ -116,6 +116,11 @@ perspective_ref_points = {'old':   {'cam1': ((0.00, 0.00),
                                              (3.40, 0.25))}
                           }
 
+# a measurement where the cameras overlap
+overlap = {'old':   1.40,
+           'new_1': 1.75,
+           'new_2': 1.75}
+
 # Specify the positions of rulers and other vertical features that
 # obscure the fluid. Measured in metres from the lock.
 

@@ -741,7 +741,7 @@ class ProcessedRun(object):
     """Same init as RawRun. At some point these two will be merged
     into a single Run class.
     """
-    def __init__(self, run, path=None):
+    def __init__(self, run, path=None, parameters_f=None):
         """
         Inputs: run - string, a run index, e.g. 'r11_05_24a'
         """
@@ -751,6 +751,10 @@ class ProcessedRun(object):
             self.path = config.path
         else:
             self.path = path
+        if not parameters_f:
+            self.parameters = read_parameters(run, config.paramf)
+        else:
+            self.parameters = read_parameters(run, parameters_f)
 
         # processed input is the output from raw
         self.input_dir = os.path.join(self.path, config.outdir, self.index)
@@ -776,10 +780,17 @@ class ProcessedRun(object):
         return (ProcessedImage(p, run=self) for p in self.imagepaths)
 
     @property
+    def style(self):
+        """Returns a string, the perspective style used for the run."""
+        return self.parameters['perspective']
+
+    @property
     def stitched_images(self):
         cam1_images = (im for im in self.images if im.cam == 'cam1')
         cam2_images = (im for im in self.images if im.cam == 'cam2')
-        return imap(StitchedImage, cam1_images, cam2_images)
+        overlap = config.overlap[self.style]
+        join = (overlap for im in self.images)
+        return imap(StitchedImage, cam1_images, cam2_images, join)
 
     @staticmethod
     def visible_regions(stitched_images):
@@ -833,16 +844,18 @@ class ProcessedRun(object):
 
 
 class StitchedImage(object):
-    def __init__(self, im1, im2):
+    def __init__(self, im1, im2, join):
         """Create a Stitched Image, which is the joining of two
         images from different cameras.
 
-        im1 - cam1 image, ProcessedImage object
-        im2 - cam2 image, ProcessedImage object
+        im1 -  cam1 image, ProcessedImage object
+        im2 -  cam2 image, ProcessedImage object
+        join - position in metres of the point at which to
+               connect the images together
 
         Alternately, im1 and im2 can be PIL Image objects.
         """
-        self.stitched_im = self.stitch(im1.im, im2.im)
+        self.stitched_im = self.stitch(im1.im, im2.im, join)
 
         if type(im1) is ProcessedImage and type(im2) is ProcessedImage:
             output_dir = im1.output_dir
@@ -854,7 +867,7 @@ class StitchedImage(object):
         self.outpath = os.path.join(output_dir, 'stitched', self.fname)
 
     @staticmethod
-    def stitch(im1, im2):
+    def stitch(im1, im2, join):
         """Stitch two images together, where im1 is taken by cam1
         and im2 is taken by cam2.
 
@@ -870,22 +883,17 @@ class StitchedImage(object):
 
         # you can join the images together anywhere you like as
         # long as is in the overlap between the two cameras
-        # this would be the leftmost edge of cam1:
-        # join = real_to_pixel(c.crop['cam1']['left'], 0, 'cam2')[0]
-        # lets pick the centre of the overlap:
-        centre = c.crop['cam2']['right'] + \
-            (c.crop['cam1']['left'] - c.crop['cam2']['right']) / 2
         # where is the join in cam2?
-        join = real_to_pixel(centre, 0, 'cam2')[0]
+        join_c2 = real_to_pixel(join, 0, 'cam2')[0]
         # where is the join in cam1?
-        join1 = real_to_pixel(centre, 0, 'cam1')[0]
+        join_c1 = real_to_pixel(join, 0, 'cam1')[0]
 
         # crop the images down
-        cim1 = im1.crop((join1, 0, im1.size[0], im1.size[1]))
-        cim2 = im2.crop((0, 0, join, im2.size[1]))
+        cim1 = im1.crop((join_c1, 0, im1.size[0], im1.size[1]))
+        cim2 = im2.crop((0, 0, join_c2, im2.size[1]))
         # output boxes for the cropped images to go in
-        b2 = (0, 0, join, cim2.size[1])
-        b1 = (join, 0, join + cim1.size[0], cim1.size[1])
+        b2 = (0, 0, join_c2, cim2.size[1])
+        b1 = (join_c2, 0, join_c2 + cim1.size[0], cim1.size[1])
 
         out = Image.new(mode='RGB', size=outsize)
         out.paste(cim1, box=b1)
