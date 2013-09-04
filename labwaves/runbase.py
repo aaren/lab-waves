@@ -203,7 +203,12 @@ class RawImage(object):
 
         self.outpath = os.path.join(run.output_dir, self.cam, self.fname)
 
-        self.im = Image.open(path)
+        f = open(path, 'rb')
+        self.im = Image.open(f)
+        if run.dump_file:
+            # explicitly close the image file after loading to memory
+            self.im.load()
+            f.close()
 
         self.parameters = run.parameters
         self.param_text = config.param_text.format(time=self.time,
@@ -274,16 +279,23 @@ class RawRun(object):
     This class uses the run metadata to create arguments for the functions
     in processing and uses the RawImage class to process a whole run.
     """
-    def __init__(self, run, parameters_f=None, run_data_f=None, path=None):
+    def __init__(self, run, parameters_f=None,
+                 run_data_f=None, path=None, dump_file=False):
         """
 
         Inputs: run - string, a run index, e.g. 'r11_05_24a'
                 parameters_f - optional, a file containing run parameters
                 run_data_f - optional, a file containing run_data
                 path - optional, root directory for this run
+                dump_file - default False, whether to explicitly load images
+                            to memory before processing. The only reason that
+                            this is needed is that parallel_process doesn't
+                            deal with generators. TODO: Fix this upstream.
         """
         self.index = run
         self.config = config
+        self.dump_file = dump_file
+
         if not path:
             self.path = config.path
         else:

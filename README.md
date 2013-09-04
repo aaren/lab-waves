@@ -88,7 +88,18 @@ to the images.
 
 Each run consists of a series of images and an entry in a
 `parameters` file that contains details of the run (fluid density,
-depths)
+depths).
+
+You can specify where the input images go in the config file.
+
+If you have more files than your OS can have open at once 
+(`ulimit -n`), then you will run into an error.
+
+The way to avoid this is to initialise your runs with 
+`dump_file=True`. This drops the image file object after
+it has been explicitly loaded to memory. It is best to try not to
+have too many files though!
+
 
 ### Code organisation ###
 
