@@ -361,13 +361,13 @@ class RawRun(object):
         plt.ylim((h * 6) / 8, (h * 2) / 8)
 
         if camera == 'cam1':
-            print(help_text("lock base and surface"))
+            plt.title(help_text("lock base and surface"))
 
         elif camera == 'cam2' and self.style == 'old':
-            print(help_text("inner join base and surface"))
+            plt.title(help_text("inner join base and surface"))
 
         elif camera == 'cam2' and 'new' in self.style:
-            print(help_text("right projection markers"))
+            plt.title(help_text("right projection markers"))
 
         plt.draw()
         # ask for three points - the third indicates to move on
@@ -377,15 +377,15 @@ class RawRun(object):
         # this is the join for cam1 and the ruler for cam2
         if camera == 'cam1' and self.style == 'old':
             plt.xlim(0, w / 6)
-            print(help_text("inner join base and surface"))
+            plt.title(help_text("inner join base and surface"))
 
         elif camera == 'cam2' and self.style == 'old':
             plt.xlim(w / 4, w / 2)
-            print(help_text("inner ruler base and projection to surface"))
+            plt.title(help_text("inner ruler base and projection to surface"))
 
         elif 'new' in self.style:
             plt.xlim(0, w / 6)
-            print(help_text("left projection markers"))
+            plt.title(help_text("left projection markers"))
 
         plt.draw()
         # ask for three points - the third indicates to move on
@@ -399,9 +399,9 @@ class RawRun(object):
         plt.xlim(0, w)
         plt.draw()
         if camera == 'cam1':
-            print("What is the extent of lock leakage? \n"
-                  "Click inside lock if none."
-                  "Click again to finish or right click to cancel point.")
+            plt.title("What is the extent of lock leakage? \n"
+                      "Click inside lock if none. \n"
+                      "Click again to finish or right click to cancel point.")
             leak = plt.ginput(2, 0)[0][0]
             leakage = int(pt1[0][0] - leak)
             points += [leakage]
