@@ -554,7 +554,7 @@ class RawRun(object):
         image in the run.
         """
         paths = self.imagepaths
-        return [RawImage(p, run=self) for p in paths]
+        return (RawImage(p, run=self) for p in paths)
 
     @property
     def style(self):
