@@ -125,7 +125,7 @@ overlap = {'old':   1.40,
 # obscure the fluid. Measured in metres from the lock.
 
 real_rulers = {}
-real_rulers['cam1'] = [(0.48, 0.525), (0.99, 1.02)]
+real_rulers['cam1'] = [(0.49, 0.535), (0.99, 1.02)]
 real_rulers['cam2'] = [(1.46, 1.54), (1.99, 2.02), (2.49, 2.52), (2.99, 3.02)]
 
 rulers = {}
