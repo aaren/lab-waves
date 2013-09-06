@@ -152,6 +152,7 @@ def irun(impath):
     run = impath.split('/')[-3]
     return run
 
+
 def real_to_pixel(x, y, cam='cam2'):
     """Convert a real measurement (in metres, relative to the lock
     gate) into a pixel measurement (in pixels, relative to the top
@@ -161,6 +162,7 @@ def real_to_pixel(x, y, cam='cam2'):
     h = config.crop[cam]['upper'] - config.crop[cam]['lower']
     y_ = config.top_bar + (h - y) * config.ideal_m
     return int(x_), int(y_)
+
 
 class RawImage(object):
     """Represents an individual image from a lab run.
@@ -277,6 +279,7 @@ class RawImage(object):
         util.makedirs_p(os.path.dirname(self.outpath))
         processed_im.save(self.outpath)
 
+
 class ProcessedImage(object):
     def __init__(self, path, run):
         """A ProcessedImage is a member of a ProcessedRun - images
@@ -313,6 +316,7 @@ class ProcessedImage(object):
             # explicitly close the image file after loading to memory
             self.im.load()
             f.close()
+
 
 class StitchedImage(object):
     def __init__(self, im1, im2, join):
@@ -425,7 +429,7 @@ class BaseRun(object):
 
     """
     def __init__(self, run, parameters_f=None, run_data_f=None,
-            path=None, dump_file=False):
+                 path=None, dump_file=False):
         """
         Inputs: run - string, a run index, e.g. 'r11_05_24a'
                 parameters_f - optional, a file containing run parameters
@@ -487,6 +491,7 @@ class BaseRun(object):
     def style(self):
         """Returns a string, the perspective style used for the run."""
         return self.parameters['perspective']
+
 
 class RawRun(BaseRun):
     """Represents a lab run in its raw state.
@@ -855,6 +860,7 @@ class RawRun(BaseRun):
         """
         kwargs = [{'image': i} for i in self.images]
         parallel_process(process_raw, kwargs, processors=10)
+
 
 class ProcessedRun(BaseRun):
     """Same init as RawRun. At some point these two will be merged
