@@ -153,6 +153,17 @@ def irun(impath):
     return run
 
 
+def real_to_pixel(x, y, cam='cam2'):
+    """Convert a real measurement (in metres, relative to the lock
+    gate) into a pixel measurement (in pixels, relative to the top
+    left image corner, given the camera being used (cam).
+    """
+    x_ = (config.crop[cam]['left'] - x) * config.ideal_m
+    h = config.crop[cam]['upper'] - config.crop[cam]['lower']
+    y_ = config.top_bar + (h - y) * config.ideal_m
+    return int(x_), int(y_)
+
+
 class RawImage(object):
     """Represents an individual image from a lab run.
 
@@ -269,20 +280,157 @@ class RawImage(object):
         processed_im.save(self.outpath)
 
 
-class RawRun(object):
-    """Represents a lab run in its raw state.
+class ProcessedImage(object):
+    def __init__(self, path, run):
+        """A ProcessedImage is a member of a ProcessedRun - images
+        don't exist outside of a run. To initialise a
+        ProcessedImage, a ProcessedRun instance must be passed as
+        input.
 
-    A lab run consists of a set of raw images and some run metadata.
+        Inputs: path - path to an image file
+                run - a ProcessedRun instance
 
-    The metadata is contained in a parameters file and a run_data file.
+        Each image originates from a specific camera and has a
+        frame number, both of which are encoded in the file path.
 
-    This class uses the run metadata to create arguments for the functions
-    in processing and uses the RawImage class to process a whole run.
-    """
-    def __init__(self, run, parameters_f=None,
-                 run_data_f=None, path=None, dump_file=False):
+        The camera determines the coefficients used in the correction
+        routines.
+
+        The frame number to determine the time that an image
+        corresponds to.
         """
+        self.path = path
+        self.run = run
 
+        self.fname = os.path.basename(path)
+        self.dirname = os.path.dirname(path)
+
+        self.frame = iframe(path)
+        self.cam = icam(path)
+
+        self.output_dir = os.path.join(run.path, config.outdir, run.index)
+
+        f = open(path, 'rb')
+        self.im = Image.open(f)
+        if run.dump_file:
+            # explicitly close the image file after loading to memory
+            self.im.load()
+            f.close()
+
+
+class StitchedImage(object):
+    def __init__(self, im1, im2, join):
+        """Create a Stitched Image, which is the joining of two
+        images from different cameras.
+
+        im1 -  cam1 image, ProcessedImage object
+        im2 -  cam2 image, ProcessedImage object
+        join - position in metres of the point at which to
+               connect the images together
+
+        Alternately, im1 and im2 can be PIL Image objects.
+        """
+        self.stitched_im = self.stitch(im1.im, im2.im, join)
+
+        if type(im1) is ProcessedImage and type(im2) is ProcessedImage:
+            output_dir = im1.output_dir
+            self.fname = os.path.basename(im1.path)
+        else:
+            output_dir = './'
+            self.fname = 'stitched_image.png'
+
+        self.outpath = os.path.join(output_dir, 'stitched', self.fname)
+
+    @staticmethod
+    def stitch(im1, im2, join):
+        """Stitch two images together, where im1 is taken by cam1
+        and im2 is taken by cam2.
+
+        im1 and im2 are PIL Image objects.
+        Returns a PIL Image object.
+        """
+        c = config
+        # the output size is determined by the outer edges of the
+        # camera crop regions
+        width = c.crop['cam2']['left'] - c.crop['cam1']['right']
+        # and we'll use the full height of the images
+        outsize = (int(width * c.ideal_m), im1.size[1])
+
+        # you can join the images together anywhere you like as
+        # long as is in the overlap between the two cameras
+        # where is the join in cam2?
+        join_c2 = real_to_pixel(join, 0, 'cam2')[0]
+        # where is the join in cam1?
+        join_c1 = real_to_pixel(join, 0, 'cam1')[0]
+
+        # crop the images down
+        cim1 = im1.crop((join_c1, 0, im1.size[0], im1.size[1]))
+        cim2 = im2.crop((0, 0, join_c2, im2.size[1]))
+        # output boxes for the cropped images to go in
+        b2 = (0, 0, join_c2, cim2.size[1])
+        b1 = (join_c2, 0, join_c2 + cim1.size[0], cim1.size[1])
+
+        out = Image.new(mode='RGB', size=outsize)
+        out.paste(cim1, box=b1)
+        out.paste(cim2, box=b2)
+        return out
+
+    def draw_rectangle(self, box, fill, linewidth):
+        """Draw a rectangle, defined by the coordinates in box, over
+        the stitched image.
+
+        box - (left, upper), (right, lower), pixel coordinates of
+              the upper left and lower right rectangle corners.
+        fill - colour to draw the lines with
+        linewidth - width of the lines in pixels
+        """
+        draw = ImageDraw.Draw(self.stitched_im)
+        (left, upper), (right, lower) = box
+        draw.line((left, upper, right, upper), width=linewidth, fill=fill)
+        draw.line((right, upper, right, lower), width=linewidth, fill=fill)
+        draw.line((right, lower, left, lower), width=linewidth, fill=fill)
+        draw.line((left, lower, left, upper), width=linewidth, fill=fill)
+        return self
+
+    def draw_rectangles(self, boxes, fill='red', linewidth=5):
+        """Draw multiple rectangles."""
+        for box in boxes:
+            self.draw_rectangle(box, fill, linewidth)
+        return self
+
+    def write_out(self, path=None):
+        """Save the stitched image to disk."""
+        if path is None:
+            path = self.outpath
+        util.makedirs_p(os.path.dirname(path))
+        self.stitched_im.save(path)
+
+
+class BaseRun(object):
+    """Base class for a lab run.
+
+    Each run has associated metadata, contained in a parameters file
+    and a run_data file.
+
+    Each run is also stored within a specific base path, with
+    the structure
+
+        path/
+            run1
+            run2
+            run3/
+                cam1/
+                    img_0001.jpg
+                    img_0002.jpg
+                    ...
+                cam2/
+                    ...
+            ...
+
+    """
+    def __init__(self, run, parameters_f=None, run_data_f=None,
+                 path=None, dump_file=False):
+        """
         Inputs: run - string, a run index, e.g. 'r11_05_24a'
                 parameters_f - optional, a file containing run parameters
                 run_data_f - optional, a file containing run_data
@@ -293,27 +441,68 @@ class RawRun(object):
                             deal with generators. TODO: Fix this upstream.
         """
         self.index = run
-        self.config = config
+
+        self.path = path or config.path
+        self.parameters_f = parameters_f or config.paramf
+        self.run_data_f = run_data_f or config.procf
+
         self.dump_file = dump_file
 
-        if not path:
-            self.path = config.path
-        else:
-            self.path = path
-        self.input_dir = os.path.join(self.path, config.indir, self.index)
-        self.output_dir = os.path.join(self.path, config.outdir, self.index)
-        if not parameters_f:
-            self.parameters = read_parameters(run, config.paramf)
-        else:
-            self.parameters = read_parameters(run, parameters_f)
+        self.parameters = read_parameters(run, self.parameters_f)
 
-        if not run_data_f:
-            run_data_f = config.procf
-        self.run_data_f = run_data_f
+    @property
+    def input_dir(self):
+        """Path to get input images from."""
+        return os.path.join(self.path, self.indir, self.index)
 
-        self.bc1_outdir = 'tmp/bc1'
+    @property
+    def output_dir(self):
+        """Path to save output images to."""
+        return os.path.join(self.path, self.outdir, self.index)
+
+    @property
+    def cameras(self):
+        """Determine cameras used in run from input path."""
         camera_paths = glob.glob(os.path.join(self.input_dir, 'cam[0-9]'))
-        self.cameras = [os.path.basename(c) for c in camera_paths]
+        return [os.path.basename(c) for c in camera_paths]
+
+    @property
+    def imagepaths(self):
+        """Return a list of the full path to all of the images
+        in the run.
+        """
+        rundir = self.input_dir
+        # TODO: put these re in config?
+        im_re = 'img*jpg'
+        cam_re = 'cam*'
+        im_cam_re = cam_re + '/' + im_re
+        imagelist = glob.glob(os.path.join(rundir, im_cam_re))
+        return sorted(imagelist)
+
+    @property
+    def images(self):
+        """Returns a list of RawImage objects, corresponding to each
+        image in the run.
+        """
+        paths = self.imagepaths
+        return (self.Image(p, run=self) for p in paths)
+
+    @property
+    def style(self):
+        """Returns a string, the perspective style used for the run."""
+        return self.parameters['perspective']
+
+
+class RawRun(BaseRun):
+    """Represents a lab run in its raw state.
+
+    A lab run consists of a set of raw images, represented
+    by RawImage.
+    """
+    Image = RawImage
+    bc1_outdir = 'tmp/bc1'
+    indir = config.indir
+    outdir = config.outdir
 
     @property
     def run_data(self):
@@ -547,32 +736,6 @@ class RawRun(object):
                                 'img_0001.jpg')
         return bc1_path
 
-    @property
-    def imagepaths(self):
-        """Return a list of the full path to all of the images
-        in the run.
-        """
-        rundir = self.input_dir
-        # TODO: put these re in config?
-        im_re = 'img*jpg'
-        cam_re = 'cam*'
-        im_cam_re = cam_re + '/' + im_re
-        imagelist = glob.glob(os.path.join(rundir, im_cam_re))
-        return sorted(imagelist)
-
-    @property
-    def images(self):
-        """Returns a list of RawImage objects, corresponding to each
-        image in the run.
-        """
-        paths = self.imagepaths
-        return (RawImage(p, run=self) for p in paths)
-
-    @property
-    def style(self):
-        """Returns a string, the perspective style used for the run."""
-        return self.parameters['perspective']
-
     def perspective_reference(self, reference_point, style, camera):
         """Return a tuple of pixel coordinates:
 
@@ -699,102 +862,12 @@ class RawRun(object):
         parallel_process(process_raw, kwargs, processors=10)
 
 
-@parallel_stub
-def process_raw(image):
-    """External function to allow multiprocessing raw images."""
-    image.write_out()
-
-
-def real_to_pixel(x, y, cam='cam2'):
-    """Convert a real measurement (in metres, relative to the lock
-    gate) into a pixel measurement (in pixels, relative to the top
-    left image corner, given the camera being used (cam).
-    """
-    x_ = (config.crop[cam]['left'] - x) * config.ideal_m
-    h = config.crop[cam]['upper'] - config.crop[cam]['lower']
-    y_ = config.top_bar + (h - y) * config.ideal_m
-    return int(x_), int(y_)
-
-
-class ProcessedImage(object):
-    def __init__(self, path, run):
-        """A ProcessedImage is a member of a ProcessedRun - images
-        don't exist outside of a run. To initialise a
-        ProcessedImage, a ProcessedRun instance must be passed as
-        input.
-
-        Inputs: path - path to an image file
-                run - a ProcessedRun instance
-
-        Each image originates from a specific camera and has a
-        frame number, both of which are encoded in the file path.
-
-        The camera determines the coefficients used in the correction
-        routines.
-
-        The frame number to determine the time that an image
-        corresponds to.
-        """
-        self.path = path
-        self.run = run
-
-        self.fname = os.path.basename(path)
-        self.dirname = os.path.dirname(path)
-
-        self.frame = iframe(path)
-        self.cam = icam(path)
-
-        self.output_dir = os.path.join(run.path, config.outdir, run.index)
-
-        self.im = Image.open(path)
-
-
-class ProcessedRun(object):
+class ProcessedRun(BaseRun):
     """Same init as RawRun. At some point these two will be merged
     into a single Run class.
     """
-    def __init__(self, run, path=None, parameters_f=None):
-        """
-        Inputs: run - string, a run index, e.g. 'r11_05_24a'
-        """
-        self.index = run
-        self.config = config
-        if not path:
-            self.path = config.path
-        else:
-            self.path = path
-        if not parameters_f:
-            self.parameters = read_parameters(run, config.paramf)
-        else:
-            self.parameters = read_parameters(run, parameters_f)
-
-        # processed input is the output from raw
-        self.input_dir = os.path.join(self.path, config.outdir, self.index)
-
-    @property
-    def imagepaths(self):
-        """Return a list of the full path to all of the images
-        in the run.
-        """
-        rundir = self.input_dir
-        # TODO: put these re in config?
-        im_re = 'img*jpg'
-        cam_re = 'cam[0-9]'
-        im_cam_re = cam_re + '/' + im_re
-        imagelist = glob.glob(os.path.join(rundir, im_cam_re))
-        return sorted(imagelist)
-
-    @property
-    def images(self):
-        """Return a list of image objects, corresponding to each image
-        in the run.
-        """
-        return (ProcessedImage(p, run=self) for p in self.imagepaths)
-
-    @property
-    def style(self):
-        """Returns a string, the perspective style used for the run."""
-        return self.parameters['perspective']
+    Image = ProcessedImage
+    indir = config.outdir
 
     @property
     def stitched_images(self):
@@ -855,89 +928,7 @@ class ProcessedRun(object):
             im.write_out()
 
 
-class StitchedImage(object):
-    def __init__(self, im1, im2, join):
-        """Create a Stitched Image, which is the joining of two
-        images from different cameras.
-
-        im1 -  cam1 image, ProcessedImage object
-        im2 -  cam2 image, ProcessedImage object
-        join - position in metres of the point at which to
-               connect the images together
-
-        Alternately, im1 and im2 can be PIL Image objects.
-        """
-        self.stitched_im = self.stitch(im1.im, im2.im, join)
-
-        if type(im1) is ProcessedImage and type(im2) is ProcessedImage:
-            output_dir = im1.output_dir
-            self.fname = os.path.basename(im1.path)
-        else:
-            output_dir = './'
-            self.fname = 'stitched_image.png'
-
-        self.outpath = os.path.join(output_dir, 'stitched', self.fname)
-
-    @staticmethod
-    def stitch(im1, im2, join):
-        """Stitch two images together, where im1 is taken by cam1
-        and im2 is taken by cam2.
-
-        im1 and im2 are PIL Image objects.
-        Returns a PIL Image object.
-        """
-        c = config
-        # the output size is determined by the outer edges of the
-        # camera crop regions
-        width = c.crop['cam2']['left'] - c.crop['cam1']['right']
-        # and we'll use the full height of the images
-        outsize = (int(width * c.ideal_m), im1.size[1])
-
-        # you can join the images together anywhere you like as
-        # long as is in the overlap between the two cameras
-        # where is the join in cam2?
-        join_c2 = real_to_pixel(join, 0, 'cam2')[0]
-        # where is the join in cam1?
-        join_c1 = real_to_pixel(join, 0, 'cam1')[0]
-
-        # crop the images down
-        cim1 = im1.crop((join_c1, 0, im1.size[0], im1.size[1]))
-        cim2 = im2.crop((0, 0, join_c2, im2.size[1]))
-        # output boxes for the cropped images to go in
-        b2 = (0, 0, join_c2, cim2.size[1])
-        b1 = (join_c2, 0, join_c2 + cim1.size[0], cim1.size[1])
-
-        out = Image.new(mode='RGB', size=outsize)
-        out.paste(cim1, box=b1)
-        out.paste(cim2, box=b2)
-        return out
-
-    def draw_rectangle(self, box, fill, linewidth):
-        """Draw a rectangle, defined by the coordinates in box, over
-        the stitched image.
-
-        box - (left, upper), (right, lower), pixel coordinates of
-              the upper left and lower right rectangle corners.
-        fill - colour to draw the lines with
-        linewidth - width of the lines in pixels
-        """
-        draw = ImageDraw.Draw(self.stitched_im)
-        (left, upper), (right, lower) = box
-        draw.line((left, upper, right, upper), width=linewidth, fill=fill)
-        draw.line((right, upper, right, lower), width=linewidth, fill=fill)
-        draw.line((right, lower, left, lower), width=linewidth, fill=fill)
-        draw.line((left, lower, left, upper), width=linewidth, fill=fill)
-        return self
-
-    def draw_rectangles(self, boxes, fill='red', linewidth=5):
-        """Draw multiple rectangles."""
-        for box in boxes:
-            self.draw_rectangle(box, fill, linewidth)
-        return self
-
-    def write_out(self, path=None):
-        """Save the stitched image to disk."""
-        if path is None:
-            path = self.outpath
-        util.makedirs_p(os.path.dirname(path))
-        self.stitched_im.save(path)
+@parallel_stub
+def process_raw(image):
+    """External function to allow multiprocessing raw images."""
+    image.write_out()
