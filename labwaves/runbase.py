@@ -315,7 +315,7 @@ class StitchedImage(object):
         self.stitched_im = self.stitch(im1.im, im2.im, join)
 
         if type(im1) is ProcessedImage and type(im2) is ProcessedImage:
-            output_dir = im1.output_dir
+            output_dir = im1.run.output_dir
             self.fname = os.path.basename(im1.path)
         else:
             output_dir = './'
@@ -850,6 +850,7 @@ class ProcessedRun(LabRun):
     """
     Image = ProcessedImage
     indir = config.outdir
+    outdir = config.outdir
 
     @property
     def stitched_images(self):
