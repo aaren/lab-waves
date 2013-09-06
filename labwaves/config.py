@@ -71,7 +71,7 @@ front_depths = {k: [int(top_bar + (1 - i) * ideal_25) for i in d[k]]
 # lower. ensure that these are consistent with the source images!
 # e.g. by comparison with proc_data.
 # the borders (top / bottom bar) are added *outside* these values
-crop = {'cam1': {'left':   1.70,
+crop = {'cam1': {'left':   1.80,
                  'right': -0.20,
                  'upper':  0.25,
                  'lower': -0.00},
@@ -118,8 +118,8 @@ perspective_ref_points = {'old':   {'cam1': ((0.00, 0.00),
 
 # a measurement where the cameras overlap
 overlap = {'old':   1.40,
-           'new_1': 1.75,
-           'new_2': 1.75}
+           'new_1': 1.80,
+           'new_2': 1.80}
 
 # Specify the positions of rulers and other vertical features that
 # obscure the fluid. Measured in metres from the lock.
