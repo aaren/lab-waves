@@ -164,31 +164,10 @@ def real_to_pixel(x, y, cam='cam2'):
     return int(x_), int(y_)
 
 
-class RawImage(object):
-    """Represents an individual image from a lab run.
-
-    We want to do a series of things to a raw lab image:
-
-        - barrel correct (self.barrel_correct)
-        - perspective correct (self.perspective_correct)
-        - crop and add borders (self.crop_text)
-
-    Each of these only makes sense to do if the previous steps have
-    been carried out already. Therefore when one of the above
-    methods is called, the preceding methods are called as well.
-
-    self.process is a wrapper function that returns a completely
-    processed image object
-
-    After all these steps have been performed we want to write
-    the image to persistent storage.
-
-    self.write_out - writes the image to disk, the location determined
-                     by the RawRun instance path and the config file.
-    """
+class BaseImage(object):
     def __init__(self, path, run):
-        """A RawImage is a member of a RawRun - images don't exist
-        outside of a run. To initialise a RawImage, a RawRun instance
+        """A BaseImage is a member of a Run - images don't exist
+        outside of a run. To initialise a RawImage, a Run instance
         must be passed as input.
 
         Inputs: path - path to an image file
@@ -233,6 +212,29 @@ class RawImage(object):
         time_stamp = index * sample_interval
         return time_stamp
 
+
+class RawImage(object):
+    """Represents an individual raw image from a lab run.
+
+    We want to do a series of things to a raw lab image:
+
+        - barrel correct (self.barrel_correct)
+        - perspective correct (self.perspective_correct)
+        - crop and add borders (self.crop_text)
+
+    Each of these only makes sense to do if the previous steps have
+    been carried out already. Therefore when one of the above
+    methods is called, the preceding methods are called as well.
+
+    self.process is a wrapper function that returns a completely
+    processed image object
+
+    After all these steps have been performed we want to write
+    the image to persistent storage.
+
+    self.write_out - writes the image to disk, the location determined
+                     by the RawRun instance path and the config file.
+    """
     def barrel_correct(self):
         """Barrel correct an image. Returns barrel corrected image
         as Image object.
@@ -280,42 +282,8 @@ class RawImage(object):
         processed_im.save(self.outpath)
 
 
-class ProcessedImage(object):
-    def __init__(self, path, run):
-        """A ProcessedImage is a member of a ProcessedRun - images
-        don't exist outside of a run. To initialise a
-        ProcessedImage, a ProcessedRun instance must be passed as
-        input.
-
-        Inputs: path - path to an image file
-                run - a ProcessedRun instance
-
-        Each image originates from a specific camera and has a
-        frame number, both of which are encoded in the file path.
-
-        The camera determines the coefficients used in the correction
-        routines.
-
-        The frame number to determine the time that an image
-        corresponds to.
-        """
-        self.path = path
-        self.run = run
-
-        self.fname = os.path.basename(path)
-        self.dirname = os.path.dirname(path)
-
-        self.frame = iframe(path)
-        self.cam = icam(path)
-
-        self.output_dir = os.path.join(run.path, config.outdir, run.index)
-
-        f = open(path, 'rb')
-        self.im = Image.open(f)
-        if run.dump_file:
-            # explicitly close the image file after loading to memory
-            self.im.load()
-            f.close()
+class ProcessedImage(BaseImage):
+    pass
 
 
 class StitchedImage(object):

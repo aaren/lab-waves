@@ -4,8 +4,6 @@
 
 ### Refactor
 
-- Inherit RawImage and ProcessedImage from BaseImage class
-
 - Consider StitchedImage --> Stitcher
 
 Use the stitcher like this:
