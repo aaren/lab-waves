@@ -973,7 +973,7 @@ class InterfaceImage(object):
 
     @property
     def pixel_rulers(self):
-        """Where are the rulers in pixel space"""
+        """Where are the rulers in pixel space."""
         cam = self.labimage.cam
         real_rulers = config.real_rulers[cam]
         pixel_rulers = [[real_to_pixel(x, 0, cam)[0] for x in r]
