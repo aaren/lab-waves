@@ -896,7 +896,7 @@ class ProcessedRun(LabRun):
         # TODO: runfiles should point to processed data
         for im in self.images:
             intim = InterfaceImage(im)
-            lock_interface = intim.lock_interface
+            lock_interface = intim.current_interface
         # possible alternate? :
         # interfacer = InterfaceImage()
         # lock_interface = interfacer(im, fluid_type='lock')
@@ -928,13 +928,37 @@ class InterfaceImage(object):
         self.labimage = labimage
         self.im = self.measurement_region(labimage)
         self.imarray = np.asarray(self.im)
-        self.pixels = np.indices(self.imarray[:, :, 0].shape)
+        self.cam = self.labimage.cam
+
+        self.ix, self.iy = self.pixel_coords
+        self.rx, self.ry = self.real_coords
+
+    @property
+    def pixel_coords(self):
+        """Return the pixel coordinate of each point in the
+        measurement region.
+
+        Outputs two arrays: the x coordinates and the y coordinates.
+        """
+        y, x = np.indices(self.imarray[:, :, 0].shape)
+        return x, y
+
+    @property
+    def real_coords(self):
+        """For each pixel in the measurement region, compute
+        the real coordinate.
+
+        Outputs two arrays: the x coordinates and the y coordinates.
+        """
+        x, y = self.pixel_coords
+        y += config.top_bar
+        return pixel_to_real(x, y, cam=self.cam)
 
     @staticmethod
     def measurement_region(labimage):
         """Remove the bars from the top and bottom of a lab image."""
         w, h = labimage.im.size
-        box = (0, config.top_bar, w, h - config.bottom_bar)
+        box = (0, config.top_bar, w, h - config.bottom_bar + 1)
         return labimage.im.crop(box)
 
     @property
@@ -958,36 +982,22 @@ class InterfaceImage(object):
         r, g, b = self.channels
         return r - g
 
-    def plot_channels(self):
-        """Convenience function to make a figure with the input
-        image and the three colour channels."""
+    @property
+    def wave_fluid(self):
+        """Colour space projection that best captures
+        the lower layer fluid.
+
+        The blue channel provides a very clear signal.
+        The green looking fluid is marked by an absence
+        of blue.
+        """
         r, g, b = self.channels
-
-        fig, ax = plt.subplots(nrows=5)
-
-        ax[0].set_title('Original')
-        ax[0].imshow(self.imarray)
-
-        ax[1].set_title('red')
-        ax[1].imshow(r)
-
-        ax[2].set_title('green')
-        ax[2].imshow(g)
-
-        ax[3].set_title('blue')
-        ax[3].imshow(b)
-
-        ax[4].set_title('r - g')
-        ax[4].imshow(self.lock_fluid)
-
-        fig.tight_layout()
-
-        return fig
+        return b
 
     @property
     def pixel_rulers(self):
         """Where are the rulers in pixel space."""
-        cam = self.labimage.cam
+        cam = self.cam
         real_rulers = config.real_rulers[cam]
         pixel_rulers = [[real_to_pixel(x, 0, cam)[0] for x in r]
                         for r in real_rulers]
@@ -1004,7 +1014,7 @@ class InterfaceImage(object):
     @property
     def ruler_mask(self):
         """Mask for rulers in the image."""
-        iy, ix = self.pixels
+        ix, iy = self.pixel_coords
         # Truth wherever there is a ruler
         mask = reduce(np.logical_or, ((x1 < ix) & (ix < x2)
                                       for x2, x1 in self.pixel_rulers))
@@ -1014,8 +1024,15 @@ class InterfaceImage(object):
     @property
     def bottom_mask(self):
         """Mask the bottom 5 pixels of the image."""
-        iy, ix = self.pixels
+        ix, iy = self.pixel_coords
         mask = iy > self.im.size[1] - 5
+        return mask
+
+    @property
+    def top_mask(self):
+        """Mask the top 10 pixels of the image."""
+        ix, iy = self.pixel_coords
+        mask = iy < 10
         return mask
 
     @property
@@ -1025,7 +1042,17 @@ class InterfaceImage(object):
         return np.all(self.imarray < 0.01, axis=-1)
 
     @property
-    def lock_mask(self):
+    def wave_mask(self):
+        """Combination of masks that masks out irrelevant features
+        for the wave fluid detection."""
+        return reduce(np.logical_or, (self.ruler_mask,
+                                      self.top_mask,
+                                      self.bottom_mask,
+                                      self.crop_mask,
+                                      self.rx < 0,))
+
+    @property
+    def current_mask(self):
         """Combination of masks that masks out irrelevant features
         for the lock fluid detection."""
         return reduce(np.logical_or, (self.ruler_mask,
@@ -1034,12 +1061,37 @@ class InterfaceImage(object):
                                       self.lock_fluid < 0.2))
 
     @property
-    def lock_interface(self):
+    def wave_interface(self):
+        """Pull out the wave interface."""
+        mask = self.wave_mask
+        array = (self.wave_fluid < 0.2).astype(np.float)
+        x, y = self.canny_interface(array, sigma=5, mask=~mask)
+        return x, y
+
+    @property
+    def current_interface(self):
         """Pull out the lock interface."""
-        # TODO: make it only select the upper bound
-        mask = self.lock_mask
-        i = self.canny_interface(self.lock_fluid < 0.5, smooth=0, mask=~mask)
-        return i
+        mask = self.current_mask
+        array = (self.lock_fluid < 0.5).astype(np.float)
+        x, y = self.canny_interface(array, sigma=5, mask=~mask)
+        return x, y
+
+    @property
+    def current_profile(self):
+        """Define the upper limit of the gravity current
+        for each horizontal position in the visible region
+        of the image.
+        """
+        # detect front, if exists
+
+        # if ahead of the front, equal 0
+
+        # if behind the front
+            # if single point, take it
+            # if two points, take highest
+            # if no point, ignore
+
+        # interpolate over gaps behind the front
 
     @staticmethod
     def canny_interface(array, sigma=5, mask=None):
@@ -1052,3 +1104,42 @@ class InterfaceImage(object):
         s = ix.argsort()
         return ix[s], iy[s]
 
+    @property
+    def has_waves(self):
+        """True if the run that the image is from contains
+        a two layer fluid."""
+        return self.labimage.parameters['h_1'] != 0.0
+
+    def plot_channels(self):
+        """Convenience function to make a figure with the input
+        image and the three colour channels."""
+        r, g, b = self.channels
+
+        fig, axes = plt.subplots(nrows=6)
+
+        axes[0].set_title('Original')
+        axes[0].imshow(self.imarray)
+
+        axes[1].set_title('red')
+        axes[1].imshow(r)
+
+        axes[2].set_title('green')
+        axes[2].imshow(g)
+
+        axes[3].set_title('blue')
+        axes[3].imshow(b)
+
+        axes[4].set_title('lock_fluid (r-g)')
+        axes[4].imshow(self.lock_fluid)
+
+        axes[5].set_title('r - b')
+        axes[5].imshow(r - b)
+
+        w, h = self.im.size
+        for ax in axes:
+            ax.set_xlim(0, w)
+            ax.set_ylim(h, 0)
+
+        fig.tight_layout()
+
+        return fig
