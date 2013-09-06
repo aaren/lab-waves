@@ -164,9 +164,10 @@ def real_to_pixel(x, y, cam='cam2'):
     return int(x_), int(y_)
 
 
-class BaseImage(object):
+class LabImage(object):
+    """Base class for images that come from a lab run."""
     def __init__(self, path, run):
-        """A BaseImage is a member of a Run - images don't exist
+        """A LabImage is a member of a Run - images don't exist
         outside of a run. To initialise a RawImage, a Run instance
         must be passed as input.
 
@@ -213,7 +214,7 @@ class BaseImage(object):
         return time_stamp
 
 
-class RawImage(object):
+class RawImage(LabImage):
     """Represents an individual raw image from a lab run.
 
     We want to do a series of things to a raw lab image:
@@ -282,7 +283,7 @@ class RawImage(object):
         processed_im.save(self.outpath)
 
 
-class ProcessedImage(BaseImage):
+class ProcessedImage(LabImage):
     pass
 
 
@@ -374,7 +375,7 @@ class StitchedImage(object):
         self.stitched_im.save(path)
 
 
-class BaseRun(object):
+class LabRun(object):
     """Base class for a lab run.
 
     Each run has associated metadata, contained in a parameters file
@@ -461,7 +462,7 @@ class BaseRun(object):
         return self.parameters['perspective']
 
 
-class RawRun(BaseRun):
+class RawRun(LabRun):
     """Represents a lab run in its raw state.
 
     A lab run consists of a set of raw images, represented
@@ -830,7 +831,7 @@ class RawRun(BaseRun):
         parallel_process(process_raw, kwargs, processors=10)
 
 
-class ProcessedRun(BaseRun):
+class ProcessedRun(LabRun):
     """Same init as RawRun. At some point these two will be merged
     into a single Run class.
     """
