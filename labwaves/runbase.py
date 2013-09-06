@@ -202,7 +202,10 @@ class LabImage(object):
         self.frame = iframe(path)
         self.cam = icam(path)
 
-        self.outpath = os.path.join(run.output_dir, self.cam, self.fname)
+        self.outformat = '.jpg'
+        # set the image file format in the filename
+        self.out_fname = os.path.splitext(self.fname)[0] + self.outformat
+        self.outpath = os.path.join(run.output_dir, self.cam, self.out_fname)
 
         f = open(path, 'rb')
         self.im = Image.open(f)
@@ -452,8 +455,8 @@ class LabRun(object):
         """
         rundir = self.input_dir
         # TODO: put these re in config?
-        im_re = 'img*jpg'
-        cam_re = 'cam*'
+        im_re = 'img_*'
+        cam_re = 'cam[0-9]'
         im_cam_re = cam_re + '/' + im_re
         imagelist = glob.glob(os.path.join(rundir, im_cam_re))
         return sorted(imagelist)
