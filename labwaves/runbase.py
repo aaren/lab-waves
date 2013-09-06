@@ -18,9 +18,6 @@ import config
 import util
 
 import processing
-# module for extracting interfaces from image objects
-# TODO: make this
-import interface
 
 
 def lazyprop(fn):
