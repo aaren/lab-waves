@@ -70,7 +70,7 @@ def barrel_correct(im, coeffs):
     # using im.format as the buffer format is fastest, but
     # there are issues with jpeg quantisation tables...
     # look at the test for this.
-    tmp_format = 'BMP'
+    tmp_format = 'TIFF'
     im.save(buff, format=tmp_format)
     imstd = buff.getvalue()
 
