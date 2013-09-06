@@ -1,3 +1,21 @@
 - multiprocessing
 
 - use new objects in generate (maybe multiprocess here?)
+
+### Refactor
+
+- Inherit RawImage and ProcessedImage from BaseImage class
+
+- Consider StitchedImage --> Stitcher
+
+Use the stitcher like this:
+
+    stitcher = Stitcher(join)
+    stitched_image = stitcher.stitch(im1, im2)
+
+Would do similar for interfacing:
+
+    interfacer = Interfacer()
+    lock_interface = interfacer.interface(im)
+
+Or we could have `interface` as a method on a ProcessedImage.
