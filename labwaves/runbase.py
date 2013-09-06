@@ -162,6 +162,18 @@ def real_to_pixel(x, y, cam='cam2'):
     return int(x_), int(y_)
 
 
+def pixel_to_real(x, y, cam='cam2'):
+    """Convert a pixel measurement (in image coordinates, relative
+    to the top left corner) into a real measurement (in metres,
+    relative to the lock gate base), given the camera being used
+    (cam).
+    """
+    x_ = (config.crop[cam]['left'] - x / config.ideal_m)
+    h = config.crop[cam]['upper'] - config.crop[cam]['lower']
+    y_ = (config.top_bar - y) / config.ideal_m + h
+    return x_, y_
+
+
 class LabImage(object):
     """Base class for images that come from a lab run."""
     def __init__(self, path, run):
