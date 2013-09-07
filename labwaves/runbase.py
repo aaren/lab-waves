@@ -1140,28 +1140,31 @@ class InterfaceImage(object):
         image and the three colour channels."""
         r, g, b = self.channels
 
-        fig, axes = plt.subplots(nrows=6)
+        fig, axes = plt.subplots(6, 2, sharex='col', sharey='row')
 
-        axes[0].set_title('Original')
-        axes[0].imshow(self.imarray)
+        axes[0, 0].set_title('Original')
+        axes[0, 0].imshow(self.imarray)
 
-        axes[1].set_title('red')
-        axes[1].imshow(r)
+        axes[1, 0].set_title('red')
+        axes[1, 0].imshow(r)
 
-        axes[2].set_title('green')
-        axes[2].imshow(g)
+        axes[2, 0].set_title('green')
+        axes[2, 0].imshow(g)
 
-        axes[3].set_title('blue')
-        axes[3].imshow(b)
+        axes[3, 0].set_title('blue')
+        axes[3, 0].imshow(b)
 
-        axes[4].set_title('lock_fluid (r-g)')
-        axes[4].imshow(self.lock_fluid)
+        axes[4, 0].set_title('current fluid (r-g)')
+        axes[4, 0].imshow(self.current_fluid)
 
-        axes[5].set_title('r - b')
-        axes[5].imshow(r - b)
+        axes[4, 1].set_title('masked current fluid (r-g)')
+        axes[4, 1].imshow(self.masked_current_fluid)
+
+        axes[5, 0].set_title('r - b')
+        axes[5, 0].imshow(r - b)
 
         w, h = self.im.size
-        for ax in axes:
+        for ax in fig.axes:
             ax.set_xlim(0, w)
             ax.set_ylim(h, 0)
 
