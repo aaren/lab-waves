@@ -1094,26 +1094,22 @@ class InterfaceImage(object):
         ix, iy = self.pixel_coords
         front = x.min()
 
-        # if ahead of the front, equal 0
         w, h = self.im.size
         X = np.arange(w)
         Y = np.zeros((w,))
-        Y[:front] = 0
+        # if ahead of the front, equal bottom of the tank
+        Y[:front] = h
 
+        # there must be a way to vectorize this...
         # if behind the front
         for i in range(front, w):
-            _x = x[np.where(x == i)]
             _y = y[np.where(x == i)]
-            # if single point, take it
-            if _x.size == 1:
-                Y[i] = _y[0]
-            # if two points, take highest (lowest y pixel)
-            elif _x.size > 1:
-                Y[i] = _y.min()
-            # if no point, ignore
-            elif _x.size == 0:
-                # placemarker
+            # if no point, put a nan placemarker
+            if _y.size == 0:
                 Y[i] = np.nan
+            # otherwise, take highest (lowest y pixel)
+            elif _y.size >= 1:
+                Y[i] = _y.min()
 
         # interpolate over gaps (nan) behind the front
         nans = np.isnan(Y)
