@@ -1116,6 +1116,11 @@ class InterfaceImage(object):
                 Y[i] = np.nan
 
         # interpolate over gaps (nan) behind the front
+        nans = np.isnan(Y)
+        # numpy one dimensional interpolation - more in
+        # scipy.interpolate
+        Y[nans] = np.interp(X[nans], X[~nans], Y[~nans])
+
         return X, Y
 
     @staticmethod
