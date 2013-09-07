@@ -895,8 +895,8 @@ class ProcessedRun(LabRun):
         # TODO: multiprocessing
         # TODO: runfiles should point to processed data
         for im in self.images:
-            intim = InterfaceImage(im)
-            lock_interface = intim.current_interface
+            iim = InterfaceImage(im)
+            lock_interface = iim.current_interface
         # possible alternate? :
         # interfacer = InterfaceImage()
         # lock_interface = interfacer(im, fluid_type='lock')
@@ -919,11 +919,11 @@ def process_raw(image):
     image.write_out()
 
 
-class InterfaceImage(object):
 # NOTE: scipy.signal._peak_finding._identify_ridge_lines may be
 # useful for wave tracking in the signal data, as well as
 # scipy.signal.find_peaks_cwt
 
+class InterfaceImage(object):
     def __init__(self, labimage):
         self.labimage = labimage
         self.im = self.measurement_region(labimage)
