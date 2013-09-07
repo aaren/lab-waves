@@ -969,9 +969,9 @@ class InterfaceImage(object):
         return [c.squeeze() / 255. for c in np.dsplit(self.imarray, 3)]
 
     @property
-    def lock_fluid(self):
+    def current_fluid(self):
         """Return the color space projection that best captures
-        the fluid from the lock.
+        the gravity current fluid.
 
         The green channel picks it out the best as a single channel,
         but is contaminated by background noise.
@@ -981,6 +981,10 @@ class InterfaceImage(object):
         """
         r, g, b = self.channels
         return r - g
+
+    @property
+    def masked_current_fluid(self):
+        return np.ma.masked_where(self.current_mask, self.current_fluid)
 
     @property
     def wave_fluid(self):
@@ -995,29 +999,32 @@ class InterfaceImage(object):
         return b
 
     @property
-    def pixel_rulers(self):
-        """Where are the rulers in pixel space."""
+    def real_rulers(self):
+        """Where are the rulers in real space."""
         cam = self.cam
         real_rulers = config.real_rulers[cam]
-        pixel_rulers = [[real_to_pixel(x, 0, cam)[0] for x in r]
-                        for r in real_rulers]
 
         style = self.labimage.run.style
         if style == 'old':
             pass
-        elif 'new' in style:
+        elif 'new' in style and cam == 'cam1':
             # only one ruler in cam1
-            pixel_rulers = [pixel_rulers[0]]
+            real_rulers = [real_rulers[0]]
+        elif 'new' in style and cam == 'cam2':
+            # no rulers
+            real_rulers = None
 
-        return pixel_rulers
+        return real_rulers
 
     @property
     def ruler_mask(self):
         """Mask for rulers in the image."""
-        ix, iy = self.pixel_coords
+        rx, ry = self.real_coords
+        if not self.real_rulers:
+            return np.zeros(rx.shape).astype(np.bool)
         # Truth wherever there is a ruler
-        mask = reduce(np.logical_or, ((x1 < ix) & (ix < x2)
-                                      for x2, x1 in self.pixel_rulers))
+        mask = reduce(np.logical_or, ((x1 < rx) & (rx < x2)
+                                      for x1, x2 in self.real_rulers))
 
         return mask
 
@@ -1049,7 +1056,7 @@ class InterfaceImage(object):
                                       self.top_mask,
                                       self.bottom_mask,
                                       self.crop_mask,
-                                      self.rx < 0,))
+                                      self.rx < 0,))  # behind lock gate
 
     @property
     def current_mask(self):
@@ -1058,7 +1065,7 @@ class InterfaceImage(object):
         return reduce(np.logical_or, (self.ruler_mask,
                                       self.bottom_mask,
                                       self.crop_mask,
-                                      self.lock_fluid < 0.2))
+                                      self.current_fluid < 0.1))
 
     @property
     def wave_interface(self):
@@ -1072,7 +1079,7 @@ class InterfaceImage(object):
     def current_interface(self):
         """Pull out the lock interface."""
         mask = self.current_mask
-        array = (self.lock_fluid < 0.5).astype(np.float)
+        array = (self.current_fluid < 0.5).astype(np.float)
         x, y = self.canny_interface(array, sigma=5, mask=~mask)
         return x, y
 
@@ -1083,15 +1090,33 @@ class InterfaceImage(object):
         of the image.
         """
         # detect front, if exists
+        x, y = self.current_interface
+        ix, iy = self.pixel_coords
+        front = x.min()
 
         # if ahead of the front, equal 0
+        w, h = self.im.size
+        X = np.arange(w)
+        Y = np.zeros((w,))
+        Y[:front] = 0
 
         # if behind the front
+        for i in range(front, w):
+            _x = x[np.where(x == i)]
+            _y = y[np.where(x == i)]
             # if single point, take it
-            # if two points, take highest
+            if _x.size == 1:
+                Y[i] = _y[0]
+            # if two points, take highest (lowest y pixel)
+            elif _x.size > 1:
+                Y[i] = _y.min()
             # if no point, ignore
+            elif _x.size == 0:
+                # placemarker
+                Y[i] = np.nan
 
-        # interpolate over gaps behind the front
+        # interpolate over gaps (nan) behind the front
+        return X, Y
 
     @staticmethod
     def canny_interface(array, sigma=5, mask=None):
