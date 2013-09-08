@@ -2,12 +2,20 @@ import sys
 
 import matplotlib.pyplot as plt
 
-from labwaves.runbase import ProcessedRun, InterfaceImage
+from labwaves.runbase import ProcessedRun
 
+# run = 'r13_01_13g'
+# n = 45
+# pr = ProcessedRun(run)
+# images = pr.images
+# for i in xrange(n):
+    # iim = images.next()
 
 def test_interface(run, n):
     pr = ProcessedRun(run)
-    iim = InterfaceImage(list(pr.images)[n])
+    images = pr.images
+    for i in xrange(n):
+        iim = images.next()
 
     def test_plot(iim):
         fig = iim.plot_channels()

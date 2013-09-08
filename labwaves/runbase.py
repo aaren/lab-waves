@@ -297,7 +297,294 @@ class RawImage(LabImage):
 
 
 class ProcessedImage(LabImage):
-    pass
+    @lazyprop
+    def imarray(self):
+        """Numpy array of the measurement region of the image."""
+        return np.asarray(self.measurement_region)
+
+    @property
+    def pixel_coords(self):
+        # TODO: move this up to run level
+        # images are homogeneous through a run so only need to
+        # do this once
+        """Return the pixel coordinate of each point in the
+        measurement region.
+
+        Outputs two arrays: the x coordinates and the y coordinates.
+        """
+        x, y = np.indices(self.measurement_region.size)
+        return x.T, y.T
+
+    @property
+    def real_coords(self):
+        # TODO: move this up to run level
+        # images are homogeneous through a run so only need to
+        # do this once
+        """For each pixel in the measurement region, compute
+        the real coordinate.
+
+        Outputs two arrays: the x coordinates and the y coordinates.
+        """
+        x, y = self.pixel_coords
+        y += config.top_bar
+        return pixel_to_real(x, y, cam=self.cam)
+
+    @lazyprop
+    def measurement_region(self):
+        # TODO: move up to run level
+        """Remove the bars from the top and bottom of a lab image."""
+        w, h = self.im.size
+        box = (0, config.top_bar, w, h - config.bottom_bar)
+        return self.im.crop(box)
+
+    @property
+    def channels(self):
+        """Return the r, g, b channels of the lab image,
+        normalised on the range [0, 1].
+        """
+        return [c.squeeze() / 255. for c in np.dsplit(self.imarray, 3)]
+
+    @property
+    def current_fluid(self):
+        """Return the color space projection that best captures
+        the gravity current fluid.
+
+        The green channel picks it out the best as a single channel,
+        but is contaminated by background noise.
+
+        This noise is largely neutrally toned though, so we can
+        subtract one of the other channels to remove it.
+        """
+        r, g, b = self.channels
+        return r - g
+
+    @property
+    def masked_current_fluid(self):
+        return np.ma.masked_where(self.current_mask, self.current_fluid)
+
+    @property
+    def wave_fluid(self):
+        """Colour space projection that best captures
+        the lower layer fluid.
+
+        The blue channel provides a very clear signal.
+        The green looking fluid is marked by an absence
+        of blue.
+        """
+        r, g, b = self.channels
+        return b
+
+    @property
+    def real_rulers(self):
+        """Where are the rulers in real space."""
+        cam = self.cam
+        real_rulers = config.real_rulers[cam]
+
+        style = self.run.style
+        if style == 'old':
+            pass
+        elif 'new' in style and cam == 'cam1':
+            # only one ruler in cam1
+            real_rulers = [real_rulers[0]]
+        elif 'new' in style and cam == 'cam2':
+            # no rulers
+            real_rulers = None
+
+        return real_rulers
+
+    @property
+    def ruler_mask(self):
+        """Mask for rulers in the image."""
+        rx, ry = self.real_coords
+        if not self.real_rulers:
+            return np.zeros(rx.shape).astype(np.bool)
+        # Truth wherever there is a ruler
+        mask = reduce(np.logical_or, ((x1 < rx) & (rx < x2)
+                                      for x1, x2 in self.real_rulers))
+
+        return mask
+
+    @property
+    def bottom_mask(self):
+        """Mask the bottom 5 pixels of the image."""
+        ix, iy = self.pixel_coords
+        mask = iy > self.measurement_region.size[1] - 5
+        return mask
+
+    @property
+    def top_mask(self):
+        """Mask the top 10 pixels of the image."""
+        ix, iy = self.pixel_coords
+        mask = iy < 10
+        return mask
+
+    @property
+    def crop_mask(self):
+        """Mask where the image has been cropped, i.e. there is black
+        background."""
+        return np.all(self.imarray < 0.01, axis=-1)
+
+    @property
+    def wave_mask(self):
+        """Combination of masks that masks out irrelevant features
+        for the wave fluid detection."""
+        return reduce(np.logical_or, (self.ruler_mask,
+                                      self.top_mask,
+                                      self.bottom_mask,
+                                      self.crop_mask,
+                                      self.real_coords[0] < 0.05,))  # behind lock
+
+    @property
+    def current_mask(self):
+        """Combination of masks that masks out irrelevant features
+        for the lock fluid detection."""
+        return reduce(np.logical_or, (self.ruler_mask,
+                                      self.bottom_mask,
+                                      self.crop_mask,
+                                      self.current_fluid < 0.1,
+                                      self.real_coords[0] < 0,))
+
+    @property
+    def wave_interface(self):
+        """Pull out the wave interface."""
+        mask = self.wave_mask
+        array = (self.wave_fluid < 0.2).astype(np.float)
+        x, y = self.canny_interface(array, sigma=5, mask=~mask)
+        return x, y
+
+    @property
+    def current_interface(self):
+        """Pull out the lock interface."""
+        mask = self.current_mask
+        array = (self.current_fluid < 0.5).astype(np.float)
+        x, y = self.canny_interface(array, sigma=5, mask=~mask)
+        return x, y
+
+    @property
+    def wave_profile(self):
+        """Define the upper limit of the gravity current
+        for each horizontal position in the visible region
+        of the image.
+        """
+        x, y = self.wave_interface
+        ix, iy = self.pixel_coords
+        w, h = self.measurement_region.size
+
+        X = np.arange(w)
+        Y = np.zeros((w,))
+        # there must be a way to vectorize this...
+        # if behind the front
+        for i in xrange(w):
+            _y = y[np.where(x == i)]
+            # if no point, put a nan placemarker
+            if _y.size == 0:
+                Y[i] = np.nan
+            # otherwise, take highest (lowest y pixel)
+            elif _y.size >= 1:
+                Y[i] = _y.min()
+
+        # interpolate over gaps (nan) behind the front
+        nans = np.isnan(Y)
+        # numpy one dimensional interpolation - more in
+        # scipy.interpolate
+        Y[nans] = np.interp(X[nans], X[~nans], Y[~nans])
+
+        return Y
+
+    @property
+    def current_profile(self):
+        """Define the upper limit of the gravity current
+        for each horizontal position in the visible region
+        of the image.
+        """
+        x, y = self.current_interface
+        ix, iy = self.pixel_coords
+        w, h = self.measurement_region.size
+
+        # detect front, if exists
+        try:
+            front = x.min()
+        except ValueError:
+            front = w
+
+        X = np.arange(w)
+        Y = np.zeros((w,))
+        # if ahead of the front, equal bottom of the tank
+        Y[:front] = h
+
+        # there must be a way to vectorize this...
+        # if behind the front
+        for i in xrange(front, w):
+            _y = y[np.where(x == i)]
+            # if no point, put a nan placemarker
+            if _y.size == 0:
+                Y[i] = np.nan
+            # otherwise, take highest (lowest y pixel)
+            elif _y.size >= 1:
+                Y[i] = _y.min()
+
+        # interpolate over gaps (nan) behind the front
+        nans = np.isnan(Y)
+        # numpy one dimensional interpolation - more in
+        # scipy.interpolate
+        Y[nans] = np.interp(X[nans], X[~nans], Y[~nans])
+
+        return Y
+
+    @staticmethod
+    def canny_interface(array, sigma=5, mask=None):
+        """Perform canny edge detection on the given array, using
+        gaussian smoothing of sigma, only considering the regions
+        defined as True in mask.
+        """
+        cb = skif.canny(array, sigma=sigma, mask=mask)
+        iy, ix = np.where(cb)
+        s = ix.argsort()
+        return ix[s], iy[s]
+
+    @property
+    def has_waves(self):
+        # TODO: move to run level
+        """True if the run that the image is from contains
+        a two layer fluid."""
+        return self.parameters['h_1'] != 0.0
+
+    def plot_channels(self):
+        """Convenience function to make a figure with the input
+        image and the three colour channels."""
+        r, g, b = self.channels
+
+        fig, axes = plt.subplots(6, 2, sharex='col', sharey='row')
+
+        axes[0, 0].set_title('Original')
+        axes[0, 0].imshow(self.imarray)
+
+        axes[1, 0].set_title('red')
+        axes[1, 0].imshow(r)
+
+        axes[2, 0].set_title('green')
+        axes[2, 0].imshow(g)
+
+        axes[3, 0].set_title('blue')
+        axes[3, 0].imshow(b)
+
+        axes[4, 0].set_title('current fluid (r-g)')
+        axes[4, 0].imshow(self.current_fluid)
+
+        axes[4, 1].set_title('masked current fluid (r-g)')
+        axes[4, 1].imshow(self.masked_current_fluid)
+
+        axes[5, 0].set_title('r - b')
+        axes[5, 0].imshow(r - b)
+
+        w, h = self.im.size
+        for ax in fig.axes:
+            ax.set_xlim(0, w)
+            ax.set_ylim(h, 0)
+
+        fig.tight_layout()
+
+        return fig
 
 
 class StitchedImage(object):
@@ -358,6 +645,8 @@ class StitchedImage(object):
         return out
 
     def draw_rectangle(self, box, fill, linewidth):
+        # TODO: make this a method on a processedimage
+        # you can draw outside the image box with PIL
         """Draw a rectangle, defined by the coordinates in box, over
         the stitched image.
 
@@ -375,6 +664,7 @@ class StitchedImage(object):
         return self
 
     def draw_rectangles(self, boxes, fill='red', linewidth=5):
+        # TODO: move to processed image
         """Draw multiple rectangles."""
         for box in boxes:
             self.draw_rectangle(box, fill, linewidth)
@@ -468,6 +758,14 @@ class LabRun(object):
         """
         paths = self.imagepaths
         return (self.Image(p, run=self) for p in paths)
+
+    @property
+    def cam1_images(self):
+        return (im for im in self.images if im.cam == 'cam1')
+
+    @property
+    def cam2_images(self):
+        return (im for im in self.images if im.cam == 'cam2')
 
     @property
     def style(self):
@@ -890,16 +1188,127 @@ class ProcessedRun(LabRun):
             si.draw_rectangles(boxes, fill='red')
             yield si
 
-    def interface(self):
+    def current_interface_X(self, cam):
+        """One dimensional X vector for a run."""
+        images = (im for im in self.images if im.cam == cam)
+        w, h = images.next().im.size
+        x = np.arange(w)
+        return pixel_to_real(x, 0, cam=cam)[0]
+
+    def current_interface_Y(self, cam):
         """Grab all interface data from a run"""
-        # TODO: multiprocessing
-        # TODO: runfiles should point to processed data
-        for im in self.images:
-            iim = InterfaceImage(im)
-            lock_interface = iim.current_interface
+        images = (im for im in self.images if im.cam == cam)
+        y = np.vstack(im.current_profile for im in images)
+        return pixel_to_real(0, y, cam=cam)[1]
         # possible alternate? :
-        # interfacer = InterfaceImage()
+        # interfacer = ProcessedImage()
         # lock_interface = interfacer(im, fluid_type='lock')
+
+    def current_interface_T(self, cam):
+        """One dimensional time vector for a run."""
+        images = (im for im in self.images if im.cam == cam)
+        times = np.fromiter((im.time for im in images),
+                            dtype=np.float)
+        return times
+
+    def mesh_XT_current(self, cam):
+        """Grid x and t"""
+        x = self.current_interface_X(cam)
+        t = self.current_interface_T(cam)
+        return np.meshgrid(x, t)
+
+    def combine_current(self):
+        """Combine the cameras into a single data array in each of
+        X, T and Y.
+
+        Chops off the individual camera arrays at the config defined
+        overlap and at the shortest sequence time length.
+        """
+        x1 = self.current_interface_X('cam1')
+        x2 = self.current_interface_X('cam2')
+
+        t1 = self.current_interface_T('cam1')
+        t2 = self.current_interface_T('cam2')
+
+        join = config.overlap[self.style]
+        x1v = x1[x1 < join]
+        x2v = x2[x2 > join]
+
+        tmax = min(t1.max(), t2.max())
+        t1v = t1[t1 < tmax]
+        t2v = t2[t2 < tmax]
+
+        xv = np.hstack((x2v, x1v))
+        tv = np.unique(np.hstack((t2v, t1v)))
+
+        X, T = np.meshgrid(xv, tv)
+
+        Y1 = self.current_interface_Y('cam1')
+        Y2 = self.current_interface_Y('cam2')
+        Y = np.hstack((Y2[:t2v.size, :x2v.size], Y1[:t1v.size, :x1v.size]))
+
+        return X, T, Y
+
+    def wave_interface_X(self, cam):
+        """One dimensional X vector for a run."""
+        images = (im for im in self.images if im.cam == cam)
+        w, h = images.next().im.size
+        x = np.arange(w)
+        return pixel_to_real(x, 0, cam=cam)[0]
+
+    def wave_interface_Y(self, cam):
+        """Grab all interface data from a run"""
+        images = (im for im in self.images if im.cam == cam)
+        y = np.vstack(im.wave_profile for im in images)
+        return pixel_to_real(0, y, cam=cam)[1]
+        # possible alternate? :
+        # interfacer = ProcessedImage()
+        # lock_interface = interfacer(im, fluid_type='lock')
+
+    def wave_interface_T(self, cam):
+        """One dimensional time vector for a run."""
+        images = (im for im in self.images if im.cam == cam)
+        times = np.fromiter((im.time for im in images),
+                            dtype=np.float)
+        return times
+
+    def mesh_XT_wave(self, cam):
+        """Grid x and t"""
+        x = self.wave_interface_X(cam)
+        t = self.wave_interface_T(cam)
+        return np.meshgrid(x, t)
+
+    def combine_wave(self):
+        """Combine the cameras into a single data array in each of
+        X, T and Y.
+
+        Chops off the individual camera arrays at the config defined
+        overlap and at the shortest sequence time length.
+        """
+        x1 = self.wave_interface_X('cam1')
+        x2 = self.wave_interface_X('cam2')
+
+        t1 = self.wave_interface_T('cam1')
+        t2 = self.wave_interface_T('cam2')
+
+        join = config.overlap[self.style]
+        x1v = x1[x1 < join]
+        x2v = x2[x2 > join]
+
+        tmax = min(t1.max(), t2.max())
+        t1v = t1[t1 < tmax]
+        t2v = t2[t2 < tmax]
+
+        xv = np.hstack((x2v, x1v))
+        tv = np.unique(np.hstack((t2v, t1v)))
+
+        X, T = np.meshgrid(xv, tv)
+
+        Y1 = self.wave_interface_Y('cam1')
+        Y2 = self.wave_interface_Y('cam2')
+        Y = np.hstack((Y2[:t2v.size, :x2v.size], Y1[:t1v.size, :x1v.size]))
+
+        return X, T, Y
 
     def write_out(self, images):
         """Write images to disk.
@@ -922,253 +1331,3 @@ def process_raw(image):
 # NOTE: scipy.signal._peak_finding._identify_ridge_lines may be
 # useful for wave tracking in the signal data, as well as
 # scipy.signal.find_peaks_cwt
-
-class InterfaceImage(object):
-    def __init__(self, labimage):
-        self.labimage = labimage
-        self.im = self.measurement_region(labimage)
-        self.imarray = np.asarray(self.im)
-        self.cam = self.labimage.cam
-
-        self.ix, self.iy = self.pixel_coords
-        self.rx, self.ry = self.real_coords
-
-    @property
-    def pixel_coords(self):
-        """Return the pixel coordinate of each point in the
-        measurement region.
-
-        Outputs two arrays: the x coordinates and the y coordinates.
-        """
-        y, x = np.indices(self.imarray[:, :, 0].shape)
-        return x, y
-
-    @property
-    def real_coords(self):
-        """For each pixel in the measurement region, compute
-        the real coordinate.
-
-        Outputs two arrays: the x coordinates and the y coordinates.
-        """
-        x, y = self.pixel_coords
-        y += config.top_bar
-        return pixel_to_real(x, y, cam=self.cam)
-
-    @staticmethod
-    def measurement_region(labimage):
-        """Remove the bars from the top and bottom of a lab image."""
-        w, h = labimage.im.size
-        box = (0, config.top_bar, w, h - config.bottom_bar + 1)
-        return labimage.im.crop(box)
-
-    @property
-    def channels(self):
-        """Return the r, g, b channels of the lab image,
-        normalised on the range [0, 1].
-        """
-        return [c.squeeze() / 255. for c in np.dsplit(self.imarray, 3)]
-
-    @property
-    def current_fluid(self):
-        """Return the color space projection that best captures
-        the gravity current fluid.
-
-        The green channel picks it out the best as a single channel,
-        but is contaminated by background noise.
-
-        This noise is largely neutrally toned though, so we can
-        subtract one of the other channels to remove it.
-        """
-        r, g, b = self.channels
-        return r - g
-
-    @property
-    def masked_current_fluid(self):
-        return np.ma.masked_where(self.current_mask, self.current_fluid)
-
-    @property
-    def wave_fluid(self):
-        """Colour space projection that best captures
-        the lower layer fluid.
-
-        The blue channel provides a very clear signal.
-        The green looking fluid is marked by an absence
-        of blue.
-        """
-        r, g, b = self.channels
-        return b
-
-    @property
-    def real_rulers(self):
-        """Where are the rulers in real space."""
-        cam = self.cam
-        real_rulers = config.real_rulers[cam]
-
-        style = self.labimage.run.style
-        if style == 'old':
-            pass
-        elif 'new' in style and cam == 'cam1':
-            # only one ruler in cam1
-            real_rulers = [real_rulers[0]]
-        elif 'new' in style and cam == 'cam2':
-            # no rulers
-            real_rulers = None
-
-        return real_rulers
-
-    @property
-    def ruler_mask(self):
-        """Mask for rulers in the image."""
-        rx, ry = self.real_coords
-        if not self.real_rulers:
-            return np.zeros(rx.shape).astype(np.bool)
-        # Truth wherever there is a ruler
-        mask = reduce(np.logical_or, ((x1 < rx) & (rx < x2)
-                                      for x1, x2 in self.real_rulers))
-
-        return mask
-
-    @property
-    def bottom_mask(self):
-        """Mask the bottom 5 pixels of the image."""
-        ix, iy = self.pixel_coords
-        mask = iy > self.im.size[1] - 5
-        return mask
-
-    @property
-    def top_mask(self):
-        """Mask the top 10 pixels of the image."""
-        ix, iy = self.pixel_coords
-        mask = iy < 10
-        return mask
-
-    @property
-    def crop_mask(self):
-        """Mask where the image has been cropped, i.e. there is black
-        background."""
-        return np.all(self.imarray < 0.01, axis=-1)
-
-    @property
-    def wave_mask(self):
-        """Combination of masks that masks out irrelevant features
-        for the wave fluid detection."""
-        return reduce(np.logical_or, (self.ruler_mask,
-                                      self.top_mask,
-                                      self.bottom_mask,
-                                      self.crop_mask,
-                                      self.rx < 0,))  # behind lock gate
-
-    @property
-    def current_mask(self):
-        """Combination of masks that masks out irrelevant features
-        for the lock fluid detection."""
-        return reduce(np.logical_or, (self.ruler_mask,
-                                      self.bottom_mask,
-                                      self.crop_mask,
-                                      self.current_fluid < 0.1))
-
-    @property
-    def wave_interface(self):
-        """Pull out the wave interface."""
-        mask = self.wave_mask
-        array = (self.wave_fluid < 0.2).astype(np.float)
-        x, y = self.canny_interface(array, sigma=5, mask=~mask)
-        return x, y
-
-    @property
-    def current_interface(self):
-        """Pull out the lock interface."""
-        mask = self.current_mask
-        array = (self.current_fluid < 0.5).astype(np.float)
-        x, y = self.canny_interface(array, sigma=5, mask=~mask)
-        return x, y
-
-    @property
-    def current_profile(self):
-        """Define the upper limit of the gravity current
-        for each horizontal position in the visible region
-        of the image.
-        """
-        # detect front, if exists
-        x, y = self.current_interface
-        ix, iy = self.pixel_coords
-        front = x.min()
-
-        w, h = self.im.size
-        X = np.arange(w)
-        Y = np.zeros((w,))
-        # if ahead of the front, equal bottom of the tank
-        Y[:front] = h
-
-        # there must be a way to vectorize this...
-        # if behind the front
-        for i in range(front, w):
-            _y = y[np.where(x == i)]
-            # if no point, put a nan placemarker
-            if _y.size == 0:
-                Y[i] = np.nan
-            # otherwise, take highest (lowest y pixel)
-            elif _y.size >= 1:
-                Y[i] = _y.min()
-
-        # interpolate over gaps (nan) behind the front
-        nans = np.isnan(Y)
-        # numpy one dimensional interpolation - more in
-        # scipy.interpolate
-        Y[nans] = np.interp(X[nans], X[~nans], Y[~nans])
-
-        return X, Y
-
-    @staticmethod
-    def canny_interface(array, sigma=5, mask=None):
-        """Perform canny edge detection on the given array, using
-        gaussian smoothing of sigma, only considering the regions
-        defined as True in mask.
-        """
-        cb = skif.canny(array, sigma=sigma, mask=mask)
-        iy, ix = np.where(cb)
-        s = ix.argsort()
-        return ix[s], iy[s]
-
-    @property
-    def has_waves(self):
-        """True if the run that the image is from contains
-        a two layer fluid."""
-        return self.labimage.parameters['h_1'] != 0.0
-
-    def plot_channels(self):
-        """Convenience function to make a figure with the input
-        image and the three colour channels."""
-        r, g, b = self.channels
-
-        fig, axes = plt.subplots(6, 2, sharex='col', sharey='row')
-
-        axes[0, 0].set_title('Original')
-        axes[0, 0].imshow(self.imarray)
-
-        axes[1, 0].set_title('red')
-        axes[1, 0].imshow(r)
-
-        axes[2, 0].set_title('green')
-        axes[2, 0].imshow(g)
-
-        axes[3, 0].set_title('blue')
-        axes[3, 0].imshow(b)
-
-        axes[4, 0].set_title('current fluid (r-g)')
-        axes[4, 0].imshow(self.current_fluid)
-
-        axes[4, 1].set_title('masked current fluid (r-g)')
-        axes[4, 1].imshow(self.masked_current_fluid)
-
-        axes[5, 0].set_title('r - b')
-        axes[5, 0].imshow(r - b)
-
-        w, h = self.im.size
-        for ax in fig.axes:
-            ax.set_xlim(0, w)
-            ax.set_ylim(h, 0)
-
-        fig.tight_layout()
-
-        return fig
