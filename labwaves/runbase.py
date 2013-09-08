@@ -783,6 +783,8 @@ class RawRun(LabRun):
     bc1_outdir = 'tmp/bc1'
     indir = config.indir
     outdir = config.outdir
+    # TODO: write out json file that contains config used
+    # to process run.
 
     @property
     def run_data(self):
@@ -1149,6 +1151,16 @@ class ProcessedRun(LabRun):
     Image = ProcessedImage
     indir = config.outdir
     outdir = config.outdir
+
+    # TODO: if you write a wrapper for images that lets
+    # you broadcast a method call across all images,
+    # then write a parallel_stub function that will
+    # call any general method, you should be able to
+    # implement multiprocessing on the image level.
+    #
+    # relies on util.parallel_progress being able
+    # to work with generators in order to work with
+    # out blasting too much memory.
 
     @property
     def stitched_images(self):
