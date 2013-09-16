@@ -224,8 +224,8 @@ def test_RawRun_process():
     for style in test_runs:
         test_runs[style].process()
     # now compare all images with ref
-    ref = glob.glob('tests/data/processed_ref/*/*/*')
-    outputs = glob.glob('tests/data/processed/*/*/*')
+    ref = sorted(glob.glob('tests/data/processed_ref/*/*/*'))
+    outputs = sorted(glob.glob('tests/data/processed/*/*/*'))
     for ref, out in zip(ref, outputs):
         assert_image_equal(ref, out)
 
