@@ -1235,6 +1235,7 @@ class ProcessedRun(LabRun):
         t = self.current_interface_T(cam)
         return np.meshgrid(x, t)
 
+    @lazyprop
     def combine_current(self):
         """Combine the cameras into a single data array in each of
         X, T and Y.
@@ -1296,6 +1297,7 @@ class ProcessedRun(LabRun):
         t = self.wave_interface_T(cam)
         return np.meshgrid(x, t)
 
+    @lazyprop
     def combine_wave(self):
         """Combine the cameras into a single data array in each of
         X, T and Y.
