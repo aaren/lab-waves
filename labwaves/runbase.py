@@ -1211,6 +1211,7 @@ class ProcessedRun(LabRun):
         images = (im for im in self.images if im.cam == cam)
         w, h = images.next().im.size
         x = np.arange(w)
+        # TODO: convert to real in images?
         return pixel_to_real(x, 0, cam=cam)[0]
 
     def current_interface_Y(self, cam):
