@@ -1,6 +1,16 @@
-- multiprocessing
-
 - use new objects in generate (maybe multiprocess here?)
+
+- change pixel_to_real to operate on measurement_region
+
+### multiprocessing
+
+centralise this on images so that it is only specified once (and
+provide a serial alternative).
+
+do this by creating something like an ImageCollection class, which
+has a hacked getattr that passes commands to memebers (which are
+LabImage instances).
+
 
 ### Refactor
 
@@ -17,3 +27,8 @@ Would do similar for interfacing:
     lock_interface = interfacer.interface(im)
 
 Or we could have `interface` as a method on a ProcessedImage.
+
+
+### Plotting
+
+Hovmollers
