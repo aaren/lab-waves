@@ -125,32 +125,6 @@ def read_run_data(run, paramf):
     return rdp_dict
 
 
-def iframe(impath):
-    """From an image filename, e.g. img_0001.jpg, get just the
-    0001 bit and return it.
-
-    Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
-    """
-    frame = impath.split('_')[-1].split('.')[0].split('_')[-1]
-    return frame
-
-
-def icam(impath):
-    """Given a path to an image, extract the corresponding camera.
-    Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
-    """
-    cam = impath.split('/')[-2]
-    return cam
-
-
-def irun(impath):
-    """Given a path to an image, extract the corresponding run.
-    Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
-    """
-    run = impath.split('/')[-3]
-    return run
-
-
 def real_to_pixel(x, y, cam='cam2'):
     """Convert a real measurement (in metres, relative to the lock
     gate) into a pixel measurement (in pixels, relative to the top
@@ -199,8 +173,8 @@ class LabImage(object):
         self.fname = os.path.basename(path)
         self.dirname = os.path.dirname(path)
 
-        self.frame = iframe(path)
-        self.cam = icam(path)
+        self.frame = self.iframe(path)
+        self.cam = self.icam(path)
 
         self.outformat = '.jpg'
         # set the image file format in the filename
@@ -232,6 +206,32 @@ class LabImage(object):
         sample_interval = self.parameters['sample']
         time_stamp = index * sample_interval
         return time_stamp
+
+    @staticmethod
+    def iframe(impath):
+        """From an image filename, e.g. img_0001.jpg, get just the
+        0001 bit and return it.
+
+        Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
+        """
+        frame = impath.split('_')[-1].split('.')[0].split('_')[-1]
+        return frame
+
+    @staticmethod
+    def icam(impath):
+        """Given a path to an image, extract the corresponding camera.
+        Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
+        """
+        cam = impath.split('/')[-2]
+        return cam
+
+    @staticmethod
+    def irun(impath):
+        """Given a path to an image, extract the corresponding run.
+        Expects impath to be of form 'path/to/run/cam/img_0001.jpg'
+        """
+        run = impath.split('/')[-3]
+        return run
 
 
 class RawImage(LabImage):
