@@ -467,6 +467,10 @@ class ProcessedImage(LabImage):
         of the image.
         """
         x, y = self.wave_interface
+        # TODO: do this a bit more elegantly
+        # like with a mapper from image coords to measured image
+        # coords
+        y += config.top_bar
         ix, iy = self.pixel_coords
         w, h = self.measurement_region.size
 
@@ -498,6 +502,8 @@ class ProcessedImage(LabImage):
         of the image.
         """
         x, y = self.current_interface
+        # TODO: do this a bit more elegantly
+        y += config.top_bar
         ix, iy = self.pixel_coords
         w, h = self.measurement_region.size
 
@@ -510,7 +516,7 @@ class ProcessedImage(LabImage):
         X = np.arange(w)
         Y = np.zeros((w,))
         # if ahead of the front, equal bottom of the tank
-        Y[:front] = h
+        Y[:front] = h + config.top_bar
 
         # there must be a way to vectorize this...
         # if behind the front
