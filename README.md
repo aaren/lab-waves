@@ -76,7 +76,7 @@ We can write out a sequence of stitched images that have been
 manipulated further:
 
 ```python
-r.write_out(r.visible_regions(r.stitched_images))
+r.write_out(si.with_visible_regions for si in r.stitched_images)
 ```
 
 In this case, `r.visible_regions`, which is a staticmethod that

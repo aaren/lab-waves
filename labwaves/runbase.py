@@ -176,7 +176,7 @@ def pixel_to_real(x, y, cam='cam2'):
 
 class LabImage(object):
     """Base class for images that come from a lab run."""
-    def __init__(self, path, run):
+    def __init__(self, path, run, im=None):
         """A LabImage is a member of a Run - images don't exist
         outside of a run. To initialise a RawImage, a Run instance
         must be passed as input.
@@ -207,12 +207,19 @@ class LabImage(object):
         self.out_fname = os.path.splitext(self.fname)[0] + self.outformat
         self.outpath = os.path.join(run.output_dir, self.cam, self.out_fname)
 
-        f = open(path, 'rb')
-        self.im = Image.open(f)
-        if run.dump_file:
-            # explicitly close the image file after loading to memory
-            self.im.load()
-            f.close()
+        if os.path.exists(path) and not im:
+            f = open(path, 'rb')
+            self.im = Image.open(f)
+            if run.dump_file:
+                # explicitly close the image file after loading to memory
+                self.im.load()
+                f.close()
+
+        elif im:
+            self.im = im
+            # NB reassignment of outpath when im is given
+            # path has different meaning in this case
+            self.outpath = path
 
         self.parameters = run.parameters
         self.param_text = config.param_text.format(time=self.time,
@@ -297,6 +304,56 @@ class RawImage(LabImage):
 
 
 class ProcessedImage(LabImage):
+    def draw_rectangle(self, box, fill, linewidth):
+        """Draw a rectangle, defined by the coordinates in box, over
+        the stitched image.
+
+        box - (left, upper), (right, lower), pixel coordinates of
+              the upper left and lower right rectangle corners.
+        fill - colour to draw the lines with
+        linewidth - width of the lines in pixels
+        """
+        # you can draw outside the image box with PIL
+        draw = ImageDraw.Draw(self.im)
+        (left, upper), (right, lower) = box
+        draw.line((left, upper, right, upper), width=linewidth, fill=fill)
+        draw.line((right, upper, right, lower), width=linewidth, fill=fill)
+        draw.line((right, lower, left, lower), width=linewidth, fill=fill)
+        draw.line((left, lower, left, upper), width=linewidth, fill=fill)
+        return self
+
+    def draw_rectangles(self, boxes, fill='red', linewidth=5):
+        """Draw multiple rectangles."""
+        for box in boxes:
+            self.draw_rectangle(box, fill, linewidth)
+        return self
+
+    @property
+    def with_visible_regions(self):
+        """ Create rectangles overlaid on the sections of the tank
+        in which PIV experiments could be performed.
+
+        In red are standard locations. In yellow are the equivalent
+        locations were the lock to shift downstream by 0.75m.
+
+        Returns self so that you can use in a chain.
+        """
+        # visible regions
+        vis = (((1.18, 0.25), (0.71, 0.0)),
+               ((2.11, 0.25), (1.70, 0.0)),
+               ((3.08, 0.25), (2.70, 0.0)))
+
+        # shifted visible regions
+        vis_ = (((0.43, 0.25), (-0.04, 0.0)),
+                ((1.36, 0.25), (0.95, 0.0)),
+                ((2.33, 0.25), (1.95, 0.0)))
+
+        boxes = [[real_to_pixel(*x, cam='cam2') for x in X] for X in vis]
+        boxes_ = [[real_to_pixel(*x, cam='cam2') for x in X] for X in vis_]
+        self.draw_rectangles(boxes_, fill='yellow')
+        self.draw_rectangles(boxes, fill='red')
+        return self
+
     @lazyprop
     def imarray(self):
         """Numpy array of the measurement region of the image."""
@@ -592,29 +649,35 @@ class ProcessedImage(LabImage):
 
         return fig
 
+    def write_out(self, path=None):
+        """Save the processed image to disk."""
+        if path is None:
+            path = self.outpath
+        util.makedirs_p(os.path.dirname(path))
+        self.im.save(path)
 
-class StitchedImage(object):
-    def __init__(self, im1, im2, join):
+
+class Stitcher(object):
+    def __init__(self,  join):
         """Create a Stitched Image, which is the joining of two
         images from different cameras.
 
-        im1 -  cam1 image, ProcessedImage object
-        im2 -  cam2 image, ProcessedImage object
         join - position in metres of the point at which to
                connect the images together
-
-        Alternately, im1 and im2 can be PIL Image objects.
         """
-        self.stitched_im = self.stitch(im1.im, im2.im, join)
+        self.join = join
 
-        if type(im1) is ProcessedImage and type(im2) is ProcessedImage:
-            output_dir = im1.run.output_dir
-            self.fname = os.path.basename(im1.path)
-        else:
-            output_dir = './'
-            self.fname = 'stitched_image.png'
+    def __call__(self, im1, im2):
+        """im1 and im2 are ProcessedImage instances"""
+        fname = os.path.basename(im1.path)
+        output_dir = im1.run.output_dir
+        outpath = os.path.join(output_dir,
+                               'stitched',
+                               fname)
 
-        self.outpath = os.path.join(output_dir, 'stitched', self.fname)
+        return ProcessedImage(im=self.stitch(im1.im, im2.im, self.join),
+                              path=outpath,
+                              run=im1.run)
 
     @staticmethod
     def stitch(im1, im2, join):
@@ -649,39 +712,6 @@ class StitchedImage(object):
         out.paste(cim1, box=b1)
         out.paste(cim2, box=b2)
         return out
-
-    def draw_rectangle(self, box, fill, linewidth):
-        # TODO: make this a method on a processedimage
-        # you can draw outside the image box with PIL
-        """Draw a rectangle, defined by the coordinates in box, over
-        the stitched image.
-
-        box - (left, upper), (right, lower), pixel coordinates of
-              the upper left and lower right rectangle corners.
-        fill - colour to draw the lines with
-        linewidth - width of the lines in pixels
-        """
-        draw = ImageDraw.Draw(self.stitched_im)
-        (left, upper), (right, lower) = box
-        draw.line((left, upper, right, upper), width=linewidth, fill=fill)
-        draw.line((right, upper, right, lower), width=linewidth, fill=fill)
-        draw.line((right, lower, left, lower), width=linewidth, fill=fill)
-        draw.line((left, lower, left, upper), width=linewidth, fill=fill)
-        return self
-
-    def draw_rectangles(self, boxes, fill='red', linewidth=5):
-        # TODO: move to processed image
-        """Draw multiple rectangles."""
-        for box in boxes:
-            self.draw_rectangle(box, fill, linewidth)
-        return self
-
-    def write_out(self, path=None):
-        """Save the stitched image to disk."""
-        if path is None:
-            path = self.outpath
-        util.makedirs_p(os.path.dirname(path))
-        self.stitched_im.save(path)
 
 
 class LabRun(object):
@@ -1167,44 +1197,13 @@ class ProcessedRun(LabRun):
     # relies on util.parallel_progress being able
     # to work with generators in order to work with
     # out blasting too much memory.
-
     @property
     def stitched_images(self):
         cam1_images = (im for im in self.images if im.cam == 'cam1')
         cam2_images = (im for im in self.images if im.cam == 'cam2')
         overlap = config.overlap[self.style]
-        join = (overlap for im in self.images)
-        return imap(StitchedImage, cam1_images, cam2_images, join)
-
-    @staticmethod
-    def visible_regions(stitched_images):
-        """Yield a sequence of stitched images that have
-        rectangles overlaid on the sections of the tank
-        in which PIV experiments could be performed.
-
-        In red are standard locations. In yellow are the equivalent
-        locations were the lock to shift downstream by 0.75m.
-
-        stitched_images is a sequence of StitchedImage objects
-
-        Returns a generator.
-        """
-        # visible regions
-        vis = (((1.18, 0.25), (0.71, 0.0)),
-               ((2.11, 0.25), (1.70, 0.0)),
-               ((3.08, 0.25), (2.70, 0.0)))
-
-        # shifted visible regions
-        vis_ = (((0.43, 0.25), (-0.04, 0.0)),
-                ((1.36, 0.25), (0.95, 0.0)),
-                ((2.33, 0.25), (1.95, 0.0)))
-
-        boxes = [[real_to_pixel(*x, cam='cam2') for x in X] for X in vis]
-        boxes_ = [[real_to_pixel(*x, cam='cam2') for x in X] for X in vis_]
-        for si in stitched_images:
-            si.draw_rectangles(boxes_, fill='yellow')
-            si.draw_rectangles(boxes, fill='red')
-            yield si
+        stitcher = Stitcher(overlap)
+        return imap(stitcher, cam1_images, cam2_images)
 
     def current_interface_X(self, cam):
         """One dimensional X vector for a run."""
