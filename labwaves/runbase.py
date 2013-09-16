@@ -355,11 +355,20 @@ class ProcessedImage(LabImage):
         return self
 
     @lazyprop
+    def measurement_region(self):
+        # TODO: move up to run level
+        # how? you still need to crop the image
+        """Remove the bars from the top and bottom of a lab image."""
+        w, h = self.im.size
+        box = (0, config.top_bar, w, h - config.bottom_bar)
+        return self.im.crop(box)
+
+    @lazyprop
     def imarray(self):
         """Numpy array of the measurement region of the image."""
         return np.asarray(self.measurement_region)
 
-    @property
+    @lazyprop
     def pixel_coords(self):
         # TODO: move this up to run level
         # images are homogeneous through a run so only need to
@@ -372,7 +381,7 @@ class ProcessedImage(LabImage):
         x, y = np.indices(self.measurement_region.size)
         return x.T, y.T
 
-    @property
+    @lazyprop
     def real_coords(self):
         # TODO: move this up to run level
         # images are homogeneous through a run so only need to
@@ -385,14 +394,6 @@ class ProcessedImage(LabImage):
         x, y = self.pixel_coords
         y += config.top_bar
         return pixel_to_real(x, y, cam=self.cam)
-
-    @lazyprop
-    def measurement_region(self):
-        # TODO: move up to run level
-        """Remove the bars from the top and bottom of a lab image."""
-        w, h = self.im.size
-        box = (0, config.top_bar, w, h - config.bottom_bar)
-        return self.im.crop(box)
 
     @property
     def channels(self):
