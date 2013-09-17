@@ -660,7 +660,7 @@ class LabRun(object):
 
     """
     def __init__(self, run, parameters_f=None, run_data_f=None,
-                 path=None, dump_file=False):
+                 path=None, dump_file=False, parallel=True):
         """
         Inputs: run - string, a run index, e.g. 'r11_05_24a'
                 parameters_f - optional, a file containing run parameters
@@ -678,6 +678,8 @@ class LabRun(object):
         self.run_data_f = run_data_f or config.procf
 
         self.dump_file = dump_file
+
+        self.parallel = parallel
 
         self.parameters = self.read_parameters(run, self.parameters_f)
 
