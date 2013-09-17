@@ -46,30 +46,6 @@ def lazyprop(fn):
     return _lazyprop
 
 
-# TODO: move these inside class
-def real_to_pixel(x, y, cam='cam2'):
-    """Convert a real measurement (in metres, relative to the lock
-    gate) into a pixel measurement (in pixels, relative to the top
-    left image corner, given the camera being used (cam).
-    """
-    x_ = (config.crop[cam]['left'] - x) * config.ideal_m
-    h = config.crop[cam]['upper'] - config.crop[cam]['lower']
-    y_ = config.top_bar + (h - y) * config.ideal_m
-    return int(x_), int(y_)
-
-
-def pixel_to_real(x, y, cam='cam2'):
-    """Convert a pixel measurement (in image coordinates, relative
-    to the top left corner) into a real measurement (in metres,
-    relative to the lock gate base), given the camera being used
-    (cam).
-    """
-    x_ = (config.crop[cam]['left'] - x / config.ideal_m)
-    h = config.crop[cam]['upper'] - config.crop[cam]['lower']
-    y_ = (config.top_bar - y) / config.ideal_m + h
-    return x_, y_
-
-
 class LabImage(object):
     """Base class for images that come from a lab run."""
     def __init__(self, path, run, im=None):
@@ -270,27 +246,25 @@ class ProcessedImage(LabImage):
                 ((1.36, 0.25), (0.95, 0.0)),
                 ((2.33, 0.25), (1.95, 0.0)))
 
-        boxes = [[real_to_pixel(*x, cam='cam2') for x in X] for X in vis]
-        boxes_ = [[real_to_pixel(*x, cam='cam2') for x in X] for X in vis_]
+        boxes = [[self.run.real_to_pixel(*x, cam='cam2') for x in X]
+                                                            for X in vis]
+        boxes_ = [[self.run.real_to_pixel(*x, cam='cam2') for x in X]
+                                                            for X in vis_]
         self.draw_rectangles(boxes_, fill='yellow')
         self.draw_rectangles(boxes, fill='red')
         return self
 
     @lazyprop
     def measurement_region(self):
-        # TODO: move up to run level
-        # how? you still need to crop the image
         """Remove the bars from the top and bottom of a lab image."""
-        w, h = self.im.size
-        box = (0, config.top_bar, w, h - config.bottom_bar)
-        return self.im.crop(box)
+        return self.im.crop(self.run.measurement_box(self.cam))
 
     @lazyprop
     def imarray(self):
         """Numpy array of the measurement region of the image."""
         return np.asarray(self.measurement_region)
 
-    @lazyprop
+    @property
     def pixel_coords(self):
         # TODO: move this up to run level
         # images are homogeneous through a run so only need to
@@ -303,7 +277,7 @@ class ProcessedImage(LabImage):
         x, y = np.indices(self.measurement_region.size)
         return x.T, y.T
 
-    @lazyprop
+    @property
     def real_coords(self):
         # TODO: move this up to run level
         # images are homogeneous through a run so only need to
@@ -315,7 +289,7 @@ class ProcessedImage(LabImage):
         """
         x, y = self.pixel_coords
         y += config.top_bar
-        return pixel_to_real(x, y, cam=self.cam)
+        return self.run.pixel_to_real(x, y, cam=self.cam)
 
     @property
     def channels(self):
@@ -393,9 +367,9 @@ class ProcessedImage(LabImage):
 
     @property
     def top_mask(self):
-        """Mask the top 10 pixels of the image."""
-        ix, iy = self.pixel_coords
-        mask = iy < 10
+        """Mask the top 5cm of the image."""
+        ix, iy = self.real_coords
+        mask = iy > 0.20
         return mask
 
     @property
@@ -405,6 +379,11 @@ class ProcessedImage(LabImage):
         return np.all(self.imarray < 0.01, axis=-1)
 
     @property
+    def lock_mask(self):
+        """Mask the region behind the lock gate."""
+        return self.real_coords[0] < 0.05
+
+    @property
     def wave_mask(self):
         """Combination of masks that masks out irrelevant features
         for the wave fluid detection."""
@@ -412,7 +391,7 @@ class ProcessedImage(LabImage):
                                       self.top_mask,
                                       self.bottom_mask,
                                       self.crop_mask,
-                                      self.real_coords[0] < 0.05,))  # behind lock
+                                      self.lock_mask,))
 
     @property
     def current_mask(self):
@@ -428,7 +407,7 @@ class ProcessedImage(LabImage):
     def wave_interface(self):
         """Pull out the wave interface."""
         mask = self.wave_mask
-        array = (self.wave_fluid < 0.2).astype(np.float)
+        array = (self.wave_fluid < 0.3).astype(np.float)
         x, y = self.canny_interface(array, sigma=5, mask=~mask)
         return x, y
 
@@ -603,7 +582,7 @@ class LabRun(object):
 
     """
     def __init__(self, run, parameters_f=None, run_data_f=None,
-                 path=None, dump_file=False, parallel=True):
+                 path=None, dump_file=False):
         """
         Inputs: run - string, a run index, e.g. 'r11_05_24a'
                 parameters_f - optional, a file containing run parameters
@@ -621,8 +600,6 @@ class LabRun(object):
         self.run_data_f = run_data_f or config.procf
 
         self.dump_file = dump_file
-
-        self.parallel = parallel
 
         self.parameters = self.read_parameters(run, self.parameters_f)
 
@@ -1121,15 +1098,15 @@ class RawRun(LabRun):
         lower = ref_y + crop['lower'] + config.bottom_bar
         return (left, upper, right, lower)
 
-    def process(self):
+    def process(self, parallel=True):
         """Process the images, transforming them from their raw state.
 
         Can easily multiprocess this bit.
         """
         kwargs = [{'image': i} for i in self.images]
-        if self.parallel:
+        if parallel:
             parallel_process(process_raw, kwargs, processors=10)
-        elif not self.parallel:
+        elif not parallel:
             for image in self.images:
                 image.write_out()
 
@@ -1181,6 +1158,18 @@ class ProcessedRun(LabRun):
         # create a config object that mimics the config module
         self.config = type('config', (object,), self.config_data['config'])
 
+    def measurement_box(self, cam):
+        """The box that contains the image data from the run, i.e.
+        the box (left, upper, right, lower) in pixels that would
+        remove the black bars from a processed image.
+        """
+        left, upper, right, lower = self.config_data['crop_box'][cam]
+        w = right - left
+        h = lower - upper
+        measurement_box = (0, self.config.top_bar,
+                           w, h - self.config.bottom_bar)
+        return measurement_box
+
     def read_run_json(self):
         """Read the configuration used to process the run."""
         inpath = os.path.join(self.input_dir, self.run_json_fname)
@@ -1211,9 +1200,9 @@ class ProcessedRun(LabRun):
         # long as is in the overlap between the two cameras
         join = self.config.overlap[self.style]
         # where is the join in cam2?
-        join_2 = real_to_pixel(join, 0, 'cam2')[0]
+        join_2 = self.real_to_pixel(join, 0, 'cam2')[0]
         # where is the join in cam1?
-        join_1 = real_to_pixel(join, 0, 'cam1')[0]
+        join_1 = self.real_to_pixel(join, 0, 'cam1')[0]
 
         stitched_image = self.stitch(im1.im, im2.im,
                                      join_1=join_1,
@@ -1252,9 +1241,36 @@ class ProcessedRun(LabRun):
 
     @property
     def stitched_images(self):
+        """Iterator of stitched images formed from joining corresponding
+        images in camera streams. Each stitched image is an instance
+        of a ProcessedImage.
+        """
         cam1_images = (im for im in self.images if im.cam == 'cam1')
         cam2_images = (im for im in self.images if im.cam == 'cam2')
         return imap(self.stitcher, cam1_images, cam2_images)
+
+    def real_to_pixel(self, x, y, cam='cam2'):
+        """Convert a real measurement (in metres, relative to the lock
+        gate) into a pixel measurement (in pixels, relative to the top
+        left image corner, given the camera being used (cam).
+        """
+        config = self.config
+        x_ = (config.crop[cam]['left'] - x) * config.ideal_m
+        h = config.crop[cam]['upper'] - config.crop[cam]['lower']
+        y_ = config.top_bar + (h - y) * config.ideal_m
+        return int(x_), int(y_)
+
+    def pixel_to_real(self, x, y, cam='cam2'):
+        """Convert a pixel measurement (in image coordinates, relative
+        to the top left corner) into a real measurement (in metres,
+        relative to the lock gate base), given the camera being used
+        (cam).
+        """
+        config = self.config
+        x_ = (config.crop[cam]['left'] - x / config.ideal_m)
+        h = config.crop[cam]['upper'] - config.crop[cam]['lower']
+        y_ = (config.top_bar - y) / config.ideal_m + h
+        return x_, y_
 
     def current_interface_X(self, cam):
         """One dimensional X vector for a run."""
@@ -1262,13 +1278,13 @@ class ProcessedRun(LabRun):
         w, h = images.next().im.size
         x = np.arange(w)
         # TODO: convert to real in images?
-        return pixel_to_real(x, 0, cam=cam)[0]
+        return self.pixel_to_real(x, 0, cam=cam)[0]
 
     def current_interface_Y(self, cam):
         """Grab all interface data from a run"""
         images = (im for im in self.images if im.cam == cam)
         y = np.vstack(im.current_profile for im in images)
-        return pixel_to_real(0, y, cam=cam)[1]
+        return self.pixel_to_real(0, y, cam=cam)[1]
         # possible alternate? :
         # interfacer = ProcessedImage()
         # lock_interface = interfacer(im, fluid_type='lock')
@@ -1324,13 +1340,13 @@ class ProcessedRun(LabRun):
         images = (im for im in self.images if im.cam == cam)
         w, h = images.next().im.size
         x = np.arange(w)
-        return pixel_to_real(x, 0, cam=cam)[0]
+        return self.pixel_to_real(x, 0, cam=cam)[0]
 
     def wave_interface_Y(self, cam):
         """Grab all interface data from a run"""
         images = (im for im in self.images if im.cam == cam)
         y = np.vstack(im.wave_profile for im in images)
-        return pixel_to_real(0, y, cam=cam)[1]
+        return self.pixel_to_real(0, y, cam=cam)[1]
         # possible alternate? :
         # interfacer = ProcessedImage()
         # lock_interface = interfacer(im, fluid_type='lock')
