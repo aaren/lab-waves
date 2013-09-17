@@ -4,6 +4,7 @@ import glob
 import os
 import itertools
 from itertools import imap
+import json
 
 import Image
 import ImageDraw
@@ -45,6 +46,7 @@ def lazyprop(fn):
     return _lazyprop
 
 
+# TODO: move these inside class
 def real_to_pixel(x, y, cam='cam2'):
     """Convert a real measurement (in metres, relative to the lock
     gate) into a pixel measurement (in pixels, relative to the top
@@ -679,6 +681,8 @@ class LabRun(object):
 
         self.parameters = self.read_parameters(run, self.parameters_f)
 
+        self.run_json_fname = 'config.json'
+
     @property
     def input_dir(self):
         """Path to get input images from."""
@@ -806,8 +810,9 @@ class LabRun(object):
 
         index = np.where(rd['run_index'] == run)
         rdp = rd[index]
-        # convert to dictionary
-        rdp_dict = dict(zip(rdp.dtype.names, rdp[0]))
+        # convert to dictionary. tolist() is to convert to native
+        # python types
+        rdp_dict = dict(zip(rdp.dtype.names, rdp[0].tolist()))
         return rdp_dict
 
 
@@ -821,8 +826,6 @@ class RawRun(LabRun):
     bc1_outdir = 'tmp/bc1'
     indir = config.indir
     outdir = config.outdir
-    # TODO: write out json file that contains config used
-    # to process run.
 
     @property
     def run_data(self):
@@ -1122,11 +1125,11 @@ class RawRun(LabRun):
         x2 = (lower_right_2, upper_right_2, lower_left_2, upper_left_2)
         X2 = self.perspective_reference(lower_right_2, style, 'cam2')
 
-        cam1_coeff = tuple(processing.perspective_coefficients(x1, X1))
+        cam1_coeff = processing.perspective_coefficients(x1, X1).tolist()
         if lower_right_2[0] == 0:
             cam2_coeff = 0
         else:
-            cam2_coeff = tuple(processing.perspective_coefficients(x2, X2))
+            cam2_coeff = processing.perspective_coefficients(x2, X2).tolist()
 
         return {'cam1': cam1_coeff, 'cam2': cam2_coeff}
 
@@ -1179,7 +1182,35 @@ class RawRun(LabRun):
         Can easily multiprocess this bit.
         """
         kwargs = [{'image': i} for i in self.images]
-        parallel_process(process_raw, kwargs, processors=10)
+        if self.parallel:
+            parallel_process(process_raw, kwargs, processors=10)
+        elif not self.parallel:
+            for image in self.images:
+                image.write_out()
+
+        self.write_run_json()
+
+    def write_run_json(self):
+        """Write out a json file that contains the configuration
+        used to process the run."""
+        outpath = os.path.join(self.output_dir, self.run_json_fname)
+
+        # pull out top level names from config file.
+        config_dict = {k: getattr(config, k)
+                       for k in dir(config)
+                       if not k.startswith('_')}
+
+        data = {'crop_box': {'cam1': self.crop_box('cam1'),
+                             'cam2': self.crop_box('cam2')},
+                'perspective_coeffs': self.perspective_coefficients,
+                'parameters': self.parameters,
+                'run_data': self.run_data,
+                'config': config_dict,
+                }
+
+        out = open(outpath, 'w')
+        out.write(json.dumps(data, indent=1))
+        out.close()
 
 
 class ProcessedRun(LabRun):
@@ -1199,11 +1230,24 @@ class ProcessedRun(LabRun):
     # relies on util.parallel_progress being able
     # to work with generators in order to work with
     # out blasting too much memory.
+    def __init__(self, *args, **kwargs):
+        super(ProcessedRun, self).__init__(*args, **kwargs)
+        self.config_data = self.read_run_json()
+        self.config = self.config_data['config']
+
+    def read_run_json(self):
+        """Read the configuration used to process the run."""
+        inpath = os.path.join(self.input_dir, self.run_json_fname)
+        fin = open(inpath, 'r')
+        data = json.loads(fin.read())
+        fin.close()
+        return data
+
     @property
     def stitched_images(self):
         cam1_images = (im for im in self.images if im.cam == 'cam1')
         cam2_images = (im for im in self.images if im.cam == 'cam2')
-        overlap = config.overlap[self.style]
+        overlap = self.config.overlap[self.style]
         stitcher = Stitcher(overlap)
         return imap(stitcher, cam1_images, cam2_images)
 
@@ -1251,7 +1295,7 @@ class ProcessedRun(LabRun):
         t1 = self.current_interface_T('cam1')
         t2 = self.current_interface_T('cam2')
 
-        join = config.overlap[self.style]
+        join = self.config.overlap[self.style]
         x1v = x1[x1 < join]
         x2v = x2[x2 > join]
 
@@ -1313,7 +1357,7 @@ class ProcessedRun(LabRun):
         t1 = self.wave_interface_T('cam1')
         t2 = self.wave_interface_T('cam2')
 
-        join = config.overlap[self.style]
+        join = self.config.overlap[self.style]
         x1v = x1[x1 < join]
         x2v = x2[x2 > join]
 
