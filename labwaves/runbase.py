@@ -45,86 +45,6 @@ def lazyprop(fn):
     return _lazyprop
 
 
-def read_parameters(run, paramf):
-    """Read in data from the parameters file, which has
-    the headers and data types as in the list data.
-    'S10' is string, 'f4' is float.
-
-    Reading in gives a numpy recarray. Convert to a dictionary
-    and return this.
-    """
-    data = [('run_index',       'S10'),
-            ('h_1',             'f8'),
-            ('rho_0',           'f8'),
-            ('rho_1',           'f8'),
-            ('rho_2',           'f8'),
-            ('alpha',           'f8'),
-            ('D',               'f8'),
-            ('sample',          'f8'),
-            ('perspective',     'S10')]
-    names, types = zip(*data)
-    try:
-        p = np.genfromtxt(paramf, dtype=types, names=names)
-    except ValueError:
-        print("parameters file is malformed. Should have headings: np.dtype")
-        print({k: v for k, v in data})
-
-    index = np.where(p['run_index'] == run)
-    params = p[index]
-    if len(params) == 0:
-        # run is not in parameters file
-        print("{run} is not in {paramf}".format(run=run, paramf=paramf))
-        raise KeyError
-    else:
-        # convert to dictionary
-        names = params.dtype.names
-        p_dict = dict(zip(names, params[0]))
-        return p_dict
-
-
-def read_run_data(run, paramf):
-    """Read in data from proc file, which has headers and data
-    types as in the list data. 'S10' is string, 'i4' is integer.
-
-    Read in as numpy recarray. Convert this to a dictionary for output.
-    """
-    data = [('run_index',  'S10'),
-            ('l0x',        'i4'),
-            ('l0y',        'i4'),
-            ('lsx',        'i4'),
-            ('lsy',        'i4'),
-            ('j10x',       'i4'),
-            ('j10y',       'i4'),
-            ('j1sx',       'i4'),
-            ('j1sy',       'i4'),
-            ('leakage',    'i4'),
-            ('odd_1',      'S10'),
-            ('j20x',       'i4'),
-            ('j20y',       'i4'),
-            ('j2sx',       'i4'),
-            ('j2sy',       'i4'),
-            ('r0x',        'i4'),
-            ('r0y',        'i4'),
-            ('rsx',        'i4'),
-            ('rsy',        'i4'),
-            ('odd_2',      'S10')]
-    names, dtypes = zip(*data)
-    try:
-        rd = np.genfromtxt(paramf, skip_header=1,
-                           dtype=dtypes,
-                           delimiter=',',
-                           names=names)
-    except ValueError:
-        print("run data file is malformed. Should have headings: np.dtype")
-        print({k: v for k, v in data})
-
-    index = np.where(rd['run_index'] == run)
-    rdp = rd[index]
-    # convert to dictionary
-    rdp_dict = dict(zip(rdp.dtype.names, rdp[0]))
-    return rdp_dict
-
-
 def real_to_pixel(x, y, cam='cam2'):
     """Convert a real measurement (in metres, relative to the lock
     gate) into a pixel measurement (in pixels, relative to the top
@@ -757,7 +677,7 @@ class LabRun(object):
 
         self.dump_file = dump_file
 
-        self.parameters = read_parameters(run, self.parameters_f)
+        self.parameters = self.read_parameters(run, self.parameters_f)
 
     @property
     def input_dir(self):
@@ -809,6 +729,87 @@ class LabRun(object):
         """Returns a string, the perspective style used for the run."""
         return self.parameters['perspective']
 
+    @staticmethod
+    def read_parameters(run, paramf):
+        """Read in data from the parameters file, which has
+        the headers and data types as in the list data.
+        'S10' is string, 'f4' is float.
+
+        Reading in gives a numpy recarray. Convert to a dictionary
+        and return this.
+        """
+        data = [('run_index',       'S10'),
+                ('h_1',             'f8'),
+                ('rho_0',           'f8'),
+                ('rho_1',           'f8'),
+                ('rho_2',           'f8'),
+                ('alpha',           'f8'),
+                ('D',               'f8'),
+                ('sample',          'f8'),
+                ('perspective',     'S10')]
+        names, types = zip(*data)
+        try:
+            p = np.genfromtxt(paramf, dtype=types, names=names)
+        except ValueError:
+            print("parameters file is malformed. "
+                  "Should have headings: {}".format(names))
+            print({k: v for k, v in data})
+
+        index = np.where(p['run_index'] == run)
+        params = p[index]
+        if len(params) == 0:
+            # run is not in parameters file
+            print("{run} is not in {paramf}".format(run=run, paramf=paramf))
+            raise KeyError
+        else:
+            # convert to dictionary
+            names = params.dtype.names
+            p_dict = dict(zip(names, params[0]))
+            return p_dict
+
+    @staticmethod
+    def read_run_data(run, paramf):
+        """Read in data from proc file, which has headers and data
+        types as in the list data. 'S10' is string, 'i4' is integer.
+
+        Read in as numpy recarray. Convert this to a dictionary for output.
+        """
+        data = [('run_index',  'S10'),
+                ('l0x',        'i4'),
+                ('l0y',        'i4'),
+                ('lsx',        'i4'),
+                ('lsy',        'i4'),
+                ('j10x',       'i4'),
+                ('j10y',       'i4'),
+                ('j1sx',       'i4'),
+                ('j1sy',       'i4'),
+                ('leakage',    'i4'),
+                ('odd_1',      'S10'),
+                ('j20x',       'i4'),
+                ('j20y',       'i4'),
+                ('j2sx',       'i4'),
+                ('j2sy',       'i4'),
+                ('r0x',        'i4'),
+                ('r0y',        'i4'),
+                ('rsx',        'i4'),
+                ('rsy',        'i4'),
+                ('odd_2',      'S10')]
+        names, dtypes = zip(*data)
+        try:
+            rd = np.genfromtxt(paramf, skip_header=1,
+                               dtype=dtypes,
+                               delimiter=',',
+                               names=names)
+        except ValueError:
+            print("run data file is malformed. Should have headings: np.dtype")
+            print({k: v for k, v in data})
+
+        index = np.where(rd['run_index'] == run)
+        rdp = rd[index]
+        # convert to dictionary
+        rdp_dict = dict(zip(rdp.dtype.names, rdp[0]))
+        return rdp_dict
+
 
 class RawRun(LabRun):
     """Represents a lab run in its raw state.
@@ -846,7 +847,7 @@ class RawRun(LabRun):
                 print "y or n!"
                 run_data = self.run_data
 
-        run_data = read_run_data(self.index, procf)
+        run_data = self.read_run_data(self.index, procf)
 
         return run_data
 

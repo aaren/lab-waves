@@ -10,8 +10,7 @@ import numpy.testing as npt
 
 from labwaves.runbase import RawRun
 from labwaves.runbase import RawImage
-from labwaves.runbase import read_parameters
-from labwaves.runbase import read_run_data
+from labwaves.runbase import LabRun
 
 from labwaves import config
 
@@ -86,13 +85,13 @@ t = TestRun()
 
 
 def test_read_parameters():
-    params = read_parameters(t.index, param_f)
+    params = LabRun.read_parameters(t.index, param_f)
     assert_equal(type(params), dict)
     assert_dict_equal(params, t.parameters)
 
 
 def test_read_run_data():
-    run_data = read_run_data(t.index, proc_f)
+    run_data = LabRun.read_run_data(t.index, proc_f)
     assert_equal(type(run_data), dict)
     assert_equal(run_data, t.run_data)
 
