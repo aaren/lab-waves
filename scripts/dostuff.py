@@ -1,6 +1,7 @@
 import glob
 import os
 import argparse
+import logging
 
 import numpy as np
 import matplotlib as mpl
@@ -69,6 +70,7 @@ def command_line_parser():
 
 
 def main(args):
+    logging.basicConfig(filename='logfile', level=logging.DEBUG)
     action_table = {'raw_process': raw_process,
                     'stitch':      stitch,
                     'hovmoller':   hovmoller,
@@ -88,7 +90,11 @@ def main(args):
         print "\nthis is {run} {i}/{N}\n".format(run=run, i=i, N=N)
         print "performing these actions: {}".format(actions)
         for action in args.actions:
-            action_table[action](run)
+            try:
+                action_table[action](run)
+            except Exception as e:
+                logmsg = "{run} {action} {error}".format
+                logging.warning(logmsg(run=run, action=action, error=e))
         i += 1
 
 
