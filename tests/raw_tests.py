@@ -54,6 +54,7 @@ class TestRun(object):
                            'rho_2':           1.000,
                            'alpha':           0.5,
                            'D':               0.4,
+                           'H':               0.25,
                            'sample':          1.0,
                            'perspective':     'old'}
         self.run_data = {'run_index':  'r11_07_06c',

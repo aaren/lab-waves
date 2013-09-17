@@ -671,6 +671,7 @@ class LabRun(object):
                 ('rho_2',           'f8'),
                 ('alpha',           'f8'),
                 ('D',               'f8'),
+                ('H',               'f8'),
                 ('sample',          'f8'),
                 ('perspective',     'S10')]
         names, types = zip(*data)

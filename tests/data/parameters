@@ -12,6 +12,7 @@
 #   alpha       - nominal value of stratification parameter
 #                 alpha = (rho_0 - rho_1) / (rho_1 - rho_2)
 #   D/H         - ratio of lock depth to total depth
+#   H           - total depth
 #   sample      - the sampling interval of the cameras in seconds (e.g. 0.04 for 25Hz video)
 #   perspective - the type of perspective marker in the run
 #   notes       - misc comments on each run.
@@ -32,24 +33,24 @@
 # Dyes: Potassium permanganate lower layer
 #       Food colouring gravity current
 #
-# run_index  h_1/H   rho_0   rho_1   rho_2   alpha  D/H  sample  perspective  notes
-r11_01_13a   0.50    1.050   1.040   1.002   0.25   0.4  1.0     None         # no significant wave.
-r11_01_14a   0.50    1.050   1.040   1.002   0.25   0.4  1.0     None       
-r11_01_14b   0.50    1.050   1.040   1.002   0.25   0.4  1.0     None        
-r11_01_14c   nan     nan     nan     nan     nan    nan  1.0     None         # close up of gate opening.
-r11_01_15a   0.50    1.040   1.020   1.001   1      0.4  1.0     None         # waves much more significant. feedback to current. appearance of undular bore.
-r11_01_15b   0.75    1.040   1.020   1.001   1      0.4  1.0     None         # waves propagating ahead of the current. mini dv recording of this also.
-r11_01_15c   0.75    1.016   1.020   1.001   nan    0.4  1.0     None         # intrusion run for interest. pretty.
-r11_01_16a   0.25    1.040   1.020   1.001   1      0.4  1.0     None         # obvious wave propagating ahead of the current here (evident by 2m)
-r11_01_16b   0.25    1.040   1.020   1.001   1      1    1.0     None         # full depth using remnant stratification.
-r11_01_16c   0.25    1.050   1.040   1.001   0.25   0.4  1.0     None        
-r11_01_16d   0.25    1.050   1.040   1.001   0.25   1    1.0     None         # full depth.
-r11_01_19a   0.76    1.040   1.020   1.000   1      0.4  1.0     None         # H=24.60
-r11_01_19b   0.76    1.040   1.020   1.000   1      1    1.0     None         # H=24.60
-r11_01_20a   0.75    1.040   1.010   1.001   4      0.4  1.0     None        
-r11_01_20b   0.75    1.040   1.010   1.001   4      1    1.0     None 
-r11_01_21a   0.50    1.040   1.010   1.001   4      0.4  1.0     None        
-r11_01_21b   0.25    1.040   1.010   1.001   4      0.4  1.0     None        
+# run_index  h_1/H   rho_0   rho_1   rho_2   alpha  D/H  H        sample  perspective  notes
+r11_01_13a   0.50    1.050   1.040   1.002   0.25   0.4  0.25     1.0     None         # no significant wave.
+r11_01_14a   0.50    1.050   1.040   1.002   0.25   0.4  0.25     1.0     None       
+r11_01_14b   0.50    1.050   1.040   1.002   0.25   0.4  0.25     1.0     None        
+r11_01_14c   nan     nan     nan     nan     nan    nan  0.25     1.0     None         # close up of gate opening.
+r11_01_15a   0.50    1.040   1.020   1.001   1      0.4  0.25     1.0     None         # waves much more significant. feedback to current. appearance of undular bore.
+r11_01_15b   0.75    1.040   1.020   1.001   1      0.4  0.25     1.0     None         # waves propagating ahead of the current. mini dv recording of this also.
+r11_01_15c   0.75    1.016   1.020   1.001   nan    0.4  0.25     1.0     None         # intrusion run for interest. pretty.
+r11_01_16a   0.25    1.040   1.020   1.001   1      0.4  0.25     1.0     None         # obvious wave propagating ahead of the current here (evident by 2m)
+r11_01_16b   0.25    1.040   1.020   1.001   1      1    0.25     1.0     None         # full depth using remnant stratification.
+r11_01_16c   0.25    1.050   1.040   1.001   0.25   0.4  0.25     1.0     None        
+r11_01_16d   0.25    1.050   1.040   1.001   0.25   1    0.25     1.0     None         # full depth.
+r11_01_19a   0.76    1.040   1.020   1.000   1      0.4  0.246    1.0     None         # H=24.60
+r11_01_19b   0.76    1.040   1.020   1.000   1      1    0.246    1.0     None         # H=24.60
+r11_01_20a   0.75    1.040   1.010   1.001   4      0.4  0.25     1.0     None        
+r11_01_20b   0.75    1.040   1.010   1.001   4      1    0.25     1.0     None 
+r11_01_21a   0.50    1.040   1.010   1.001   4      0.4  0.25     1.0     None        
+r11_01_21b   0.25    1.040   1.010   1.001   4      0.4  0.25     1.0     None        
 #######################################################
 
 #######################################################
@@ -58,13 +59,13 @@ r11_01_21b   0.25    1.040   1.010   1.001   4      0.4  1.0     None
 # Dyes: Potassium permanganate lower layer
 #       Food colouring gravity current
 #
-# run_index  h_1/H   rho_0   rho_1   rho_2   alpha  D/H  sample  perspective  notes
-r11_02_18a   0.50    1.040   1.020   1.001   1      0.4  1.0     None         # first run with two camera set up.
-r11_02_18b   0.75    1.028   1.020   1.001   0.4    0.4  1.0     None         # messed up the filling so made the best with this.
-r11_02_19a   0.75    1.040   1.020   1.001   1      0.4  1.0     None
-r11_02_19b   0.25    1.040   1.020   1.001   1      0.4  1.0     None
-r11_02_20a   0.25    1.050   1.040   1.001   0.25   0.4  1.0     None
-r11_02_20b   0.50    1.050   1.040   1.001   0.25   0.4  1.0     None         # MOTOR FALIURE. AHHH.
+# run_index  h_1/H   rho_0   rho_1   rho_2   alpha  D/H  H        sample  perspective  notes
+r11_02_18a   0.50    1.040   1.020   1.001   1      0.4  0.25     1.0     None         # first run with two camera set up.
+r11_02_18b   0.75    1.028   1.020   1.001   0.4    0.4  0.25     1.0     None         # messed up the filling so made the best with this.
+r11_02_19a   0.75    1.040   1.020   1.001   1      0.4  0.25     1.0     None
+r11_02_19b   0.25    1.040   1.020   1.001   1      0.4  0.25     1.0     None
+r11_02_20a   0.25    1.050   1.040   1.001   0.25   0.4  0.25     1.0     None
+r11_02_20b   0.50    1.050   1.040   1.001   0.25   0.4  0.25     1.0     None         # MOTOR FALIURE. AHHH.
 #######################################################
 
 #######################################################
@@ -77,72 +78,72 @@ r11_02_20b   0.50    1.050   1.040   1.001   0.25   0.4  1.0     None         # 
 # Lenses: cam1: Nikkor 18-55mm f/3.5-5.6G AF-S DX VR
 #         cam2: Nikkor 18-70mm f/3.5-4.5G ED-IF AF-S DX
 #
-# run_index  h_1/H   rho_0   rho_1   rho_2   alpha  D/H  sample  perspective  notes
-r11_05_24a   0.75    1.050   1.040   1.000   0.25   0.4  1.0     old          # 3 months of H&S madness later... now visualising using fluorescein ambient and rhodamine wt current.
-r11_05_24b   0.75    1.050   1.040   1.000   0.25   1    1.0     old          # Low alpha really crushes the current. this full depth current actually ends up about 1/5 the depth, like the ideal partial current is meant to be.
-r11_05_24c   0.50    1.050   1.010   1.000   4      0.4  1.0     old     
-r11_05_24d   0.50    1.050   1.010   1.000   4      1    1.0     old     
-r11_05_25a   0.75    1.050   1.010   1.000   4      0.4  1.0     old          
-r11_05_25b   0.75    1.050   1.010   1.000   4      1    1.0     old     
-r11_05_25c   0.25    1.050   1.010   1.000   4      0.4  1.0     old          # cam2 batt low so incomplete set of images (~7s between shots) 
-r11_05_25d   0.25    1.050   1.010   1.000   4      1    1.0     old     
-r11_05_26a   0.50    1.050   1.030   1.000   0.66   0.4  1.0     old          # good series of amplitude ordered solitary waves, propagating ahead of and behind the gravity current.
-r11_05_26b   0.50    1.050   1.030   1.000   0.66   1    1.0     old     
-r11_05_26c   0.50    1.050   1.020   1.000   1.5    0.4  1.0     old          # another good one.
-r11_05_26d   0.50    1.050   1.020   1.000   1.5    1    1.0     old     
-r11_05_27a   0.40    1.040   1.020   1.000   1      0.4  1.0     old          # Gate fell back into the tank, but seemed ok - would be good to see how resilient the results are to this. First run using modified filling method: much faster, 1hr to fill. (+1 hour extra of setup and faff)
-r11_05_27b   0.40    1.040   1.020   1.000   1      1    1.0     old     
-r11_05_28a   0.60    1.040   1.020   1.000   1      0.4  1.0     old          # wave of depression.
-r11_05_28b   0.60    1.040   1.020   1.000   1      1    1.0     old     
-r11_06_29a   0.50    1.050   1.040   1.000   0.25   0.4  1.0     old          # These two runs couldn't be much more different. Partial depth slow and excited minimal disturbances on the interface. 
-r11_06_29b   0.50    1.050   1.040   1.000   0.25   1    1.0     old          # Violent start, developing a solitary wave train on the interface that propagates well ahead of the current. *Well worth doing*: contrast between runs was remarkable.
-r11_06_30a   0.25    1.050   1.040   1.000   0.25   0.4  1.0     old          # Cam 2 data corrupted
-r11_06_30b   0.25    1.050   1.040   1.000   0.25   1    1.0     old          # Cam 2 data corrupted 
-r11_06_30c   0.75    1.050   1.040   1.000   0.25   0.4  1.0     old          # messed up filling - didn't slow down pump as interface rising over partial lock -> mixing, resulting partial depth more like 9cm than 10cm. also, H=24.7cm *and* cam1 battery low -> partial coverage on cam1. think this occured after features passed to cam2 frame, but need to check.
-r11_06_30d   0.75    1.050   1.040   1.000   0.25   1    1.0     old     
-r11_06_30e   0.25    1.040   1.020   1.000   1      0.4  1.0     old     
-r11_06_30f   0.25    1.040   1.020   1.000   1      1    1.0     old     
-r11_07_01a   0.50    1.100   1.050   1.000   1      0.4  1.0     old     
-r11_07_01b   0.50    1.100   1.050   1.000   1      1    1.0     old     
-r11_07_01c   0.10    1.100   1.050   1.000   1      0.4  1.0     old     
-r11_07_01d   0.10    1.100   1.050   1.000   1      1    1.0     old     
-r11_07_01e   0.75    1.100   1.050   1.000   1      0.4  1.0     old     
-r11_07_01f   0.75    1.100   1.050   1.000   1      1    1.0     old     
-r11_07_04a   0.40    1.100   1.050   1.000   1      0.4  1.0     old     
-r11_07_04b   0.40    1.100   1.050   1.000   1      1    1.0     old     
-r11_07_04c   0.25    1.100   1.050   1.000   1      0.4  1.0     old     
-r11_07_04d   0.25    1.100   1.050   1.000   1      1    1.0     old     
-r11_07_04e   0.60    1.100   1.050   1.000   1      0.4  1.0     old          # Check cam2 continuity
-r11_07_04f   0.60    1.100   1.050   1.000   1      1    1.0     old     
-r11_07_04g   0.30    1.100   1.050   1.000   1      0.4  1.0     old     
-r11_07_04h   0.30    1.100   1.050   1.000   1      1    1.0     old     
-r11_07_04i   0.20    1.100   1.050   1.000   1      0.4  1.0     old     
-r11_07_04j   0.20    1.100   1.050   1.000   1      1    1.0     old     
-r11_07_05a   0.25    1.150   1.050   1.000   2      0.4  1.0     old     
-r11_07_05b   0.25    1.150   1.050   1.000   2      1    1.0     old     
-r11_07_05c   0.50    1.150   1.050   1.000   2      0.4  1.0     old     
-r11_07_05d   0.50    1.150   1.050   1.000   2      1    1.0     old     
-r11_07_05e   0.75    1.150   1.050   1.000   2      0.4  1.0     old     
-r11_07_05f   0.75    1.150   1.050   1.000   2      1    1.0     old          # check cam2 continuity
-r11_07_06a   0.50    1.150   1.100   1.000   0.5    0.4  1.0     old          # mixed up the fluids the night before. \rho1 had stratified a lot by morning - took ages to get back to correct density (over 1 hr of mixing). big variations throughout the tank --> be careful with errors here (this one might have been more like rho1 = 1.090)
-r11_07_06b   0.50    1.150   1.100   1.000   0.5    1    1.0     old          # HUGE! waves in undular bore! really impressive.
-r11_07_06c   0.25    1.150   1.100   1.000   0.5    0.4  1.0     old     
-r11_07_06d   0.25    1.150   1.100   1.000   0.5    1    1.0     old     
-r11_07_06e   0.75    1.150   1.100   1.000   0.5    0.4  1.0     old          # filled water to 6.75 instead of 6.25 - how often have i done this??!
-r11_07_06f   0.75    1.150   1.100   1.000   0.5    1    1.0     old          # again, BIG! undular bore
-r11_07_06g   0.25    1.100   1.010   1.000   9      0.4  1.0     old          # mistake. was meant to be run as alpha = 10.
-r11_07_06h   0.25    1.100   1.010   1.000   9      1    1.0     old     
-r11_07_06i   0.50    1.110   1.010   1.000   10     0.4  1.0     old     
-r11_07_06j   0.50    1.110   1.010   1.000   10     1    1.0     old     
-r11_07_07a   0.75    1.110   1.010   1.000   10     0.4  1.0     old     
-r11_07_07b   0.75    1.110   1.010   1.000   10     1    1.0     old     
-r11_07_07c   0.25    1.110   1.010   1.000   10     0.4  1.0     old     
-r11_07_07d   0.25    1.110   1.010   1.000   10     1    1.0     old     
-r11_07_07e   0.75    1.200   1.100   1.000   1      0.4  1.0     old          # no full depth run as ran out of salt.
-r11_07_08a   0.50    1.200   1.100   1.000   1      0.4  1.0     old     
-r11_07_08b   0.50    1.198   1.100   1.000   1      1    1.0     old          # 1.200 is near enough saturation at T=20degC and I couldn't force anymore salt in.
-r11_07_08c   0.25    1.200   1.100   1.000   1      0.4  1.0     old     
-r11_07_08d   0.25    1.198   1.100   1.000   1      1    1.0     old     
+# run_index  h_1/H   rho_0   rho_1   rho_2   alpha  D/H   H       sample  perspective  notes
+r11_05_24a   0.75    1.050   1.040   1.000   0.25   0.4   0.25    1.0     old          # 3 months of H&S madness later... now visualising using fluorescein ambient and rhodamine wt current.
+r11_05_24b   0.75    1.050   1.040   1.000   0.25   1     0.25    1.0     old          # Low alpha really crushes the current. this full depth current actually ends up about 1/5 the depth, like the ideal partial current is meant to be.
+r11_05_24c   0.50    1.050   1.010   1.000   4      0.4   0.25    1.0     old     
+r11_05_24d   0.50    1.050   1.010   1.000   4      1     0.25    1.0     old     
+r11_05_25a   0.75    1.050   1.010   1.000   4      0.4   0.25    1.0     old          
+r11_05_25b   0.75    1.050   1.010   1.000   4      1     0.25    1.0     old     
+r11_05_25c   0.25    1.050   1.010   1.000   4      0.4   0.25    1.0     old          # cam2 batt low so incomplete set of images (~7s between shots) 
+r11_05_25d   0.25    1.050   1.010   1.000   4      1     0.25    1.0     old     
+r11_05_26a   0.50    1.050   1.030   1.000   0.66   0.4   0.25    1.0     old          # good series of amplitude ordered solitary waves, propagating ahead of and behind the gravity current.
+r11_05_26b   0.50    1.050   1.030   1.000   0.66   1     0.25    1.0     old     
+r11_05_26c   0.50    1.050   1.020   1.000   1.5    0.4   0.25    1.0     old          # another good one.
+r11_05_26d   0.50    1.050   1.020   1.000   1.5    1     0.25    1.0     old     
+r11_05_27a   0.40    1.040   1.020   1.000   1      0.4   0.25    1.0     old          # Gate fell back into the tank, but seemed ok - would be good to see how resilient the results are to this. First run using modified filling method: much faster, 1hr to fill. (+1 hour extra of setup and faff)
+r11_05_27b   0.40    1.040   1.020   1.000   1      1     0.25    1.0     old     
+r11_05_28a   0.60    1.040   1.020   1.000   1      0.4   0.25    1.0     old          # wave of depression.
+r11_05_28b   0.60    1.040   1.020   1.000   1      1     0.25    1.0     old     
+r11_06_29a   0.50    1.050   1.040   1.000   0.25   0.4   0.25    1.0     old          # These two runs couldn't be much more different. Partial depth slow and excited minimal disturbances on the interface. 
+r11_06_29b   0.50    1.050   1.040   1.000   0.25   1     0.25    1.0     old          # Violent start, developing a solitary wave train on the interface that propagates well ahead of the current. *Well worth doing*: contrast between runs was remarkable.
+r11_06_30a   0.25    1.050   1.040   1.000   0.25   0.4   0.25    1.0     old          # Cam 2 data corrupted
+r11_06_30b   0.25    1.050   1.040   1.000   0.25   1     0.25    1.0     old          # Cam 2 data corrupted 
+r11_06_30c   0.75    1.050   1.040   1.000   0.25   0.4   0.25    1.0     old          # messed up filling - didn't slow down pump as interface rising over partial lock -> mixing, resulting partial depth more like 9cm than 10cm. also, H=24.7cm *and* cam1 battery low -> partial coverage on cam1. think this occured after features passed to cam2 frame, but need to check.
+r11_06_30d   0.75    1.050   1.040   1.000   0.25   1     0.25    1.0     old     
+r11_06_30e   0.25    1.040   1.020   1.000   1      0.4   0.25    1.0     old     
+r11_06_30f   0.25    1.040   1.020   1.000   1      1     0.25    1.0     old     
+r11_07_01a   0.50    1.100   1.050   1.000   1      0.4   0.25    1.0     old     
+r11_07_01b   0.50    1.100   1.050   1.000   1      1     0.25    1.0     old     
+r11_07_01c   0.10    1.100   1.050   1.000   1      0.4   0.25    1.0     old     
+r11_07_01d   0.10    1.100   1.050   1.000   1      1     0.25    1.0     old     
+r11_07_01e   0.75    1.100   1.050   1.000   1      0.4   0.25    1.0     old     
+r11_07_01f   0.75    1.100   1.050   1.000   1      1     0.25    1.0     old     
+r11_07_04a   0.40    1.100   1.050   1.000   1      0.4   0.25    1.0     old     
+r11_07_04b   0.40    1.100   1.050   1.000   1      1     0.25    1.0     old     
+r11_07_04c   0.25    1.100   1.050   1.000   1      0.4   0.25    1.0     old     
+r11_07_04d   0.25    1.100   1.050   1.000   1      1     0.25    1.0     old     
+r11_07_04e   0.60    1.100   1.050   1.000   1      0.4   0.25    1.0     old          # Check cam2 continuity
+r11_07_04f   0.60    1.100   1.050   1.000   1      1     0.25    1.0     old     
+r11_07_04g   0.30    1.100   1.050   1.000   1      0.4   0.25    1.0     old     
+r11_07_04h   0.30    1.100   1.050   1.000   1      1     0.25    1.0     old     
+r11_07_04i   0.20    1.100   1.050   1.000   1      0.4   0.25    1.0     old     
+r11_07_04j   0.20    1.100   1.050   1.000   1      1     0.25    1.0     old     
+r11_07_05a   0.25    1.150   1.050   1.000   2      0.4   0.25    1.0     old     
+r11_07_05b   0.25    1.150   1.050   1.000   2      1     0.25    1.0     old     
+r11_07_05c   0.50    1.150   1.050   1.000   2      0.4   0.25    1.0     old     
+r11_07_05d   0.50    1.150   1.050   1.000   2      1     0.25    1.0     old     
+r11_07_05e   0.75    1.150   1.050   1.000   2      0.4   0.25    1.0     old     
+r11_07_05f   0.75    1.150   1.050   1.000   2      1     0.25    1.0     old          # check cam2 continuity
+r11_07_06a   0.50    1.150   1.100   1.000   0.5    0.4   0.25    1.0     old          # mixed up the fluids the night before. \rho1 had stratified a lot by morning - took ages to get back to correct density (over 1 hr of mixing). big variations throughout the tank --> be careful with errors here (this one might have been more like rho1 = 1.090)
+r11_07_06b   0.50    1.150   1.100   1.000   0.5    1     0.25    1.0     old          # HUGE! waves in undular bore! really impressive.
+r11_07_06c   0.25    1.150   1.100   1.000   0.5    0.4   0.25    1.0     old     
+r11_07_06d   0.25    1.150   1.100   1.000   0.5    1     0.25    1.0     old     
+r11_07_06e   0.75    1.150   1.100   1.000   0.5    0.4   0.25    1.0     old          # filled water to 6.75 instead of 6.25 - how often have i done this??!
+r11_07_06f   0.75    1.150   1.100   1.000   0.5    1     0.25    1.0     old          # again, BIG! undular bore
+r11_07_06g   0.25    1.100   1.010   1.000   9      0.4   0.25    1.0     old          # mistake. was meant to be run as alpha = 10.
+r11_07_06h   0.25    1.100   1.010   1.000   9      1     0.25    1.0     old     
+r11_07_06i   0.50    1.110   1.010   1.000   10     0.4   0.25    1.0     old     
+r11_07_06j   0.50    1.110   1.010   1.000   10     1     0.25    1.0     old     
+r11_07_07a   0.75    1.110   1.010   1.000   10     0.4   0.25    1.0     old     
+r11_07_07b   0.75    1.110   1.010   1.000   10     1     0.25    1.0     old     
+r11_07_07c   0.25    1.110   1.010   1.000   10     0.4   0.25    1.0     old     
+r11_07_07d   0.25    1.110   1.010   1.000   10     1     0.25    1.0     old     
+r11_07_07e   0.75    1.200   1.100   1.000   1      0.4   0.25    1.0     old          # no full depth run as ran out of salt.
+r11_07_08a   0.50    1.200   1.100   1.000   1      0.4   0.25    1.0     old     
+r11_07_08b   0.50    1.198   1.100   1.000   1      1     0.25    1.0     old          # 1.200 is near enough saturation at T=20degC and I couldn't force anymore salt in.
+r11_07_08c   0.25    1.200   1.100   1.000   1      0.4   0.25    1.0     old     
+r11_07_08d   0.25    1.198   1.100   1.000   1      1     0.25    1.0     old     
 #######################################################
 
 #######################################################
@@ -181,45 +182,45 @@ r11_07_08d   0.25    1.198   1.100   1.000   1      1    1.0     old
 # The cam1 lower right marker is actually 6mm right of where it
 # should be!
 #
-# run_index h_1/H   rho_0   rho_1   rho_2   alpha   D/H  sample  perspective  notes
+# run_index h_1/H   rho_0   rho_1   rho_2   alpha   D/H  H        sample  perspective  notes
 ## (*) cam1 bottom left tape marker 20mm left of where meant to be.
-r12_12_19a  0.25    1.075   1.050   1.000   1/2     0.4  0.04    new_1        # * repeating r11_07_06c to test repeatability.
-r12_12_20a  0.25    1.075   1.050   1.000   1/2     0.4  0.04    new_1        # *
-r12_12_21a  0.25    1.075   1.050   1.000   1/2     0.4  0.04    new_1        # *
-r13_01_07a  0.40    1.050   1.030   1.000   2/3     0.4  0.04    new_1        # * setup hassle. meant to do 0.3.
-r13_01_08a  0.30    1.050   1.030   1.000   2/3     0.4  0.04    new_1        # *
-r13_01_08b  0.10    1.050   1.030   1.000   2/3     0.4  0.04    new_1        # * impressive first wave!
-r13_01_08c  0.20    1.050   1.030   1.000   2/3     0.4  0.04    new_1        # * big slow down of current front.
-r13_01_08d  0.60    1.050   1.030   1.000   2/3     0.4  0.04    new_1        # * rarefaction
-##                                                         
-r13_01_09a  0.30    1.050   1.030   1.000   2/3     1.0  0.04    new_2
-r13_01_09b  0.10    1.050   1.030   1.000   2/3     1.0  0.04    new_2
-r13_01_09c  0.45    1.050   1.030   1.000   2/3     1.0  0.04    new_2        # resonance. detachment just out of cam2 fov.
-r13_01_09d  0.20    1.050   1.030   1.000   2/3     1.0  0.04    new_2        # supercritical
-r13_01_09e  0.60    1.050   1.030   1.000   2/3     1.0  0.04    new_2        # resonance. detachment just outside cam2 fov.
-r13_01_10a  0.30    1.100   1.080   1.000   1/4     1.0  0.04    new_2        # detachment in cam2 fov.
-r13_01_10b  0.20    1.100   1.080   1.000   1/4     1.0  0.04    new_2
-r13_01_10c  0.60    1.100   1.080   1.000   1/4     1.0  0.04    new_2        # inverted resonance?
-r13_01_10d  0.45    1.100   1.080   1.000   1/4     1.0  0.04    new_2
-r13_01_11a  0.10    1.100   1.080   1.000   1/4     1.0  0.04    new_2        # supercritical
-r13_01_11b  0.30    1.100   1.080   1.000   1/4     0.4  0.04    new_2
-r13_01_11c  0.20    1.100   1.080   1.000   1/4     0.4  0.04    new_2        # resonance? certainly a wave shooting off
-r13_01_11d  0.45    1.100   1.080   1.000   1/4     0.4  0.04    new_2        # flat, slow, boring!
-r13_01_11e  0.10    1.100   1.080   1.000   1/4     0.4  0.04    new_2        # big amplitude resonance.
-r13_01_12a  0.30    1.040   1.020   1.000   1       0.4  0.04    new_2        # resonance. lots of interaction.
-r13_01_12b  0.30    1.040   1.020   1.000   1       1    0.04    new_2        # supercritical
-r13_01_12c  0.45    1.040   1.020   1.000   1       1    0.04    new_2        # supercritical
-r13_01_12d  0.10    1.040   1.020   1.000   1       1    0.04    new_2        # 
-r13_01_13a  0.45    1.040   1.020   1.000   1       0.4  0.04    new_2        # upstream
-r13_01_13b  0.10    1.040   1.020   1.000   1       0.4  0.04    new_2        # detachment just after cam2. phase locked? large amplitude wave.
-r13_01_13c  0.60    1.040   1.020   1.000   1       1    0.04    new_2        # super / rare / res? seemed like lots of development to go beyond end of tank.
-r13_01_13d  0.20    1.040   1.020   1.000   1       1    0.04    new_2        # supercritical
-r13_01_13e  0.20    1.040   1.020   1.000   1       0.4  0.04    new_2        # resonance? looked phase locked at first.
-r13_01_13f  0.20    1.040   1.020   1.000   1       1    0.04    new_2        # H=0.20m
-r13_01_13g  0.00    1.040   1.000   1.000   0       1    0.04    new_2        # homogeneous ambient H=0.25m
-r13_01_13h  0.00    1.040   1.000   1.000   0       1    0.04    new_2        # homogeneous ambient H=0.20m
-r13_01_13i  0.00    1.040   1.000   1.000   0       0.4  0.04    new_2        # homogeneous ambient H=0.25m
-r13_01_13j  0.00    1.020   1.000   1.000   0       1    0.04    new_2        # homogeneous ambient H=0.25m
-r13_01_13k  0.00    1.020   1.000   1.000   0       1    0.04    new_2        # homogeneous ambient H=0.20m
-r13_01_13l  0.00    1.020   1.000   1.000   0       0.4  0.04    new_2        # homogeneous ambient H=0.25m. left hydrometer halfway down tank! didn't seem to affect current propagation
+r12_12_19a  0.25    1.075   1.050   1.000   1/2     0.4  0.25     0.04    new_1        # * repeating r11_07_06c to test repeatability.
+r12_12_20a  0.25    1.075   1.050   1.000   1/2     0.4  0.25     0.04    new_1        # *
+r12_12_21a  0.25    1.075   1.050   1.000   1/2     0.4  0.25     0.04    new_1        # *
+r13_01_07a  0.40    1.050   1.030   1.000   2/3     0.4  0.25     0.04    new_1        # * setup hassle. meant to do 0.3.
+r13_01_08a  0.30    1.050   1.030   1.000   2/3     0.4  0.25     0.04    new_1        # *
+r13_01_08b  0.10    1.050   1.030   1.000   2/3     0.4  0.25     0.04    new_1        # * impressive first wave!
+r13_01_08c  0.20    1.050   1.030   1.000   2/3     0.4  0.25     0.04    new_1        # * big slow down of current front.
+r13_01_08d  0.60    1.050   1.030   1.000   2/3     0.4  0.25     0.04    new_1        # * rarefaction
+##
+r13_01_09a  0.30    1.050   1.030   1.000   2/3     1.0  0.25     0.04    new_2
+r13_01_09b  0.10    1.050   1.030   1.000   2/3     1.0  0.25     0.04    new_2
+r13_01_09c  0.45    1.050   1.030   1.000   2/3     1.0  0.25     0.04    new_2        # resonance. detachment just out of cam2 fov.
+r13_01_09d  0.20    1.050   1.030   1.000   2/3     1.0  0.25     0.04    new_2        # supercritical
+r13_01_09e  0.60    1.050   1.030   1.000   2/3     1.0  0.25     0.04    new_2        # resonance. detachment just outside cam2 fov.
+r13_01_10a  0.30    1.100   1.080   1.000   1/4     1.0  0.25     0.04    new_2        # detachment in cam2 fov.
+r13_01_10b  0.20    1.100   1.080   1.000   1/4     1.0  0.25     0.04    new_2
+r13_01_10c  0.60    1.100   1.080   1.000   1/4     1.0  0.25     0.04    new_2        # inverted resonance?
+r13_01_10d  0.45    1.100   1.080   1.000   1/4     1.0  0.25     0.04    new_2
+r13_01_11a  0.10    1.100   1.080   1.000   1/4     1.0  0.25     0.04    new_2        # supercritical
+r13_01_11b  0.30    1.100   1.080   1.000   1/4     0.4  0.25     0.04    new_2
+r13_01_11c  0.20    1.100   1.080   1.000   1/4     0.4  0.25     0.04    new_2        # resonance? certainly a wave shooting off
+r13_01_11d  0.45    1.100   1.080   1.000   1/4     0.4  0.25     0.04    new_2        # flat, slow, boring!
+r13_01_11e  0.10    1.100   1.080   1.000   1/4     0.4  0.25     0.04    new_2        # big amplitude resonance.
+r13_01_12a  0.30    1.040   1.020   1.000   1       0.4  0.25     0.04    new_2        # resonance. lots of interaction.
+r13_01_12b  0.30    1.040   1.020   1.000   1       1    0.25     0.04    new_2        # supercritical
+r13_01_12c  0.45    1.040   1.020   1.000   1       1    0.25     0.04    new_2        # supercritical
+r13_01_12d  0.10    1.040   1.020   1.000   1       1    0.25     0.04    new_2        # 
+r13_01_13a  0.45    1.040   1.020   1.000   1       0.4  0.25     0.04    new_2        # upstream
+r13_01_13b  0.10    1.040   1.020   1.000   1       0.4  0.25     0.04    new_2        # detachment just after cam2. phase locked? large amplitude wave.
+r13_01_13c  0.60    1.040   1.020   1.000   1       1    0.25     0.04    new_2        # super / rare / res? seemed like lots of development to go beyond end of tank.
+r13_01_13d  0.20    1.040   1.020   1.000   1       1    0.25     0.04    new_2        # supercritical
+r13_01_13e  0.20    1.040   1.020   1.000   1       0.4  0.25     0.04    new_2        # resonance? looked phase locked at first.
+r13_01_13f  0.20    1.040   1.020   1.000   1       1    0.25     0.04    new_2        # H=0.20m
+r13_01_13g  0.00    1.040   1.000   1.000   0       1    0.25     0.04    new_2        # homogeneous ambient H=0.25m
+r13_01_13h  0.00    1.040   1.000   1.000   0       1    0.20     0.04    new_2        # homogeneous ambient H=0.20m
+r13_01_13i  0.00    1.040   1.000   1.000   0       0.4  0.25     0.04    new_2        # homogeneous ambient H=0.25m
+r13_01_13j  0.00    1.020   1.000   1.000   0       1    0.25     0.04    new_2        # homogeneous ambient H=0.25m
+r13_01_13k  0.00    1.020   1.000   1.000   0       1    0.20     0.04    new_2        # homogeneous ambient H=0.20m
+r13_01_13l  0.00    1.020   1.000   1.000   0       0.4  0.25     0.04    new_2        # homogeneous ambient H=0.25m. left hydrometer halfway down tank! didn't seem to affect current propagation
 #######################################################
