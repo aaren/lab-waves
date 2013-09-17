@@ -580,63 +580,6 @@ class ProcessedImage(LabImage):
         self.im.save(path)
 
 
-class Stitcher(object):
-    def __init__(self,  join):
-        """Create a Stitched Image, which is the joining of two
-        images from different cameras.
-
-        join - position in metres of the point at which to
-               connect the images together
-        """
-        self.join = join
-
-    def __call__(self, im1, im2):
-        """im1 and im2 are ProcessedImage instances"""
-        fname = os.path.basename(im1.path)
-        output_dir = im1.run.output_dir
-        outpath = os.path.join(output_dir,
-                               'stitched',
-                               fname)
-
-        return ProcessedImage(im=self.stitch(im1.im, im2.im, self.join),
-                              path=outpath,
-                              run=im1.run)
-
-    @staticmethod
-    def stitch(im1, im2, join):
-        """Stitch two images together, where im1 is taken by cam1
-        and im2 is taken by cam2.
-
-        im1 and im2 are PIL Image objects.
-        Returns a PIL Image object.
-        """
-        c = config
-        # the output size is determined by the outer edges of the
-        # camera crop regions
-        width = c.crop['cam2']['left'] - c.crop['cam1']['right']
-        # and we'll use the full height of the images
-        outsize = (int(width * c.ideal_m), im1.size[1])
-
-        # you can join the images together anywhere you like as
-        # long as is in the overlap between the two cameras
-        # where is the join in cam2?
-        join_c2 = real_to_pixel(join, 0, 'cam2')[0]
-        # where is the join in cam1?
-        join_c1 = real_to_pixel(join, 0, 'cam1')[0]
-
-        # crop the images down
-        cim1 = im1.crop((join_c1, 0, im1.size[0], im1.size[1]))
-        cim2 = im2.crop((0, 0, join_c2, im2.size[1]))
-        # output boxes for the cropped images to go in
-        b2 = (0, 0, join_c2, cim2.size[1])
-        b1 = (join_c2, 0, join_c2 + cim1.size[0], cim1.size[1])
-
-        out = Image.new(mode='RGB', size=outsize)
-        out.paste(cim1, box=b1)
-        out.paste(cim2, box=b2)
-        return out
-
-
 class LabRun(object):
     """Base class for a lab run.
 
@@ -1235,7 +1178,8 @@ class ProcessedRun(LabRun):
     def __init__(self, *args, **kwargs):
         super(ProcessedRun, self).__init__(*args, **kwargs)
         self.config_data = self.read_run_json()
-        self.config = self.config_data['config']
+        # create a config object that mimics the config module
+        self.config = type('config', (object,), self.config_data['config'])
 
     def read_run_json(self):
         """Read the configuration used to process the run."""
@@ -1245,13 +1189,72 @@ class ProcessedRun(LabRun):
         fin.close()
         return data
 
+    def stitcher(self, im1, im2):
+        """im1 and im2 are ProcessedImage instances"""
+        fname = os.path.basename(im1.path)
+        output_dir = self.output_dir
+        outpath = os.path.join(output_dir,
+                               'stitched',
+                               fname)
+
+        # the output size is determined by the outer edges of the
+        # camera crop regions
+        width = self.config.crop['cam2']['left'] \
+                - self.config.crop['cam1']['right']
+        # and we'll use the full height of the images
+        height = self.config.ideal_25 \
+                 + self.config.top_bar \
+                 + self.config.bottom_bar
+        outsize = (int(width * config.ideal_m), height)
+
+        # you can join the images together anywhere you like as
+        # long as is in the overlap between the two cameras
+        join = self.config.overlap[self.style]
+        # where is the join in cam2?
+        join_2 = real_to_pixel(join, 0, 'cam2')[0]
+        # where is the join in cam1?
+        join_1 = real_to_pixel(join, 0, 'cam1')[0]
+
+        stitched_image = self.stitch(im1.im, im2.im,
+                                     join_1=join_1,
+                                     join_2=join_2,
+                                     outsize=outsize)
+
+        return self.Image(im=stitched_image, path=outpath, run=self)
+
+    @staticmethod
+    def stitch(im1, im2, join_1, join_2, outsize):
+        """Stitch two images together, where im1 is taken by cam1
+        and im2 is taken by cam2.
+
+        im1 and im2 are PIL Image objects.
+
+        join_i is the horizontal position (pixels) at which to crop
+        image i. Ideally these positions will correspond to the same
+        physical place.
+
+        outsize is the size (w, h) in pixels of the stitched
+        image.
+
+        Returns a PIL Image object.
+        """
+        # crop the images down
+        cim1 = im1.crop((join_1, 0, im1.size[0], im1.size[1]))
+        cim2 = im2.crop((0, 0, join_2, im2.size[1]))
+        # output boxes for the cropped images to go in
+        b2 = (0, 0, join_2, cim2.size[1])
+        b1 = (join_2, 0, join_2 + cim1.size[0], cim1.size[1])
+
+        out = Image.new(mode='RGB', size=outsize)
+        out.paste(cim1, box=b1)
+        out.paste(cim2, box=b2)
+        return out
+
     @property
     def stitched_images(self):
         cam1_images = (im for im in self.images if im.cam == 'cam1')
         cam2_images = (im for im in self.images if im.cam == 'cam2')
-        overlap = self.config.overlap[self.style]
-        stitcher = Stitcher(overlap)
-        return imap(stitcher, cam1_images, cam2_images)
+        return imap(self.stitcher, cam1_images, cam2_images)
 
     def current_interface_X(self, cam):
         """One dimensional X vector for a run."""
