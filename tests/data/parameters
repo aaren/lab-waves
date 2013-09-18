@@ -184,29 +184,29 @@ r11_07_08d   0.25    1.198   1.100   1.000   1      1     0.25    1.0     old
 #
 # run_index h_1/H   rho_0   rho_1   rho_2   alpha   D/H  H        sample  perspective  notes
 ## (*) cam1 bottom left tape marker 20mm left of where meant to be.
-r12_12_19a  0.25    1.075   1.050   1.000   1/2     0.4  0.25     0.04    new_1        # * repeating r11_07_06c to test repeatability.
-r12_12_20a  0.25    1.075   1.050   1.000   1/2     0.4  0.25     0.04    new_1        # *
-r12_12_21a  0.25    1.075   1.050   1.000   1/2     0.4  0.25     0.04    new_1        # *
-r13_01_07a  0.40    1.050   1.030   1.000   2/3     0.4  0.25     0.04    new_1        # * setup hassle. meant to do 0.3.
-r13_01_08a  0.30    1.050   1.030   1.000   2/3     0.4  0.25     0.04    new_1        # *
-r13_01_08b  0.10    1.050   1.030   1.000   2/3     0.4  0.25     0.04    new_1        # * impressive first wave!
-r13_01_08c  0.20    1.050   1.030   1.000   2/3     0.4  0.25     0.04    new_1        # * big slow down of current front.
-r13_01_08d  0.60    1.050   1.030   1.000   2/3     0.4  0.25     0.04    new_1        # * rarefaction
+r12_12_19a  0.25    1.075   1.050   1.000   0.5     0.4  0.25     0.04    new_1        # * repeating r11_07_06c to test repeatability.
+r12_12_20a  0.25    1.075   1.050   1.000   0.5     0.4  0.25     0.04    new_1        # *
+r12_12_21a  0.25    1.075   1.050   1.000   0.5     0.4  0.25     0.04    new_1        # *
+r13_01_07a  0.40    1.050   1.030   1.000   0.66    0.4  0.25     0.04    new_1        # * setup hassle. meant to do 0.3.
+r13_01_08a  0.30    1.050   1.030   1.000   0.66    0.4  0.25     0.04    new_1        # *
+r13_01_08b  0.10    1.050   1.030   1.000   0.66    0.4  0.25     0.04    new_1        # * impressive first wave!
+r13_01_08c  0.20    1.050   1.030   1.000   0.66    0.4  0.25     0.04    new_1        # * big slow down of current front.
+r13_01_08d  0.60    1.050   1.030   1.000   0.66    0.4  0.25     0.04    new_1        # * rarefaction
 ##
-r13_01_09a  0.30    1.050   1.030   1.000   2/3     1.0  0.25     0.04    new_2
-r13_01_09b  0.10    1.050   1.030   1.000   2/3     1.0  0.25     0.04    new_2
-r13_01_09c  0.45    1.050   1.030   1.000   2/3     1.0  0.25     0.04    new_2        # resonance. detachment just out of cam2 fov.
-r13_01_09d  0.20    1.050   1.030   1.000   2/3     1.0  0.25     0.04    new_2        # supercritical
-r13_01_09e  0.60    1.050   1.030   1.000   2/3     1.0  0.25     0.04    new_2        # resonance. detachment just outside cam2 fov.
-r13_01_10a  0.30    1.100   1.080   1.000   1/4     1.0  0.25     0.04    new_2        # detachment in cam2 fov.
-r13_01_10b  0.20    1.100   1.080   1.000   1/4     1.0  0.25     0.04    new_2
-r13_01_10c  0.60    1.100   1.080   1.000   1/4     1.0  0.25     0.04    new_2        # inverted resonance?
-r13_01_10d  0.45    1.100   1.080   1.000   1/4     1.0  0.25     0.04    new_2
-r13_01_11a  0.10    1.100   1.080   1.000   1/4     1.0  0.25     0.04    new_2        # supercritical
-r13_01_11b  0.30    1.100   1.080   1.000   1/4     0.4  0.25     0.04    new_2
-r13_01_11c  0.20    1.100   1.080   1.000   1/4     0.4  0.25     0.04    new_2        # resonance? certainly a wave shooting off
-r13_01_11d  0.45    1.100   1.080   1.000   1/4     0.4  0.25     0.04    new_2        # flat, slow, boring!
-r13_01_11e  0.10    1.100   1.080   1.000   1/4     0.4  0.25     0.04    new_2        # big amplitude resonance.
+r13_01_09a  0.30    1.050   1.030   1.000   0.66    1.0  0.25     0.04    new_2
+r13_01_09b  0.10    1.050   1.030   1.000   0.66    1.0  0.25     0.04    new_2
+r13_01_09c  0.45    1.050   1.030   1.000   0.66    1.0  0.25     0.04    new_2        # resonance. detachment just out of cam2 fov.
+r13_01_09d  0.20    1.050   1.030   1.000   0.66    1.0  0.25     0.04    new_2        # supercritical
+r13_01_09e  0.60    1.050   1.030   1.000   0.66    1.0  0.25     0.04    new_2        # resonance. detachment just outside cam2 fov.
+r13_01_10a  0.30    1.100   1.080   1.000   0.25    1.0  0.25     0.04    new_2        # detachment in cam2 fov.
+r13_01_10b  0.20    1.100   1.080   1.000   0.25    1.0  0.25     0.04    new_2
+r13_01_10c  0.60    1.100   1.080   1.000   0.25    1.0  0.25     0.04    new_2        # inverted resonance?
+r13_01_10d  0.45    1.100   1.080   1.000   0.25    1.0  0.25     0.04    new_2
+r13_01_11a  0.10    1.100   1.080   1.000   0.25    1.0  0.25     0.04    new_2        # supercritical
+r13_01_11b  0.30    1.100   1.080   1.000   0.25    0.4  0.25     0.04    new_2
+r13_01_11c  0.20    1.100   1.080   1.000   0.25    0.4  0.25     0.04    new_2        # resonance? certainly a wave shooting off
+r13_01_11d  0.45    1.100   1.080   1.000   0.25    0.4  0.25     0.04    new_2        # flat, slow, boring!
+r13_01_11e  0.10    1.100   1.080   1.000   0.25    0.4  0.25     0.04    new_2        # big amplitude resonance.
 r13_01_12a  0.30    1.040   1.020   1.000   1       0.4  0.25     0.04    new_2        # resonance. lots of interaction.
 r13_01_12b  0.30    1.040   1.020   1.000   1       1    0.25     0.04    new_2        # supercritical
 r13_01_12c  0.45    1.040   1.020   1.000   1       1    0.25     0.04    new_2        # supercritical
