@@ -74,7 +74,6 @@ def main(args):
     action_table = {'raw_process': raw_process,
                     'stitch':      stitch,
                     'hovmoller':   hovmoller,
-                    'wave_hovmoller': wave_hovmoller,
                     }
 
     runs = get_runs(args.run_pattern)
@@ -114,96 +113,73 @@ def raw_process(run):
     r.process()
 
 
-def hovmoller(run, visible_regions=False):
-    pr = ProcessedRun(run)
-    X, T, Y = pr.combine_current
+def hovmoller_current(pr, ax):
+    Xg, Tg, Yg = pr.combine_current
+    D = pr.parameters['D']
+    contour_current = dict(cmap=plt.cm.bone,
+                            levels=np.linspace(0, D / 2, 100))
 
-    fig, ax = plt.subplots()
-
-    contour_args = dict(cmap=plt.cm.bone,
-                        levels=np.linspace(0, 0.25, 100))
-
-    contourf = ax.contourf(X, T, Y, **contour_args)
-
-    if visible_regions:
-    # vertical lines where the measurement regions are
-        for i, v in enumerate(vis):
-            ax.axvspan(*v, color='r', alpha=0.2)
-
-        # for i, v in enumerate(vis_):
-            # ax.axvspan(*v, color='y', alpha=0.2)
-
-    # line at the transition
-    ax.axvline(2.5, color='y', linewidth=2)
-    ax.text(2.505, 6, 'phase transition', color='y', rotation=90)
-
-    # label the current viewing region
-    ax.text(2.8, 7, 'test run viewing window', color='w', rotation=90)
-
-    ax.set_xlim(0.0, 3.5)
-    ax.set_xlabel('distance from lock (m)')
-    ax.set_ylabel('time from release (s)')
-
-    title = r"Hovmoller, {run}: $H={H}$, $\rho_0={rho_0}$, $\rho_1={rho_1}$"
-    ax.set_title(title.format(run=run,
-                              H=pr.parameters['H'],
-                              rho_0=pr.parameters['rho_0'],
-                              rho_1=pr.parameters['rho_1']))
-
-    fig.colorbar(contourf)
-    fig.tight_layout()
-
-    if visible_regions:
-        fig.savefig('plots/hovmoller_visible_simple_' + run + '.png')
-    else:
-        fig.savefig('plots/hovmoller_' + run + '.png')
+    contourf = ax.contourf(Xg, Tg, Yg, **contour_current)
+    return contourf
 
 
-def wave_hovmoller(run, visible_regions=False):
-    pr = ProcessedRun(run)
-    X, T, Y = pr.combine_wave
-
-    fig, ax = plt.subplots()
-
-    contour_args = dict(cmap=plt.cm.bone,
+def hovmoller_wave(pr, ax):
+    Xw, Tw, Yw = pr.combine_wave
+    contour_wave = dict(cmap=plt.cm.bone,
                         levels=np.linspace(-1, 1, 100))
 
-    Y_ = Y / Y.mean() - 1
-    contourf = ax.contourf(X, T, Y_, **contour_args)
+    Yw_ = Yw / Yw.mean() - 1
+    contourf = ax.contourf(Xw, Tw, Yw_, **contour_wave)
+    return contourf
 
-    if visible_regions:
-    # vertical lines where the measurement regions are
-        for i, v in enumerate(vis):
-            ax.axvspan(*v, color='r', alpha=0.2)
 
-        # for i, v in enumerate(vis_):
-            # ax.axvspan(*v, color='y', alpha=0.2)
+def hovmoller(run, visible_regions=False):
+    pr = ProcessedRun(run)
+    # FIXME: catch single layer runs and do something else.
+
+    fig, axes = plt.subplots(nrows=2)
+
+    current_ax = axes[0]
+    wave_ax = axes[1]
+
+    c_wave = hovmoller_wave(pr, wave_ax)
+    c_current = hovmoller_current(pr, current_ax)
+    fig.colorbar(c_wave, ax=wave_ax)
+    fig.colorbar(c_current, ax=current_ax)
+
+    for ax in axes:
+        if visible_regions:
+        # vertical lines where the measurement regions are
+            for i, v in enumerate(vis):
+                ax.axvspan(*v, color='r', alpha=0.2)
+
+            # for i, v in enumerate(vis_):
+                # ax.axvspan(*v, color='y', alpha=0.2)
 
     # line at the transition
-    ax.axvline(2.5, color='y', linewidth=2)
-    ax.text(2.505, 6, 'phase transition', color='y', rotation=90)
+        ax.axvline(2.5, color='y', linewidth=2)
+        ax.text(2.505, 6, 'phase transition', color='y', rotation=90)
 
     # label the current viewing region
-    ax.text(2.8, 7, 'test run viewing window', color='w', rotation=90)
+        ax.text(2.8, 7, 'test run viewing window', color='w', rotation=90)
 
-    ax.set_xlim(0.0, 3.5)
-    ax.set_xlabel('distance from lock (m)')
-    ax.set_ylabel('time from release (s)')
+        ax.set_xlim(0.0, 3.5)
+        ax.set_xlabel('distance from lock (m)')
+        ax.set_ylabel('time from release (s)')
 
-    title = r"Wave Hovmoller, {run}: $H={H}$, $\rho_0={rho_0}$, $\rho_1={rho_1}$"
-    ax.set_title(title.format(run=run,
-                              H=pr.parameters['H'],
-                              rho_0=pr.parameters['rho_0'],
-                              rho_1=pr.parameters['rho_1']))
+    # FIXME: main figure title
+    title = ("Hovmoller, {run_index} \n"
+             r"$D={D}$, $H={H}$, $\rho_0={rho_0}$, $\rho_1={rho_1}$,"
+             r"$\alpha={alpha}$")
 
-    cbar = fig.colorbar(contourf)
-    cbar.set_label(r'$\eta(x, t) = \frac{z(x, t)}{\bar{z}} - 1$')
+    ax.set_title(title.format(**pr.parameters))
+
     fig.tight_layout()
 
     if visible_regions:
         fig.savefig('plots/hovmoller_visible_simple_' + run + '.png')
     else:
-        fig.savefig('plots/hovmoller_wave' + run + '.png')
+        fig.savefig('plots/hovmoller_combine_' + run + '.png')
 
 
 def composite(run, visible_regions=False, h=0.13, tag='50mm'):
