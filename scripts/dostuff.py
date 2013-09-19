@@ -61,6 +61,11 @@ def command_line_parser():
                         action='append_const',
                         const='wave_hovmoller',
                         dest='actions')
+    parser.add_argument('--cache',
+                        help='extract interfaces and save to cache',
+                        action='append_const',
+                        const='cache',
+                        dest='actions')
     parser.add_argument('--list',
                         help='list the runs that match run_pattern',
                         action='store_true')
@@ -74,6 +79,7 @@ def main(args):
     action_table = {'raw_process': raw_process,
                     'stitch':      stitch,
                     'hovmoller':   hovmoller,
+                    'cache':       cache,
                     }
 
     runs = get_runs(args.run_pattern)
@@ -95,6 +101,11 @@ def main(args):
                 logmsg = "{run} {action} {error}".format
                 logging.warning(logmsg(run=run, action=action, error=e))
         i += 1
+
+
+def cache(run):
+    ra = RunAnalysis(run, load_from_cache=False)
+    ra.save_to_cache()
 
 
 def get_runs(regex="r1[123]*"):
@@ -219,6 +230,61 @@ def composite(run, visible_regions=False, h=0.13, tag='50mm'):
         fig.savefig('plots/composite_visible_' + tag + '_' + run + '.png')
     else:
         fig.savefig('plots/composite_' + tag + '_' + run + '.png')
+
+
+class RunAnalysis(object):
+    """Container for analysis methods. Also implements caching of
+    interface data."""
+    def __init__(self, index, load_from_cache=True):
+        self.pr = ProcessedRun(index)
+
+        self.cache_path = os.path.join(self.pr.output_dir, 'cache.npz')
+
+        if load_from_cache:
+            self.load_from_cache()
+
+    def load_from_cache(self):
+        """Load interface data from cache file."""
+        try:
+            cache = np.load(self.cache_path)
+        except IOError:
+            print "nothing at {}".format(self.cache_path)
+            return
+
+        for k in cache.keys():
+            setattr(self, k, cache[k])
+
+    def save_to_cache(self):
+        """Save interface data to cache."""
+        arrays = {'combine_wave': self.combine_wave,
+                  'combine_current': self.combine_current}
+        np.savez(self.cache_path, **arrays)
+
+    @property
+    def combine_wave(self):
+        """The wave interface."""
+        if hasattr(self, '_combine_wave'):
+            return self._combine_wave
+        else:
+            self.combine_wave = self.pr.combine_wave
+            return self._combine_wave
+
+    @combine_wave.setter
+    def combine_wave(self, value):
+        self._combine_wave = value
+
+    @property
+    def combine_current(self):
+        """The current interface."""
+        if hasattr(self, '_combine_current'):
+            return self._combine_current
+        else:
+            self.combine_current = self.pr.combine_current
+            return self._combine_current
+
+    @combine_current.setter
+    def combine_current(self, value):
+        self._combine_current = value
 
 
 if __name__ == '__main__':
