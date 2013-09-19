@@ -116,7 +116,7 @@ def raw_process(run):
 def hovmoller_current(pr, ax):
     Xg, Tg, Yg = pr.combine_current
     D = pr.parameters['D']
-    contour_current = dict(cmap=plt.cm.bone,
+    contour_current = dict(cmap=plt.cm.bone_r,
                             levels=np.linspace(0, D / 2, 100))
 
     contourf = ax.contourf(Xg, Tg, Yg, **contour_current)
@@ -125,7 +125,7 @@ def hovmoller_current(pr, ax):
 
 def hovmoller_wave(pr, ax):
     Xw, Tw, Yw = pr.combine_wave
-    contour_wave = dict(cmap=plt.cm.bone,
+    contour_wave = dict(cmap=plt.cm.bone_r,
                         levels=np.linspace(-1, 1, 100))
 
     Yw_ = Yw / Yw.mean() - 1
@@ -137,7 +137,7 @@ def hovmoller(run, visible_regions=False):
     pr = ProcessedRun(run)
     # FIXME: catch single layer runs and do something else.
 
-    fig, axes = plt.subplots(nrows=2)
+    fig, axes = plt.subplots(nrows=2, figsize=(8, 12), dpi=100)
 
     current_ax = axes[0]
     wave_ax = axes[1]
@@ -169,10 +169,10 @@ def hovmoller(run, visible_regions=False):
 
     # FIXME: main figure title
     title = ("Hovmoller, {run_index} \n"
-             r"$D={D}$, $H={H}$, $\rho_0={rho_0}$, $\rho_1={rho_1}$,"
-             r"$\alpha={alpha}$")
+             r"$D={D}$, $H={H}$, $h_1={h_1}$, "
+             r"$\rho_0={rho_0}$, $\rho_1={rho_1}$, $\alpha={alpha}$")
 
-    ax.set_title(title.format(**pr.parameters))
+    axes[0].set_title(title.format(**pr.parameters))
 
     fig.tight_layout()
 
@@ -180,6 +180,8 @@ def hovmoller(run, visible_regions=False):
         fig.savefig('plots/hovmoller_visible_simple_' + run + '.png')
     else:
         fig.savefig('plots/hovmoller_combine_' + run + '.png')
+
+    plt.close(fig)
 
 
 def composite(run, visible_regions=False, h=0.13, tag='50mm'):
