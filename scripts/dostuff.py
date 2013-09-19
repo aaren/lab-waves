@@ -242,6 +242,10 @@ class RunAnalysis(object):
         if load_from_cache:
             self.load_from_cache()
 
+    @property
+    def has_cache(self):
+        return os.path.exists(self.cache_path)
+
     def load_from_cache(self):
         """Load interface data from cache file."""
         try:
