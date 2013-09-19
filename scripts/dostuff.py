@@ -178,7 +178,6 @@ def hovmoller(run, visible_regions=False):
         ax.set_xlabel('distance from lock (m)')
         ax.set_ylabel('time from release (s)')
 
-    # FIXME: main figure title
     title = ("Hovmoller, {run_index} \n"
              r"$D={D}$, $H={H}$, $h_1={h_1}$, "
              r"$\rho_0={rho_0}$, $\rho_1={rho_1}$, $\alpha={alpha}$")
