@@ -407,7 +407,7 @@ class ProcessedImage(LabImage):
     def wave_interface(self):
         """Pull out the wave interface."""
         mask = self.wave_mask
-        array = (self.wave_fluid < 0.3).astype(np.float)
+        array = (self.wave_fluid < 0.1).astype(np.float)
         x, y = self.canny_interface(array, sigma=5, mask=~mask)
         return x, y
 
