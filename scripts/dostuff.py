@@ -127,6 +127,7 @@ class RunAnalysis(object):
     of interface data."""
     def __init__(self, index, load_from_cache=True):
         self.pr = ProcessedRun(index)
+        # TODO: use a namedtuple?
         self.parameters = type('parameters', (object,), self.pr.parameters)
 
         self.cache_path = os.path.join(self.pr.output_dir, 'cache.npz')
