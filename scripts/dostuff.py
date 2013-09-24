@@ -182,6 +182,20 @@ class RunAnalysis(object):
     def combine_current(self, value):
         self._combine_current = value
 
+    @property
+    def wave_maximum(self):
+        """Find the largest wave amplitude by
+        looking in the region 2 < x < 2.5.
+
+        Returns the nondimensionalised wave amplitude.
+        """
+        X, T, Z = self.combine_wave
+
+        x_in_range = (2.0 < X) & (X < 2.5)
+        # TODO: non dimensionalise in ProcessedRun
+        wave_max = Z[np.where(x_in_range)].max() / self.parameters.H
+        return wave_max
+
 
 class RunPlotter(RunAnalysis):
     """Container for plots."""
