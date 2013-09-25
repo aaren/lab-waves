@@ -236,22 +236,32 @@ class ProcessedImage(LabImage):
 
         Returns self so that you can use in a chain.
         """
-        # visible regions
-        vis = (((1.18, 0.25), (0.71, 0.0)),
-               ((2.11, 0.25), (1.70, 0.0)),
-               ((3.08, 0.25), (2.70, 0.0)))
+        # visible region
+        vis = ((3.08, 0.25), (2.70, 0.0))
 
-        # shifted visible regions
-        vis_ = (((0.43, 0.25), (-0.04, 0.0)),
-                ((1.36, 0.25), (0.95, 0.0)),
-                ((2.33, 0.25), (1.95, 0.0)))
+        # shifted lock equivalent visible region
+        vis_s = ((2.33, 0.25), (1.95, 0.0))
 
-        boxes = [[self.run.real_to_pixel(*x, cam='cam2') for x in X]
-                                                            for X in vis]
-        boxes_ = [[self.run.real_to_pixel(*x, cam='cam2') for x in X]
-                                                            for X in vis_]
-        self.draw_rectangles(boxes_, fill='yellow')
-        self.draw_rectangles(boxes, fill='red')
+        # elongated lock visible region
+        def elong(x, n=4, L=0.25):
+            """Calculate equivalent x position given an elongation
+            of the lock gate of length L by a factor of n, where
+            x=0 is found at n=1."""
+            return (x - (n - 1) * L) / n
+
+        vis_e = (((elong(3.08, n=4), 0.25), (elong(2.70, n=4), 0.0)),
+                 ((elong(3.08, n=3), 0.25), (elong(2.70, n=3), 0.0)),
+                 ((elong(3.08, n=2), 0.25), (elong(2.70, n=2), 0.0)),)
+
+        box = [[self.run.real_to_pixel(*x, cam='cam2') for x in vis]]
+        box_s = [[self.run.real_to_pixel(*x, cam='cam2') for x in vis_s]]
+        box_e = [[self.run.real_to_pixel(*x, cam='cam2') for x in X]
+                                                            for X in vis_e]
+
+        self.draw_rectangles(box, fill='red')
+        self.draw_rectangles(box_s, fill='yellow')
+        self.draw_rectangles(box_e, fill='cyan')
+
         return self
 
     @lazyprop
