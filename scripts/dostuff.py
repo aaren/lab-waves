@@ -9,6 +9,7 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 from labwaves import config
+import labwaves.runbase as runbase
 from labwaves.runbase import RawRun
 from labwaves.runbase import ProcessedRun
 
@@ -306,6 +307,86 @@ class RunPlotter(RunAnalysis):
             fig.savefig('plots/composite_visible_' + tag + '_' + run + '.png')
         else:
             fig.savefig('plots/composite_' + tag + '_' + run + '.png')
+
+
+class SynthesisPlotter(object):
+    def __init__(self, regex):
+        self.run_pattern = regex
+        self.parameters = runbase.read_parameters(config.paramf)
+        self.types = self.load_types()
+
+    @property
+    def run_indices(self):
+        return get_runs(regex=self.run_pattern)
+
+    @property
+    def runs(self):
+        indices = self.run_indices
+        return (RunAnalysis(index, load_from_cache=False) for index in indices)
+
+    def load_types(self):
+        """Load the types file."""
+        type_path = os.path.join(config.path, 'types')
+        # wtf numpy! - why is it different if I use tuples here???
+        headers = ['run_index', 'type']
+        dtypes = ['S10', 'S10']
+
+        data = np.genfromtxt(type_path, dtype=dtypes, names=headers)
+
+        return data
+
+    def plot_types(self):
+        fig, axes = plt.subplots(nrows=2)
+
+        ax0, ax1 = axes
+
+        # S, d0 as axes
+        # what to plot types as
+        symbols = {'1':  'red',
+                   '2':  'blue',
+                   '2i': 'blue',
+                   '2!': 'cyan',
+                   '3':  'green',
+                   '4':  'magenta',
+                   '5':  'black',
+                   '5.': 'gray',
+                   }
+
+        p = self.parameters
+
+        ri_04 = p[p['D'] == 0.4]['run_index']
+        ri_10 = p[p['D'] == 1.0]['run_index']
+
+        def plot_type(ax, run):
+            types = self.types
+            rtype = types[types['run_index'] == run]['type']
+            if rtype.size == 0 or rtype[0] == '-':
+                return
+            else:
+                rtype = rtype[0].split('/')[0]
+
+            d0 = p[p['run_index'] == run]['h_1']
+            alpha = p[p['run_index'] == run]['alpha']
+            S = 1 / (1 + alpha)
+            ax.scatter(S, d0, facecolor=symbols[rtype], edgecolor='none')
+
+        for ax in axes:
+            ax.set_xlabel(r'$ S = \frac{\rho_1 - \rho_2}{\rho_c - \rho_2}$')
+            ax.set_ylabel(r'$ d_0 $, interface depth')
+
+        # plot D=0.4
+        ax0.set_title('D = 0.4')
+        for ri in ri_04:
+            plot_type(ax0, ri)
+
+        # plot D=1 on this axes
+        ax1.set_title('D = 1.0')
+        for ri in ri_10:
+            plot_type(ax1, ri)
+
+        fig.tight_layout()
+
+        return fig
 
 
 if __name__ == '__main__':

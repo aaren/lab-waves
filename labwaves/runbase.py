@@ -46,6 +46,34 @@ def lazyprop(fn):
     return _lazyprop
 
 
+def read_parameters(paramf):
+    """Read in data from the parameters file, which has
+    the headers and data types as in the list data.
+    'S10' is string, 'f4' is float.
+
+    Reading in gives a numpy recarray. Convert to a dictionary
+    and return this.
+    """
+    data = [('run_index',       'S10'),
+            ('h_1',             'f8'),
+            ('rho_0',           'f8'),
+            ('rho_1',           'f8'),
+            ('rho_2',           'f8'),
+            ('alpha',           'f8'),
+            ('D',               'f8'),
+            ('H',               'f8'),
+            ('sample',          'f8'),
+            ('perspective',     'S10')]
+    names, types = zip(*data)
+    try:
+        p = np.genfromtxt(paramf, dtype=types, names=names)
+    except ValueError:
+        print("parameters file is malformed. "
+                "Should have headings: {}".format(names))
+        print({k: v for k, v in data})
+    return p
+
+
 class LabImage(object):
     """Base class for images that come from a lab run."""
     def __init__(self, path, run, im=None):
@@ -667,31 +695,7 @@ class LabRun(object):
 
     @staticmethod
     def read_parameters(run, paramf):
-        """Read in data from the parameters file, which has
-        the headers and data types as in the list data.
-        'S10' is string, 'f4' is float.
-
-        Reading in gives a numpy recarray. Convert to a dictionary
-        and return this.
-        """
-        data = [('run_index',       'S10'),
-                ('h_1',             'f8'),
-                ('rho_0',           'f8'),
-                ('rho_1',           'f8'),
-                ('rho_2',           'f8'),
-                ('alpha',           'f8'),
-                ('D',               'f8'),
-                ('H',               'f8'),
-                ('sample',          'f8'),
-                ('perspective',     'S10')]
-        names, types = zip(*data)
-        try:
-            p = np.genfromtxt(paramf, dtype=types, names=names)
-        except ValueError:
-            print("parameters file is malformed. "
-                  "Should have headings: {}".format(names))
-            print({k: v for k, v in data})
-
+        p = read_parameters(paramf)
         index = np.where(p['run_index'] == run)
         params = p[index]
         if len(params) == 0:

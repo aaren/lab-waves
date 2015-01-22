@@ -216,7 +216,7 @@ r13_01_13b  0.10    1.040   1.020   1.000   1       0.4  0.25     0.04    new_2 
 r13_01_13c  0.60    1.040   1.020   1.000   1       1    0.25     0.04    new_2        # super / rare / res? seemed like lots of development to go beyond end of tank.
 r13_01_13d  0.20    1.040   1.020   1.000   1       1    0.25     0.04    new_2        # supercritical
 r13_01_13e  0.20    1.040   1.020   1.000   1       0.4  0.25     0.04    new_2        # resonance? looked phase locked at first.
-r13_01_13f  0.20    1.040   1.020   1.000   1       1    0.25     0.04    new_2        # H=0.20m
+r13_01_13f  0.20    1.040   1.020   1.000   1       1    0.20     0.04    new_2        # H=0.20m
 r13_01_13g  0.00    1.040   1.000   1.000   0       1    0.25     0.04    new_2        # homogeneous ambient H=0.25m
 r13_01_13h  0.00    1.040   1.000   1.000   0       1    0.20     0.04    new_2        # homogeneous ambient H=0.20m
 r13_01_13i  0.00    1.040   1.000   1.000   0       0.4  0.25     0.04    new_2        # homogeneous ambient H=0.25m
