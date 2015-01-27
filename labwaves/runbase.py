@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage import filter as skif
 
-from gc_turbulence.gc_turbulence.util import parallel_process, parallel_stub
+from parallelprogress import parallel_process, parallel_stub
 
 import config
 import util
