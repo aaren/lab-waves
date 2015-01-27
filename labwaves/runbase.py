@@ -1118,14 +1118,14 @@ class RawRun(LabRun):
         lower = ref_y + crop['lower'] + config.bottom_bar
         return (left, upper, right, lower)
 
-    def process(self, parallel=True):
+    def process(self, parallel=10):
         """Process the images, transforming them from their raw state.
 
         Can easily multiprocess this bit.
         """
         kwargs = [{'image': i} for i in self.images]
         if parallel:
-            parallel_process(process_raw, kwargs, processors=10)
+            parallel_process(process_raw, kwargs, processors=int(parallel))
         elif not parallel:
             for image in self.images:
                 image.write_out()
