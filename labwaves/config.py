@@ -181,6 +181,7 @@ barrel_coeffs = {'old':   {'cam1': nikkor_1855,
 # in 15 pt Liberation Regular, "Aaron O'Leary" is 360 px wide,
 # "University of Leeds" is 520 px wide.
 font = '/usr/share/fonts/liberation/LiberationMono-Regular.ttf'
+alt_font = '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf'
 fontsize = ideal_25 / 10
 # text that appears in the processed images
 author_text = "Aaron O'Leary, University of Leeds"

@@ -202,11 +202,16 @@ class RawImage(LabImage):
         self.crop_box = self.run.crop_box(self.cam)
         crop_im = processing.crop(trans_im, self.crop_box)
 
+        try:
+            font = ImageFont.truetype(config.font, config.fontsize)
+        except IOError:
+            font = ImageFont.truetype(config.alt_font, config.fontsize)
+
         kwargs = {'upper_text': self.param_text,
                   'lower_text': config.author_text,
                   'upper_bar': config.top_bar,
                   'lower_bar': config.bottom_bar,
-                  'font': ImageFont.truetype(config.font, config.fontsize),
+                  'font': font,
                   'text_colour': 'white',
                   'bg_colour': 'black'}
 
