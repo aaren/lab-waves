@@ -1,3 +1,12 @@
+Load all images of a ProcessedRun to a 4d array. Then use a surface
+fitter to fit the wave-field.
+
+Store all data as hdf5:
+    - concatenated image
+    - interface pre-fitting
+    - interface post-fitting
+
+
 - use new objects in generate (maybe multiprocess here?)
 
 - change pixel_to_real to operate on measurement_region
