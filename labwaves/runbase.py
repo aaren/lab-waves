@@ -309,30 +309,21 @@ class ProcessedImage(LabImage):
 
     @property
     def pixel_coords(self):
-        # TODO: move this up to run level
-        # images are homogeneous through a run so only need to
-        # do this once
         """Return the pixel coordinate of each point in the
         measurement region.
 
         Outputs two arrays: the x coordinates and the y coordinates.
         """
-        x, y = np.indices(self.measurement_region.size)
-        return x.T, y.T
+        return self.run.pixel_coords(cam=self.cam)
 
     @property
     def real_coords(self):
-        # TODO: move this up to run level
-        # images are homogeneous through a run so only need to
-        # do this once
         """For each pixel in the measurement region, compute
         the real coordinate.
 
         Outputs two arrays: the x coordinates and the y coordinates.
         """
-        x, y = self.pixel_coords
-        y += config.top_bar
-        return self.run.pixel_to_real(x, y, cam=self.cam)
+        return self.run.real_coords(cam=self.cam)
 
     @property
     def channels(self):
@@ -1291,6 +1282,26 @@ class ProcessedRun(LabRun):
         h = config.crop[cam]['upper'] - config.crop[cam]['lower']
         y_ = (config.top_bar - y) / config.ideal_m + h
         return x_, y_
+
+    def pixel_coords(self, cam):
+        """Return the pixel coordinate of each point in the
+        measurement region.
+
+        Outputs two arrays: the x coordinates and the y coordinates.
+        """
+        x0, y0, x1, y1 = self.measurement_box(cam=cam)
+        x, y = np.indices(((x1 - x0), (y1 - y0)))
+        return x.T, y.T
+
+    def real_coords(self, cam):
+        """For each pixel in the measurement region, compute
+        the real coordinate.
+
+        Outputs two arrays: the x coordinates and the y coordinates.
+        """
+        x, y = self.pixel_coords(cam)
+        y += config.top_bar
+        return self.pixel_to_real(x, y, cam=cam)
 
     def current_interface_X(self, cam):
         """One dimensional X vector for a run."""
