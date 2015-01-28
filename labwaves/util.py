@@ -116,6 +116,8 @@ def get_parameters(run, paramf, delim=None):
 def cprint(string):
     print string, "\r",
     sys.stdout.flush()
+
+
 def makedirs_p(path):
     """Emulate mkdir -p. Doesn't throw error if directory
     already exists.
@@ -127,4 +129,3 @@ def makedirs_p(path):
             pass
         else:
             raise
-
