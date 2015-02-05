@@ -1,3 +1,5 @@
+from __future__ import division
+
 from labwaves.runbase import ProcessedRun
 
 from labwaves import config
@@ -10,9 +12,6 @@ def test_pixel_to_real_cam1():
     top_bar_real = config.top_bar / config.ideal_m
     x, y = pr.pixel_to_real(0, 0, 'cam1')
     assert(x == config.crop['cam1']['left'])
-    print y
-    print config.crop['cam1']
-    print top_bar_real
     assert(y == config.crop['cam1']['upper'] + top_bar_real)
 
 
