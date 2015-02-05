@@ -12,6 +12,7 @@ import ImageFont
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage import filter as skif
+import h5py
 
 from parallelprogress import parallel_process, parallel_stub
 
@@ -1444,6 +1445,74 @@ class ProcessedRun(LabRun):
 def process_raw(image):
     """External function to allow multiprocessing raw images."""
     image.write_out()
+
+
+class Run(object):
+    def __init__(self, index):
+        self.index = index
+        self.parameters_f = config.paramf
+        self.parameters = LabRun.read_parameters(index, self.parameters_f)
+
+        self.processed = ProcessedRun(index)
+        self.raw = RawRun(index)
+
+        self.h5name = os.path.join(self.processed.output_dir,
+                                   self.index + '.hdf5')
+
+    def extract(self):
+        """Extract data from the processed run."""
+        waves = self.processed.combine_wave
+        current = self.processed.combine_current
+        self.waves = Waves(*waves)
+        self.current = Current(*current)
+
+    def save(self):
+        """Save data to run-wide hdf5"""
+        h5 = h5py.File(self.h5name)
+
+        waves = h5.create_group('waves')
+        current = h5.create_group('current')
+
+        waves.create_dataset('x', data=self.waves.x)
+        waves.create_dataset('t', data=self.waves.t)
+        waves.create_dataset('z', data=self.waves.z)
+
+        current.create_dataset('x', data=self.current.x)
+        current.create_dataset('t', data=self.current.t)
+        current.create_dataset('z', data=self.current.z)
+
+        h5.close()
+
+    def load(self):
+        """Load data from hdf5."""
+        h5 = h5py.File(self.h5name)
+
+        wx = h5['waves']['x']
+        wt = h5['waves']['t']
+        wz = h5['waves']['z']
+
+        cx = h5['current']['x']
+        ct = h5['current']['t']
+        cz = h5['current']['z']
+
+        self.waves = Waves(wx, wt, wz)
+        self.current = Current(cx, ct, cz)
+
+
+class Waves(object):
+    """Container for wave data."""
+    def __init__(self, x, t, z):
+        self.x = x
+        self.t = t
+        self.z = z
+
+
+class Current(object):
+    """Container for current data."""
+    def __init__(self, x, t, z):
+        self.x = x
+        self.t = t
+        self.z = z
 
 
 # NOTE: scipy.signal._peak_finding._identify_ridge_lines may be
