@@ -120,7 +120,7 @@ def test_RawRun_imagepaths():
     p1 = r.imagepaths[0]
     path = 'tests/data/synced/r11_07_06c/cam1/img_0001.jpg'
     assert(os.path.samefile(p1, path))
-    assert_equal(len(r.imagepaths), 14)
+    assert_equal(len(r.imagepaths), 6)
 
 
 def test_RawRun_images():
