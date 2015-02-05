@@ -228,6 +228,8 @@ def test_RawRun_process():
     ref = sorted(glob.glob('tests/data/processed_ref/*/*/*'))
     outputs = sorted(glob.glob('tests/data/processed/*/*/*'))
     for ref, out in zip(ref, outputs):
+        print ref
+        print out
         assert_image_equal(ref, out)
 
 ### RawImage class tests
@@ -256,4 +258,6 @@ def test_RawImage_write_out():
     """Integration tests the whole RawImage class."""
     i.write_out()
     # now compare the output with reference
+    print i.outpath
+    print t.processed_path
     assert_image_equal(i.outpath, t.processed_path)
