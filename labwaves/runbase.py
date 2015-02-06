@@ -1463,7 +1463,7 @@ class Run(object):
         self.waves = Waves(*waves)
         self.current = Current(*current)
 
-    def save(self, overwrite=True):
+    def save(self, overwrite=False):
         """Save data to run-wide hdf5"""
         if overwrite and os.path.exists(self.h5name):
             os.remove(self.h5name)
