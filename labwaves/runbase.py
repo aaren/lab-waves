@@ -1466,8 +1466,13 @@ class Run(object):
         self.waves = Waves(*waves)
         self.current = Current(*current)
 
-    def save(self):
+    def save(self, overwrite=True):
         """Save data to run-wide hdf5"""
+        if overwrite and os.path.exists(self.h5name):
+            os.remove(self.h5name)
+        elif not overwrite and os.path.exists(self.h5name):
+            raise IOError('file already exists ({})'.format(self.h5name))
+
         h5 = h5py.File(self.h5name)
 
         waves = h5.create_group('waves')
