@@ -1503,6 +1503,16 @@ class Run(object):
         self.waves = Waves(wx, wt, wz)
         self.current = Current(cx, ct, cz)
 
+    def load_to_memory(self):
+        """Load the hdf5 data to memory."""
+        self.waves.x = self.waves.x[:]
+        self.waves.t = self.waves.t[:]
+        self.waves.z = self.waves.z[:]
+
+        self.current.x = self.current.x[:]
+        self.current.t = self.current.t[:]
+        self.current.z = self.current.z[:]
+
 
 class Waves(object):
     """Container for wave data."""
