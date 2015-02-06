@@ -1445,7 +1445,7 @@ def process_raw(image):
 
 
 class Run(object):
-    def __init__(self, index):
+    def __init__(self, index, autoload=True):
         self.index = index
         self.parameters_f = config.paramf
         self.parameters = LabRun.read_parameters(index, self.parameters_f)
@@ -1455,6 +1455,9 @@ class Run(object):
 
         self.h5name = os.path.join(self.processed.output_dir,
                                    self.index + '.hdf5')
+
+        if autoload:
+            self.load()
 
     def extract(self):
         """Extract data from the processed run."""
