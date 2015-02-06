@@ -1360,13 +1360,11 @@ class ProcessedRun(LabRun):
         xv = np.hstack((x2v, x1v))
         tv = np.unique(np.hstack((t2v, t1v)))
 
-        X, T = np.meshgrid(xv, tv)
-
         Y1 = self.current_interface_Y('cam1')
         Y2 = self.current_interface_Y('cam2')
         Y = np.hstack((Y2[:t2v.size, :x2v.size], Y1[:t1v.size, :x1v.size]))
 
-        return X, T, Y
+        return xv[::-1], tv, Y[:, ::-1]
 
     def wave_interface_X(self, cam):
         """One dimensional X vector for a run."""
@@ -1422,13 +1420,11 @@ class ProcessedRun(LabRun):
         xv = np.hstack((x2v, x1v))
         tv = np.unique(np.hstack((t2v, t1v)))
 
-        X, T = np.meshgrid(xv, tv)
-
         Y1 = self.wave_interface_Y('cam1')
         Y2 = self.wave_interface_Y('cam2')
         Y = np.hstack((Y2[:t2v.size, :x2v.size], Y1[:t1v.size, :x1v.size]))
 
-        return X, T, Y
+        return xv[::-1], tv, Y[:, ::-1]
 
     def write_out(self, images):
         """Write images to disk.
@@ -1529,9 +1525,7 @@ class Waves(object):
     @property
     def _interpolator(self):
         if not hasattr(self, '_cached_interpolator'):
-            x = self.x[0, :]
-            t = self.t[:, 0]
-            self._cached_interpolator = interp.interp2d(x, t, self.z)
+            self._cached_interpolator = interp.interp2d(self.x, self.t, self.z)
 
         return self._cached_interpolator
 
