@@ -1514,8 +1514,8 @@ class Run(object):
         self.current.z = self.current.z[:]
 
 
-class Waves(object):
-    """Container for wave data."""
+class InterfaceData(object):
+    """Container for data from an interface."""
     def __init__(self, x, t, z):
         self.x = x
         self.t = t
@@ -1547,13 +1547,14 @@ class Waves(object):
         return self._T
 
 
-class Current(object):
-    """Container for current data."""
-    def __init__(self, x, t, z):
-        self.x = x
-        self.t = t
-        self.z = z
+class Waves(InterfaceData):
+    """Container for wave data."""
+    pass
 
+
+class Current(InterfaceData):
+    """Container for current data."""
+    pass
 
 # NOTE: scipy.signal._peak_finding._identify_ridge_lines may be
 # useful for wave tracking in the signal data, as well as
