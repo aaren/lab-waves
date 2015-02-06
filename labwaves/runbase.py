@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage import filter as skif
 import h5py
+import scipy.interpolate as interp
 
 from parallelprogress import parallel_process, parallel_stub
 
@@ -1520,6 +1521,19 @@ class Waves(object):
         self.x = x
         self.t = t
         self.z = z
+
+    def __call__(self, x, t):
+        """Return the value of z at the given x and t."""
+        return self._interpolator(x, t)
+
+    @property
+    def _interpolator(self):
+        if not hasattr(self, '_cached_interpolator'):
+            x = self.x[0, :]
+            t = self.t[:, 0]
+            self._cached_interpolator = interp.interp2d(x, t, self.z)
+
+        return self._cached_interpolator
 
 
 class Current(object):
