@@ -1529,6 +1529,20 @@ class Waves(object):
 
         return self._cached_interpolator
 
+    @property
+    def X(self):
+        """Gridded view of x."""
+        if not hasattr(self, '_X'):
+            self._X, self._T = np.meshgrid(self.x, self.t)
+        return self._X
+
+    @property
+    def T(self):
+        """Gridded view of t."""
+        if not hasattr(self, '_T'):
+            self._X, self._T = np.meshgrid(self.x, self.t)
+        return self._T
+
 
 class Current(object):
     """Container for current data."""
