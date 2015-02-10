@@ -1458,6 +1458,7 @@ class Run(object):
 
         if autoload:
             self.load()
+            self.load_to_memory()
 
     def extract(self):
         """Extract data from the processed run."""
