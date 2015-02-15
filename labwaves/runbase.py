@@ -1522,8 +1522,12 @@ class InterfaceData(object):
         self.t = t
         self.z = z
 
-    def __call__(self, x, t):
+    def __call__(self, x=None, t=None):
         """Return the value of z at the given x and t."""
+        if x is None:
+            x = self.x
+        if t is None:
+            t = self.t
         return self._interpolator(x, t)
 
     @property
