@@ -1460,6 +1460,9 @@ class Run(object):
             self.load()
             self.load_to_memory()
 
+        self.set_attributes()
+        self.nondimensionalise()
+
     def extract(self):
         """Extract data from the processed run."""
         waves = self.processed.combine_wave
@@ -1507,12 +1510,49 @@ class Run(object):
     def load_to_memory(self):
         """Load the hdf5 data to memory."""
         self.waves.x = self.waves.x[:]
-        self.waves.t = self.waves.t[:]
+        self.waves.t = self.waves.t[:] * 5  # XXX: hack to correct sample rate
         self.waves.z = self.waves.z[:]
 
         self.current.x = self.current.x[:]
-        self.current.t = self.current.t[:]
+        self.current.t = self.current.t[:] * 5  # XXX: ^
         self.current.z = self.current.z[:]
+
+    def nondimensionalise(self):
+        """Non dimensionalise everything, keeping dimensional views
+        with a 'd' suffix.
+        """
+        self.waves.xd = self.waves.x
+        self.waves.td = self.waves.t
+        self.waves.zd = self.waves.z
+
+        self.waves.x = self.waves.xd / self.H
+        self.waves.t = self.waves.td / self.T
+        self.waves.z = self.waves.zd / self.H
+
+        self.current.xd = self.current.x
+        self.current.td = self.current.t
+        self.current.zd = self.current.z
+
+        self.current.x = self.current.xd / self.H
+        self.current.t = self.current.td / self.T
+        self.current.z = self.current.zd / self.H
+
+    def set_attributes(self):
+        self.H = self.parameters['H']
+        self.h1 = self.parameters['h_1']
+
+        self.p0 = self.parameters['rho_0']
+        self.p1 = self.parameters['rho_1']
+        self.p2 = self.parameters['rho_2']
+
+        self.pc = self.p0
+
+        self.g = 9.81 * (self.p1 - self.p2) / self.p2
+        self.alpha = (self.p0 - self.p1) / (self.p1 - self.p2)
+        self.S = (self.p1 - self.p2) / (self.p0 - self.p2)
+
+        self.U = (self.g * self.H) ** .5
+        self.T = self.H / self.U
 
 
 class InterfaceData(object):
