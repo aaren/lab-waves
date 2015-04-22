@@ -1554,6 +1554,10 @@ class Run(object):
         self.U = (self.g * self.H) ** .5
         self.T = self.H / self.U
 
+    @property
+    def dt(self):
+        return np.diff(self.waves.t).mean()
+
 
 class InterfaceData(object):
     """Container for data from an interface."""
