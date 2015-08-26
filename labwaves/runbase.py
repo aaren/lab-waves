@@ -11,7 +11,7 @@ from PIL import ImageDraw
 from PIL import ImageFont
 import numpy as np
 import matplotlib.pyplot as plt
-from skimage import filters as skif
+from skimage import feature as skif
 import h5py
 import scipy.interpolate as interp
 
