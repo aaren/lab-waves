@@ -1461,7 +1461,6 @@ class Run(object):
             self.load_to_memory()
 
         self.set_attributes()
-        self.nondimensionalise()
 
     def extract(self):
         """Extract data from the processed run."""
