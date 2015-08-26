@@ -4,7 +4,7 @@ from nose.tools import *
 import os
 import glob
 
-import Image
+from PIL import Image
 import numpy as np
 import numpy.testing as npt
 

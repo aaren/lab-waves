@@ -26,8 +26,8 @@ import subprocess
 from cStringIO import StringIO
 
 import numpy as np
-import Image
-import ImageDraw
+from PIL import Image
+from PIL import ImageDraw
 
 
 ### PURE FUNCTIONS ###

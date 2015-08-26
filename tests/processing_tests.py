@@ -3,7 +3,7 @@ from nose.tools import *
 
 import numpy.testing as npt
 import numpy as np
-import Image
+from PIL import Image
 
 from labwaves import processing
 from labwaves import config
